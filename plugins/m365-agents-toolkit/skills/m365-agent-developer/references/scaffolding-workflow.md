@@ -13,7 +13,7 @@ Check if ATK CLI is available by running `atk --version`. If the command is not 
 Copy this command EXACTLY. Replace `<project-name>` with the user's project name:
 
 ```bash
-atk new -n <project-name> -c declarative-agent-basic -with-plugin no -i false
+atk new -n <project-name> -c declarative-agent -with-plugin no -i false
 ```
 
 ### Forbidden Commands — These Do Not Exist
@@ -74,7 +74,7 @@ Always use `-i false` (non-interactive mode) to prevent unexpected prompts.
 
 1. **Create the project:**
 ```bash
-atk new -n <project-name> -c declarative-agent-basic -with-plugin no -i false
+atk new -n <project-name> -c declarative-agent -with-plugin no -i false
 ```
 
 2. **Move all files from the subfolder to current directory:**

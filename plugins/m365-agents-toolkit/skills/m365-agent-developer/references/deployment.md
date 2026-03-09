@@ -17,7 +17,7 @@ Then use `atk` directly for all commands.
 # Create new agent project
 atk new \
   -n my-agent \
-  -c declarative-agent-basic \
+  -c declarative-agent \
   -with-plugin type-spec \
   -i false
 
