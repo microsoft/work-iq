@@ -24,6 +24,22 @@ Add to your `.mcp.json` or IDE MCP settings:
 }
 ```
 
+## Updating
+
+If you installed WorkIQ globally with npm, run the following command to update to the latest version:
+
+```bash
+npm update -g @microsoft/workiq
+```
+
+To verify the installed version after updating:
+
+```bash
+workiq version
+```
+
+> 💡 **Using npx?** If you run WorkIQ via `npx -y @microsoft/workiq mcp`, npx automatically fetches the latest version each time, so no manual update step is needed.
+
 ## Usage
 
 ```

@@ -88,6 +88,22 @@ Or add it as an MCP server in your coding agent or IDE:
 
 > Note: please refer to [use MCP servers in VS Code](https://code.visualstudio.com/docs/copilot/customization/mcp-servers) for the configuration instructions relative to Visual Studio Code.
 
+### Updating
+
+If you installed WorkIQ globally with npm, run the following command to update to the latest version:
+
+```bash
+npm update -g @microsoft/workiq
+```
+
+To verify the installed version after updating:
+
+```bash
+workiq version
+```
+
+> 💡 **Using npx?** If you run WorkIQ via `npx -y @microsoft/workiq mcp`, npx automatically fetches the latest version each time, so no manual update step is needed.
+
 ---
 
 ## 🎯 What You Can Query
