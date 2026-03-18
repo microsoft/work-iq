@@ -170,7 +170,7 @@ workiq mcp
 |--------|-------------|
 | [**workiq**](./plugins/workiq/) | Query Microsoft 365 data with natural language — emails, meetings, documents, Teams messages, and more. |
 | [**microsoft-365-agents-toolkit**](./plugins/microsoft-365-agents-toolkit/) | Toolkit for building M365 Copilot declarative agents — scaffolding, manifest authoring, and capability configuration. |
-| [**workiq-productivity**](./plugins/workiq-productivity/) | Read-only WorkIQ productivity insights — email triage, meeting costs, org charts, channel audits, and more. |
+| [**workiq-productivity**](./plugins/workiq-productivity/) | 36 WorkIQ productivity skills — email, meetings, calendar, Teams, SharePoint, projects, people, and reporting. |
 
 ---
 

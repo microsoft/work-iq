@@ -1,0 +1,73 @@
+{
+  "mcpServers": {
+    "workiq": {
+      "command": "npx",
+      "args": ["-y", "@microsoft/workiq@latest", "mcp"],
+      "tools": ["*"]
+    },
+    "WorkIQ-Me-MCP-Server": {
+      "url": "https://agent365.svc.cloud.microsoft/agents/tenants/<TENANT_ID>/servers/mcp_MeServer",
+      "type": "http",
+      "oauth": {
+        "clientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87",
+        "callbackPort": 8080
+      }
+    },
+    "WorkIQ-Mail-MCP-Server": {
+      "url": "https://agent365.svc.cloud.microsoft/agents/tenants/<TENANT_ID>/servers/mcp_MailTools",
+      "type": "http",
+      "oauth": {
+        "clientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87",
+        "callbackPort": 8080
+      }
+    },
+    "WorkIQ-Calendar-MCP-Server": {
+      "url": "https://agent365.svc.cloud.microsoft/agents/tenants/<TENANT_ID>/servers/mcp_CalendarTools",
+      "type": "http",
+      "oauth": {
+        "clientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87",
+        "callbackPort": 8080
+      }
+    },
+    "WorkIQ-Teams-MCP-Server": {
+      "url": "https://agent365.svc.cloud.microsoft/agents/tenants/<TENANT_ID>/servers/mcp_TeamsServer",
+      "type": "http",
+      "oauth": {
+        "clientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87",
+        "callbackPort": 8080
+      }
+    },
+    "WorkIQ-Planner-MCP-Server": {
+      "url": "https://agent365.svc.cloud.microsoft/agents/tenants/<TENANT_ID>/servers/mcp_PlannerServer",
+      "type": "http",
+      "oauth": {
+        "clientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87",
+        "callbackPort": 8080
+      }
+    },
+    "WorkIQ-SharepointLists-MCP-Server": {
+      "url": "https://agent365.svc.cloud.microsoft/agents/tenants/<TENANT_ID>/servers/mcp_SharePointListsTools",
+      "type": "http",
+      "oauth": {
+        "clientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87",
+        "callbackPort": 8080
+      }
+    },
+    "WorkIQ-SharepointAndOneDrive-MCP-Server": {
+      "url": "https://agent365.svc.cloud.microsoft/agents/tenants/<TENANT_ID>/servers/mcp_ODSPRemoteServer",
+      "type": "http",
+      "oauth": {
+        "clientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87",
+        "callbackPort": 8080
+      }
+    },
+    "WorkIQ-Word-MCP-Server": {
+      "url": "https://agent365.svc.cloud.microsoft/agents/tenants/<TENANT_ID>/servers/mcp_WordServer",
+      "type": "http",
+      "oauth": {
+        "clientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87",
+        "callbackPort": 8080
+      }
+    }
+  }
+}
