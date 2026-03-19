@@ -19,6 +19,18 @@ https://login.microsoftonline.com/{your-tenant-id}/adminconsent?client_id=ba0816
 
 That's it! Users with Copilot licenses can now install and use Work IQ. See the [Work IQ README](https://github.com/microsoft/work-iq-mcp/blob/main/README.md) for end-user installation instructions.
 
+> **⚠️ Known Issue – "Access Denied" on Quick Start URL**
+>
+> The Quick Start URL above may fail with an **Access Denied** or **AADSTS** error in some tenants. This happens because the Work IQ CLI app registration now includes permissions that target the Work IQ Tools MCP Server resource, and the service principal for that resource may not yet be provisioned in your tenant.
+>
+> **Workaround:** Use the following URL instead. It requests only the Microsoft Graph permissions, whose service principal is always present in every tenant:
+>
+> ```text
+> https://login.microsoftonline.com/{your-tenant-id}/adminconsent?client_id=ba081686-5d24-4bc6-a0d6-d034ecffed87&scope=Sites.Read.All%20Mail.Read%20People.Read.All%20OnlineMeetingTranscript.Read.All%20Chat.Read%20ChannelMessage.Read.All%20ExternalItem.Read.All
+> ```
+>
+> To also enable the full Work IQ Tools MCP Server permissions, run the PowerShell script in the [Troubleshooting – Fix: Access Denied Error](#fix-access-denied-error-and-missing-enterprise-application) section to provision the required service principal first, then return to the original Quick Start URL.
+
 ---
 
 ## Table of Contents
@@ -268,13 +280,54 @@ For additional security, create a Conditional Access policy:
 
 ### Common Issues and Solutions
 
-| Issue                                | Cause                        | Solution                                           |
-|--------------------------------------|------------------------------|----------------------------------------------------|
-| "Admin approval required" prompt     | Admin consent not granted    | Use the Quick Start URL or Step 3 methods          |
-| "Insufficient permissions" error     | Missing API permissions      | Verify all 7 required permissions are consented    |
-| Users can't sign in                  | Conditional Access blocking  | Review Conditional Access policies                 |
-| "License required" error             | User lacks Copilot license   | Assign Microsoft 365 Copilot license to user       |
-| Features not appearing               | License propagation delay    | Wait up to 24 hours after license assignment       |
+| Issue                                        | Cause                                                         | Solution                                                                          |
+|----------------------------------------------|---------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| "Access denied" / AADSTS error on consent URL | Work IQ MCP Server service principal not provisioned in tenant | Use the [alternative consent URL](#known-issue--access-denied-on-quick-start-url) or run the provisioning script below |
+| Work IQ not visible in Enterprise Applications | Service principal not yet provisioned                         | Use the alternative consent URL or run the provisioning script below              |
+| "Admin approval required" prompt             | Admin consent not granted                                     | Use the Quick Start URL or Step 3 methods                                         |
+| "Insufficient permissions" error             | Missing API permissions                                       | Verify all 7 required permissions are consented                                   |
+| Users can't sign in                          | Conditional Access blocking                                   | Review Conditional Access policies                                                |
+| "License required" error                     | User lacks Copilot license                                    | Assign Microsoft 365 Copilot license to user                                      |
+| Features not appearing                       | License propagation delay                                     | Wait up to 24 hours after license assignment                                      |
+
+### Fix: "Access Denied" Error and Missing Enterprise Application
+
+If you receive an **Access Denied** error when using the Quick Start consent URL, or if Work IQ does not appear in your tenant's Enterprise Applications catalog, it is because the service principal for the Work IQ Tools MCP Server resource has not been provisioned in your tenant.
+
+You can resolve this by running the following PowerShell script to provision the service principal manually. Once provisioned, you can use the original Quick Start consent URL to grant all permissions including the Work IQ Tools MCP Server permissions.
+
+**Prerequisites:** Install the Microsoft Graph PowerShell SDK if not already installed:
+
+```powershell
+# Install Microsoft Graph PowerShell module (run as Administrator)
+Install-Module Microsoft.Graph -Scope CurrentUser
+
+# Or update if already installed
+Update-Module Microsoft.Graph
+```
+
+**Provision the Work IQ MCP Server service principal:**
+
+```powershell
+# Connect to Microsoft Graph with Application.ReadWrite.All permission
+Connect-MgGraph -Scopes "Application.ReadWrite.All"
+
+# The Work IQ MCP Server resource AppId
+$workIqMcpServerAppId = "b4f5a623-4af7-4cd1-b657-3dbf80327b4e"
+
+# Check if the service principal already exists
+$existingSp = Get-MgServicePrincipal -Filter "appId eq '$workIqMcpServerAppId'" -ErrorAction SilentlyContinue
+
+if ($existingSp) {
+    Write-Host "Service principal already exists: $($existingSp.DisplayName)"
+} else {
+    # Provision the service principal
+    $newSp = New-MgServicePrincipal -AppId $workIqMcpServerAppId
+    Write-Host "Service principal provisioned successfully: $($newSp.DisplayName)"
+}
+```
+
+After running this script, return to the [Quick Start](#quick-start-for-admins-with-copilot-licenses) section and use the original consent URL to grant all permissions.
 
 ### Verify Admin Consent Status
 
@@ -337,5 +390,5 @@ Work IQ provides access to sensitive organizational data including:
 
 ---
 
-**Document Version:** 1.3
-**Last Updated:** January 2026
+**Document Version:** 1.4
+**Last Updated:** March 2026
