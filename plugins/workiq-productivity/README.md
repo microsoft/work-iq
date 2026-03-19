@@ -1,6 +1,6 @@
 # WorkIQ Productivity
 
-> **36 productivity skills** — email, meetings, calendar, Teams, SharePoint, projects, people, and reporting — powered by the local WorkIQ CLI and remote WorkIQ MCP servers.
+> **37 skills** (including setup-tenant) — email, meetings, calendar, Teams, SharePoint, projects, people, and reporting — powered by the local WorkIQ CLI and remote WorkIQ MCP servers.
 
 ## What It Does
 
@@ -10,18 +10,19 @@ WorkIQ Productivity connects to your Microsoft 365 environment through the local
 
 This plugin requires the local WorkIQ CLI and remote WorkIQ MCP servers.
 
-1. Copy the template to create your local MCP config:
-   ```bash
-   cp .mcp.template.json .mcp.json
-   ```
-2. Open `.mcp.json` and replace every `<TENANT_ID>` with your Microsoft 365 tenant ID (e.g. `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`).
+After installing the plugin from the marketplace, run the **setup-tenant** skill to configure your tenant:
 
-> **Note:** The `clientId` is already set in the template. You only need to supply your tenant ID.
+> **"Set up WorkIQ"** — the setup-tenant skill will ask for your Microsoft 365 tenant ID and configure all remote MCP servers automatically.
+
+The local WorkIQ CLI works immediately. The 8 remote MCP servers require a one-time tenant ID configuration via the setup-tenant skill.
+
+> **Note:** Your tenant admin must also grant consent for the WorkIQ app. See [Admin Instructions](../../ADMIN-INSTRUCTIONS.md) for details. A copy of the base configuration is available in `.mcp.template.json` to reset if needed.
 
 ## Skills
 
 | Skill | Description |
 |-------|-------------|
+| [**setup-tenant**](./skills/setup-tenant/SKILL.md) | One-time setup — configure your Microsoft 365 tenant ID |
 | [**action-item-extractor**](./skills/action-item-extractor/SKILL.md) | Extract action items with owners, deadlines, priorities |
 | [**availability-checker**](./skills/availability-checker/SKILL.md) | Check colleague availability and find free slots |
 | [**burndown-report**](./skills/burndown-report/SKILL.md) | Sprint burndown chart from Planner task data |

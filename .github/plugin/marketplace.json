@@ -34,6 +34,7 @@
       "version": "1.0.0",
       "description": "WorkIQ productivity skills powered by the local WorkIQ CLI and remote WorkIQ MCP servers — insights across email, meetings, calendar, Teams, SharePoint, projects, and people.",
       "skills": [
+        "./plugins/workiq-productivity/skills/setup-tenant",
         "./plugins/workiq-productivity/skills/action-item-extractor",
         "./plugins/workiq-productivity/skills/availability-checker",
         "./plugins/workiq-productivity/skills/burndown-report",
