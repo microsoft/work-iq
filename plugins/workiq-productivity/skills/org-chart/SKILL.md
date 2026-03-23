@@ -214,7 +214,7 @@ When there are more than 6 direct reports, switch to a **compact list layout** b
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📊 Firstname8 Lastname8 has 7 direct reports
    Chain: CEO → Firstname2 Lastname2 → Firstname7 Lastname7 → ⭐ Firstname8 Lastname8
-📧 Firstname8.Lastname8@contoso.com
+📧 firstname8@contoso.com
 ```
 
 ### Summary Line

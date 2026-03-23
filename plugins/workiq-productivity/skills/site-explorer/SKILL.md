@@ -235,7 +235,7 @@ workiq-ask_work_iq (
 - Start broad: "show me my SharePoint sites" to discover what's available.
 - Drill down naturally: "open Marketing site" → "show lists" → "show Job Openings items."
 - Say "search for 'budget'" to find files across SharePoint without knowing where they are.
-- After exploring, you can create new lists or search for specific files using other M365 productivity skills.
+- After exploring, you can create new lists or search for specific files using other WorkIQ productivity skills.
 
 ## Examples
 
