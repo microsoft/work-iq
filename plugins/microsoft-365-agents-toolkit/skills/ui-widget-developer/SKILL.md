@@ -39,7 +39,7 @@ If the user chooses MCP Apps, provide these instructions:
 To build an MCP App, install the ext-apps plugin from the marketplace:
 
 1. /plugin marketplace add modelcontextprotocol/ext-apps
-2. /plugin install mcp-apps@modelcontextprotocol-ext-apps
+2. /plugin install mcp-apps@mcp-apps
 
 Then use one of these skills from that plugin:
 - create-mcp-app      — Scaffold a new MCP App with interactive UI from scratch
