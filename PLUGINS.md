@@ -2,7 +2,16 @@
 
 > Browse, install, and discover skills from the Work IQ plugin marketplace for GitHub Copilot CLI.
 
-This page is the central reference for every plugin published in the **Work IQ** marketplace. Each plugin bundles one or more **skills** (AI-guided workflows) and may include an **MCP server** that exposes tools to your Copilot session.
+This page is the central reference for every plugin published in the **Work IQ** marketplace.
+
+### What's in a plugin?
+
+Each plugin can contain one or both of the following:
+
+- **Skills** — AI-guided workflows defined in `SKILL.md` files. Skills teach Copilot *how* to accomplish a task (e.g., "triage my inbox", "scaffold a declarative agent"). A plugin must include at least one skill.
+- **MCP servers** — [Model Context Protocol](https://modelcontextprotocol.io/) servers defined in a `.mcp.json` file. MCP servers expose **tools** that Copilot can call at runtime to fetch live data or perform actions (e.g., querying Microsoft 365 emails, accepting a EULA). When a plugin includes an MCP server, installing the plugin automatically registers the server so its tools are available in your Copilot session.
+
+> **In short:** Skills tell Copilot *what to do*; MCP servers give Copilot *the tools to do it*.
 
 ---
 
