@@ -151,19 +151,10 @@ copilot plugin uninstall workiq-productivity
 
 ## workiq-productivity
 
-> **9 read-only skills** — email, meetings, Teams, SharePoint, projects, and people — powered by the local WorkIQ CLI MCP server only.
+> **9 read-only skills** — email, meetings, Teams, SharePoint, projects, and people.
 
 **Install:** `/plugin install workiq-productivity@work-iq`
 **Source:** [`plugins/workiq-productivity/`](./plugins/workiq-productivity/)
-
-### MCP Servers
-
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=workiq&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40microsoft%2Fworkiq%22%2C%22mcp%22%5D%7D)
-[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=workiq&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40microsoft%2Fworkiq%22%2C%22mcp%22%5D%7D&quality=insiders)
-
-| Server | Tools |
-|--------|-------|
-| `@microsoft/workiq` | `ask_work_iq`, `accept_eula`, `get_debug_link` |
 
 ### Skills
 

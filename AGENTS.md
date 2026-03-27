@@ -73,7 +73,7 @@ plugins/<plugin-name>/
   - `declarative-agent-developer` skill — Scaffolding, JSON manifest authoring, capability configuration, deployment
   - `ui-widget-developer` skill — Build MCP servers with OpenAI Apps SDK widget rendering for Copilot Chat
 
-- **workiq-productivity** — Read-only WorkIQ productivity insights powered by the local WorkIQ CLI. Bundles:
+- **workiq-productivity** — Read-only WorkIQ productivity insights. Bundles:
   - `action-item-extractor` skill — Extract action items with owners, deadlines, and priorities
   - `daily-outlook-triage` skill — Quick summary of inbox and calendar for the day
   - `email-analytics` skill — Analyze email patterns (volume, senders, response times)
@@ -83,7 +83,6 @@ plugins/<plugin-name>/
   - `site-explorer` skill — Browse SharePoint sites, lists, and libraries
   - `channel-audit` skill — Audit channels for inactivity and cleanup
   - `channel-digest` skill — Summarize activity across multiple channels
-  - MCP server (`@microsoft/workiq`) with tools: `ask_work_iq`, `accept_eula`, `get_debug_link`
 
 ## Prerequisites
 

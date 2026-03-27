@@ -1,10 +1,10 @@
 # WorkIQ Productivity
 
-> **9 read-only skills** — email, meetings, Teams, SharePoint, projects, and people — powered by the local WorkIQ CLI MCP server only. No remote MCP server dependencies.
+> **9 read-only skills** — email, meetings, Teams, SharePoint, projects, and people.
 
 ## What It Does
 
-WorkIQ Productivity connects to your Microsoft 365 environment through the local WorkIQ CLI (`npx @microsoft/workiq mcp`) to provide read-only productivity insights:
+WorkIQ Productivity provides read-only productivity insights across your Microsoft 365 environment:
 
 - **action-item-extractor** — Extract action items with owners, deadlines, and priorities from meeting content
 - **daily-outlook-triage** — Quick summary of inbox and calendar for the day
@@ -15,20 +15,6 @@ WorkIQ Productivity connects to your Microsoft 365 environment through the local
 - **site-explorer** — Browse SharePoint sites, lists, and libraries
 - **channel-audit** — Audit channels for inactivity and cleanup
 - **channel-digest** — Summarize activity across multiple channels
-
-## Setup
-
-This plugin only requires the local WorkIQ CLI. The `.mcp.json` file ships pre-configured:
-
-```json
-{
-  "workiq": {
-    "command": "npx",
-    "args": ["-y", "@microsoft/workiq@latest", "mcp"],
-    "tools": ["*"]
-  }
-}
-```
 
 ## Skills
 
@@ -43,16 +29,6 @@ This plugin only requires the local WorkIQ CLI. The `.mcp.json` file ships pre-c
 | [**site-explorer**](./skills/site-explorer/SKILL.md) | Browse SharePoint sites, lists, and libraries |
 | [**channel-audit**](./skills/channel-audit/SKILL.md) | Audit channels for inactivity and cleanup |
 | [**channel-digest**](./skills/channel-digest/SKILL.md) | Summarize activity across multiple channels |
-
-## MCP Servers
-
-This plugin uses **only** the local WorkIQ CLI MCP server:
-
-| Server | Command | Capabilities |
-|--------|---------|-------------|
-| **workiq** | `npx -y @microsoft/workiq@latest mcp` | Natural language queries across all M365 data (emails, meetings, files, Teams, people). Handles its own auth. |
-
-No remote `WorkIQ-*` MCP servers (agent365.svc.cloud.microsoft) are required.
 
 ## Platform Support
 
