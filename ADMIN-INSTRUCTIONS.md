@@ -21,15 +21,20 @@ That's it! Users with Copilot licenses can now install and use Work IQ. See the 
 
 > **⚠️ Known Issue – "Access Denied" on Quick Start URL**
 >
-> The Quick Start URL above may fail with an **Access Denied** or **AADSTS** error in some tenants. This happens because the Work IQ CLI app registration now includes permissions that target the Work IQ Tools MCP Server resource, and the service principal for that resource may not yet be provisioned in your tenant.
+> The Quick Start URL above may fail with an **Access Denied** or **AADSTS650052** error in some tenants. This happens because the Work IQ CLI app registration includes permissions that target the Work IQ Tools MCP Server resource, and the service principal for that resource is not automatically provisioned in your tenant.
 >
-> **Workaround:** Use the following URL instead. It requests only the Microsoft Graph permissions, whose service principal is always present in every tenant:
+> **Fix:** Run the [`Enable-WorkIQToolsForTenant.ps1`](scripts/Enable-WorkIQToolsForTenant.ps1) script to provision the missing service principal and grant admin consent in one step:
 >
-> ```text
-> https://login.microsoftonline.com/{your-tenant-id}/adminconsent?client_id=ba081686-5d24-4bc6-a0d6-d034ecffed87&scope=Sites.Read.All%20Mail.Read%20People.Read.All%20OnlineMeetingTranscript.Read.All%20Chat.Read%20ChannelMessage.Read.All%20ExternalItem.Read.All
+> ```powershell
+> # Prerequisites: Install-Module Microsoft.Graph -Scope CurrentUser
+> .\scripts\Enable-WorkIQToolsForTenant.ps1
 > ```
 >
-> To also enable the full Work IQ Tools MCP Server permissions, a PowerShell provisioning script will be provided in a future update. For now, use the alternative consent URL above to get started.
+> The script requires the `Microsoft.Graph.Applications` module and one of: Global Admin, Cloud Application Admin, or Application Admin role. It will:
+> 1. Create the Work IQ Tools service principal in your tenant
+> 2. Create or verify the Work IQ CLI service principal
+> 3. Grant admin consent for all required Microsoft Graph permissions
+> 4. Grant admin consent for Work IQ Tools permissions
 
 ---
 
@@ -282,8 +287,8 @@ For additional security, create a Conditional Access policy:
 
 | Issue                                        | Cause                                                         | Solution                                                                 |
 |----------------------------------------------|---------------------------------------------------------------|--------------------------------------------------------------------------|
-| "Access denied" / AADSTS error on consent URL | Work IQ MCP Server service principal not provisioned in tenant | Use the [alternative consent URL](#known-issue--access-denied-on-quick-start-url) |
-| Work IQ not visible in Enterprise Applications | Service principal not yet provisioned                         | Use the alternative consent URL described in the Quick Start section     |
+| "Access denied" / AADSTS error on consent URL | Work IQ Tools service principal not provisioned in tenant | Run [`Enable-WorkIQToolsForTenant.ps1`](scripts/Enable-WorkIQToolsForTenant.ps1) — see [Known Issue](#known-issue--access-denied-on-quick-start-url) |
+| Work IQ not visible in Enterprise Applications | Service principal not yet provisioned                         | Run [`Enable-WorkIQToolsForTenant.ps1`](scripts/Enable-WorkIQToolsForTenant.ps1) to provision it |
 | "Admin approval required" prompt             | Admin consent not granted                                     | Use the Quick Start URL or Step 3 methods                                |
 | "Insufficient permissions" error             | Missing API permissions                                       | Verify all 7 required permissions are consented                          |
 | Users can't sign in                          | Conditional Access blocking                                   | Review Conditional Access policies                                       |
