@@ -23,18 +23,24 @@ That's it! Users with Copilot licenses can now install and use Work IQ. See the 
 >
 > The Quick Start URL above may fail with an **Access Denied** or **AADSTS650052** error in some tenants. This happens because the Work IQ CLI app registration includes permissions that target the Work IQ Tools MCP Server resource, and the service principal for that resource is not automatically provisioned in your tenant.
 >
-> **Fix:** Run the [`Enable-WorkIQToolsForTenant.ps1`](scripts/Enable-WorkIQToolsForTenant.ps1) script to provision the missing service principal and grant admin consent in one step:
+> **Diagnose (optional):** You can run the read-only verification script to see what's missing before making changes:
+>
+> ```powershell
+> .\scripts\Verify-WorkIQTenant.ps1
+> ```
+>
+> **Fix:** Run the [`Enable-WorkIQToolsForTenant.ps1`](scripts/Enable-WorkIQToolsForTenant.ps1) script to provision the missing service principals and grant admin consent in one step:
 >
 > ```powershell
 > # Prerequisites: Install-Module Microsoft.Graph -Scope CurrentUser
 > .\scripts\Enable-WorkIQToolsForTenant.ps1
 > ```
 >
-> The script requires the `Microsoft.Graph.Applications` module and one of: Global Admin, Cloud Application Admin, or Application Admin role. It will:
-> 1. Create the Work IQ Tools service principal in your tenant
+> The script requires the `Microsoft.Graph` PowerShell modules (auto-installed if missing) and one of: Global Admin, Cloud Application Admin, or Application Admin role. It will:
+> 1. Create all MCP Server service principals in your tenant (Work IQ Tools, Mail, Calendar, Teams, OneDrive, SharePoint, Word, Admin, Me, M365 Copilot)
 > 2. Create or verify the Work IQ CLI service principal
 > 3. Grant admin consent for all required Microsoft Graph permissions
-> 4. Grant admin consent for Work IQ Tools permissions
+> 4. Grant admin consent for all MCP Server permissions
 
 ---
 
@@ -297,10 +303,18 @@ For additional security, create a Conditional Access policy:
 
 ### Verify Admin Consent Status
 
+Run the verification script to check all service principals and permission grants:
+
+```powershell
+.\scripts\Verify-WorkIQTenant.ps1
+```
+
+Or verify manually:
+
 1. Go to **Microsoft Entra admin center** > **Enterprise applications**
 2. Find the Work IQ CLI application
 3. Select **Permissions**
-4. Verify all 7 permissions show "Granted for [Your Organization]"
+4. Verify all permissions show "Granted for [Your Organization]"
 
 ### Check User License Assignment
 
