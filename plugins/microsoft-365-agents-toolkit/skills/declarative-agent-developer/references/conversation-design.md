@@ -374,6 +374,8 @@ Write starters as users would naturally speak:
 
 ## Avoiding Common Prompt Failures
 
+> **Reviewing existing instructions?** If you are auditing or improving instructions that already exist (rather than writing from scratch), use the [Instruction Review](instruction-review.md) guide instead. It provides a diagnostic checklist, named anti-patterns, and before/after rewrite examples.
+
 | Problem | Solution |
 |---------|----------|
 | **Overeager tool use** — model calls tools without needed inputs | Add: "Only call the tool if necessary inputs are available; otherwise, ask the user." |
