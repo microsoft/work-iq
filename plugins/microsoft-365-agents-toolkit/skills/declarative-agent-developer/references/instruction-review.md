@@ -265,6 +265,35 @@ Use this table to detect capability gaps in both directions — instructions tha
 
 > **Advanced capability configuration:** Some capabilities support scoping (e.g. `OneDriveAndSharePoint` with `items_by_url`, `Email` with `shared_mailbox` and `folders`, `TeamsMessages` with specific channel URLs, `Meetings` with `items_by_id`, `People` with `include_related_content`). When reviewing instructions, also check whether scoping in the manifest aligns with what the instructions describe — e.g. instructions say "search all SharePoint" but the capability is scoped to a single site.
 
+### Version-Capability Matrix
+
+Use this table during Phase 1 step 7 to check if the agent's schema version supports the capabilities its instructions imply.
+
+| Capability | Minimum version | What it unlocks |
+|------------|----------------|------------------|
+| `WebSearch` | v1.0 | Web search for grounding |
+| `OneDriveAndSharePoint` | v1.0 | SharePoint/OneDrive file search |
+| `GraphConnectors` | v1.0 | External data via Copilot connectors |
+| `GraphicArt` | v1.0 | Image generation from text |
+| `CodeInterpreter` | v1.0 | Python code execution, data analysis, charts |
+| `Dataverse` | v1.3 | CRM/Dynamics/Power Platform table search |
+| `TeamsMessages` | v1.3 | Teams channel posts, DMs, meeting chat messages (NOT transcripts) |
+| `Email` | v1.3 | Email search (inbox, shared mailboxes, group mailboxes) |
+| `People` | v1.3 | Org chart, people search, OOO, birthdays |
+| `ScenarioModels` | v1.4 | Task-specific AI models |
+| `behavior_overrides` | v1.4 | `discourage_model_knowledge`, suggestions toggle |
+| `disclaimer` | v1.4 | Disclaimer text at conversation start |
+| `Meetings` | v1.5 | Calendar events, attendees, meeting transcripts, recordings |
+| `sensitivity_label` | v1.6 | Purview sensitivity labels (with embedded files) |
+| `worker_agents` | v1.6 | Connected agents (delegate to other declarative agents) |
+| `EmbeddedKnowledge` | v1.6 | Local files bundled in app package (not yet available) |
+| `user_overrides` | v1.6 | Let users toggle capabilities on/off |
+| `People.include_related_content` | v1.6 | Include related docs, emails, and Teams messages for people searches |
+| `Email.group_mailboxes` | v1.6 | Search Microsoft 365 Group mailboxes |
+| `Meetings.items_by_id` | v1.6 | Scope to specific meetings/series |
+
+> **How to use:** If the agent is on v1.4 and the instructions reference "meeting transcripts" or "calendar events", flag that `Meetings` requires v1.5+. If the instructions reference "people and what we have in common", flag that `People.include_related_content` requires v1.6. Always offer to upgrade — never silently change the version.
+
 ---
 
 ## Review Workflow
@@ -279,6 +308,7 @@ When reviewing instructions, follow this sequence:
 4. If API plugins exist, read the `ai-plugin.json` to understand what functions are available and their parameter requirements
 5. If MCP plugins exist, read the plugin manifest to understand what tools are available
 6. Check the `version` field — note which GPT model era the instructions were likely written for
+7. **Version upgrade analysis** — Cross-reference the current schema version against the capabilities implied by the instructions (use the Version-Capability Matrix below). If the instructions describe functionality that requires a newer schema version, flag it. Example: instructions say "review meeting transcripts" but the agent is on v1.4 — `Meetings` capability (which includes transcripts) requires v1.5+.
 
 > **Quick length check:** `wc -m appPackage/instructions.txt` (Unix/macOS/WSL) or `(Get-Content appPackage/instructions.txt -Raw).Length` (PowerShell)
 
@@ -305,6 +335,10 @@ Present your understanding in this structure:
 |------------|-------------|-----------------|-----|
 | [For each configured capability] | ✅ | ✅ or ❌ | [If ❌: instructions never reference this — model won't know when to use it] |
 | [For each capability implied by instructions but NOT configured] | ❌ | ✅ | [Instructions assume this exists but it's not configured — will fail or hallucinate] |
+
+**Version upgrade opportunities:**
+- [If the current schema version is not the latest (v1.6), list capabilities available in newer versions that could benefit this agent's intent. Example: "You're on v1.4. Upgrading to v1.5 would unlock `Meetings` (calendar + transcripts), which aligns with your instruction's references to meeting prep and scheduling."]
+- [If already on v1.6: "✅ You're on the latest schema version — no upgrade needed."]
 
 **Tone / personality:** [What personality or communication style the instructions establish, if any]
 
