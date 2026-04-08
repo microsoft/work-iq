@@ -7,6 +7,104 @@ This reference defines how to evaluate, diagnose, and improve existing agent ins
 > - User reports the agent "doesn't use the right tool", "gives generic answers", or "doesn't follow the process"
 > - You are adding a capability or plugin and need to update instructions (mandatory per the editing workflow)
 > - You are reviewing an agent before deployment
+> - Agent behavior changed after a model update (GPT 5.0 → 5.1 → 5.2)
+> - User wants to migrate instructions for a newer model version
+
+> **Official references:** This guide synthesizes and operationalizes the official Microsoft guidance:
+> - [Write effective instructions for declarative agents](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-instructions)
+> - [Instructions for agents with API plugins](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/instructions-api-plugins)
+> - [Model changes in GPT 5.1+ for declarative agents](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-model-migration-overview)
+
+---
+
+## GPT 5.2 Model Awareness
+
+As of April 2026, M365 Copilot uses **GPT 5.2**. Understanding the model's behavior is essential for writing and reviewing instructions, because the same instructions can produce very different results across model versions.
+
+### Instruction Token Budget
+
+**Instructions are limited to 8,000 characters.** Every character counts. This hard limit means you must be surgical about what goes into `instructions.txt`:
+
+- **DO include:** Decision logic (WHEN to use which capability), workflows with transitions, failure handling, chaining rules, domain vocabulary, output contracts, self-evaluation gates
+- **DO NOT include:** Tool descriptions, function parameter lists, API schemas, or anything already documented in the plugin metadata
+
+> **⛔ CRITICAL: Do NOT duplicate tool/capability metadata in instructions.**
+>
+> The orchestrator already has access to tool names, descriptions, and parameters through:
+> - `ai-plugin.json` → `description_for_model` and function definitions
+> - MCP plugin manifest → `mcp_tool_description.tools[]` with full `inputSchema`
+> - Capability configuration in `declarativeAgent.json`
+> - Meta-prompts injected by the orchestration layer
+>
+> Listing tools and their parameters in instructions is a **waste of the 8,000-character budget**. Instead, instructions should provide **decision logic** that the metadata cannot express: WHEN to choose one tool over another, HOW to chain tools together, and WHAT to do when a tool returns no results.
+
+### What belongs in instructions vs metadata
+
+| Belongs in `instructions.txt` | Belongs in plugin metadata (NOT instructions) |
+|-------------------------------|------------------------------------------------|
+| WHEN to use a capability: "Search SharePoint first, fall back to web search" | Tool name and description |
+| Chaining logic: "After getting weather, create a task with the result" | Function parameters and types |
+| Failure handling: "If no results, ask the user to rephrase" | Input schemas and validation rules |
+| Confirmation gates: "Always confirm before deleting" | Response format / adaptive cards |
+| Multi-turn rules: "Collect all 3 values before calling the API" | API endpoint details |
+| Domain vocabulary and business rules | Tool-level `description_for_model` |
+| Output format and reasoning depth | MCP `inputSchema`, `annotations`, `execution` |
+
+### The Model Shift: Literal-First → Intent-First
+
+| Behavior | GPT 5.0 (old) | GPT 5.1+ / 5.2 (current) |
+|----------|---------------|---------------------------|
+| Interpretation | Literal — follows instructions step-by-step as written | Intent-first — interprets what instructions *intended*, not just what they said |
+| Missing steps | Fails or responds narrowly | Fills gaps, infers missing steps, replans its approach |
+| Ambiguity | Follows the first plausible path | Dynamically selects reasoning depth; may reorder or merge steps |
+| Tone | Direct and factual by default | Adapts tone based on inferred context; supports 8 output profiles |
+| Reasoning | Fixed: chat model OR reasoning model | Adaptive: chooses model + reasoning depth per sub-task within a single request |
+
+### What This Means for Instruction Review
+
+GPT 5.2's intent-first behavior **amplifies the impact of instruction quality**:
+
+- **Well-structured instructions** → GPT 5.2 follows them more precisely than GPT 5.0 and can adaptively fill in routine details
+- **Ambiguous instructions** → GPT 5.2 will *replan and improvise*, which may produce unexpected behavior: reordered steps, merged tasks, tone drift, added/removed steps based on inferred context
+- **Output-only instructions** → GPT 5.2 will infer the entire process, often incorrectly, because the instructions give it maximum freedom to interpret intent
+
+**Bottom line:** The weaker the instructions, the more GPT 5.2 will improvise — and improvisation in structured workflows is a bug, not a feature.
+
+### Fixed vs Adaptive Reasoning — When to Use Each
+
+GPT 5.2 supports two modes, and your instructions should signal which one to use:
+
+**Use strict step-by-step instructions when:**
+- The agent must follow a defined business process
+- Specific formatting rules or compliance templates are required
+- A fixed retrieval/reasoning sequence must be honored
+- Destructive operations need confirmation gates
+
+**Use goal-focused instructions with guardrails when:**
+- Tools and knowledge sources are well-defined
+- The output format is flexible
+- The goal matters more than the exact path
+- You want the model to adaptively plan and handle edge cases
+
+> **Key insight:** You can mix both in the same instruction set. Use strict process for critical workflows (ticket creation, data modification) and goal-focused for open-ended tasks (information retrieval, summarization).
+
+### Output Style Profiles
+
+GPT 5.2 has 8 built-in output profiles. Instead of writing verbose tone instructions, reference the profile directly:
+
+| Profile | Behavior |
+|---------|----------|
+| **Default** | Verbose, explanatory, teacher-like |
+| **Professional** | Neutral, structured, business-oriented |
+| **Friendly** | Conversational, supportive |
+| **Candid** | Direct, concise |
+| **Quirky** | Expressive, informal |
+| **Efficient** | Minimal verbosity, outcome-focused |
+| **Nerdy** | Technical, detail-oriented, precise |
+| **Cynical** | Skeptical, dry, matter-of-fact |
+
+**Anti-pattern:** Writing 5+ lines about tone ("Be professional but approachable, don't be too formal, use simple language...").
+**Fix:** `Tone: Professional` — one line is enough. The model maps this to the built-in profile.
 
 ---
 
@@ -32,16 +130,17 @@ Format responses with headers when appropriate.
 
 ### Process-focused (✅ correct pattern)
 
-Tells the model the *steps* to follow, *which tools* to use, and *what decisions* to make at each point.
+Tells the model the *decision logic* — WHEN to use which tool, in what order, and what to do when things fail. Does NOT duplicate tool descriptions or parameters already in the plugin metadata.
 
 ```md
 # OBJECTIVE
 Help employees find answers to HR policy questions using the company's official policy documents.
 
-# CAPABILITIES
-- **SharePoint knowledge** — Search the HR Policies document library for official policy documents. This is the PRIMARY source of truth. Always search here first.
-- **People knowledge** — Look up employee information (manager, department, location) when the question requires org context.
-- **Email** — Search the user's email for HR communications only when the policy documents don't have the answer and the user mentions a specific email or announcement.
+# DECISION LOGIC
+- Policy/process questions → search **HR Policies** (SharePoint) first. This is the primary source.
+- Org/people questions → use People knowledge directly.
+- Email → search user's email ONLY when the user mentions a specific HR email or announcement.
+- If the answer isn't in any source → direct users to hr@company.com. Do not guess.
 
 # WORKFLOW
 
@@ -84,8 +183,8 @@ Run this checklist against any set of instructions. Each failed check is a speci
 |---|-------|---------------|----------------|
 | A1 | Every capability in the manifest has a matching section in instructions | Compare `capabilities[]` array in `declarativeAgent.json` against instruction text | Capability is configured but never mentioned → model won't know when to use it |
 | A2 | Every action/plugin has a matching section in instructions | Compare `actions[]` array against instruction text | Plugin exists but instructions don't reference it → model may never invoke it |
-| A3 | Each capability section has a WHEN clause | Look for conditional language: "when the user asks about...", "use X for Y" | Capability is mentioned but model has no trigger for using it |
-| A4 | Each capability section has a HOW clause | Look for specific actions: "search for...", "query by...", "filter using..." | Capability is named but model doesn't know how to use it effectively |
+| A3 | Each capability/action section has a WHEN clause | Look for conditional language: "when the user asks about...", "use X for Y" | Capability is mentioned but model has no trigger for using it |
+| A4 | Instructions provide decision logic, not tool descriptions | Check that instructions don't duplicate `description_for_model`, parameter lists, or schemas from plugin metadata | Token waste — this information is already available to the orchestrator |
 
 ### B. Process Structure
 
@@ -106,10 +205,39 @@ Run this checklist against any set of instructions. Each failed check is a speci
 | C4 | **Orphaned starters** | Conversation starter references a capability not mentioned in instructions | Either add the capability to instructions or remove the starter |
 | C5 | **Tool ambiguity** | Instructions say "search for documents" without specifying which capability | Name the capability: "Search the **HR Policies** SharePoint library" |
 | C6 | **Hallucination invitation** | "Include [specific data] in your response" without specifying where to find it | Add: "Retrieve [data] from [capability]. If not found, do not include it." |
-| C7 | **Compound tasks** | "Extract metrics and summarize findings and create a report" | Break into separate steps with transitions |
+| C7 | **Compound tasks** | "Extract metrics and summarize findings and create a report" | Break into separate atomic steps with transitions |
 | C8 | **Over-restriction** | Long list of "do NOT" rules with few "DO" rules | Rewrite as positive directives; keep restrictions to genuine guardrails only |
 | C9 | **Missing reasoning calibration** | No indication of how deep the model should think | Add a reasoning header: "Short answer only" or "Break the problem into steps" depending on task complexity |
 | C10 | **No self-evaluation** | Instructions end without a verification step | Add: "Before responding, confirm: [checklist]" |
+| C11 | **Tool/parameter dumping** | Instructions list tool names with descriptions and parameters already in plugin metadata | Remove tool descriptions and parameters from instructions. Keep only WHEN/chaining/failure logic. Reclaim token budget for decision logic. |
+
+### D. GPT 5.2 Model-Sensitivity Anti-Patterns
+
+These anti-patterns are specifically caused or amplified by the GPT 5.1+/5.2 intent-first behavior. They may not have caused issues on GPT 5.0 but will cause problems now.
+
+| # | Anti-pattern | What it looks like | Fix |
+|---|---|---|---|
+| D1 | **Fused/ambiguous tasks** | Single instruction with multiple actions: "extract metrics and summarize" | GPT 5.2 may merge steps or infer unintended processes. Split into atomic steps with explicit transitions. |
+| D2 | **Incorrect numbering** | Numbered lists used for parallel tasks that have no required order | GPT 5.2 treats numbering as a strict sequence signal. Use bullets (`-`) for parallel tasks; reserve numbering for true sequential workflows. |
+| D3 | **Implicit formats** | No explicit tone, structure, or verbosity specified | GPT 5.2 will infer these and may produce inconsistent results. Specify the output profile (`Tone: Professional`) and format explicitly. |
+| D4 | **Weak Markdown hierarchy** | Mixed list types, unclear headers, inconsistent nesting | GPT 5.2 uses structure as a control signal. Clean up: `##` for sections, `-` for parallel items, `Step N:` for sequences. |
+| D5 | **No validation step** | Instructions end without a self-check gate | GPT 5.2 may choose faster reasoning and return incomplete output. Add: "Before finalizing, confirm: [checklist]" |
+| D6 | **Verbose tone instructions** | 5+ lines describing desired tone and style | Replace with a single output profile reference: `Tone: Professional` or `Tone: Efficient`. GPT 5.2 maps these to built-in profiles. |
+| D7 | **Vague verbs** | "Verify", "process", "handle", "clean" without specifying observable actions | Replace with precise verbs: "search", "compare", "list", "call [function]", "ask the user for" |
+| D8 | **Missing stabilizing header** | Agent that previously worked on GPT 5.0 now shows drift (reordered steps, added reasoning, tone changes) | Add a literal-execution header at the top as an interim fix (see Stabilizing Header section below) |
+
+### E. API Plugin Instruction Anti-Patterns
+
+These apply specifically to agents with API plugins (actions).
+
+| # | Anti-pattern | What it looks like | Fix |
+|---|---|---|---|
+| E1 | **No function-level WHEN clauses** | Instructions mention the plugin but don't say when to call each function | List every function with a WHEN clause: "`getRepairs` — use when user asks to find or list repairs" |
+| E2 | **No chaining instructions** | Agent has multiple plugins or plugin + capability but no guidance on combining them | Add chaining rules: "After calling `getWeather`, use the result to call `createTask` with the temperature in the title" |
+| E3 | **No multi-turn collection** | Function requires 3+ parameters but instructions don't say to collect them before calling | Add: "Before calling `createRepair`, collect title, description, and assignee. Ask for missing values." |
+| E4 | **Missing confirmation for writes** | POST/PATCH/DELETE functions have no confirmation gate in instructions | Add: "Before calling `deleteRepair`, confirm: 'Are you sure you want to delete repair #[id]?'" |
+| E5 | **Negative/contrasting instructions** | "Don't call getWeather for indoor temperatures" instead of defining valid cases | Rewrite as positive: "Call `getWeather` only for outdoor weather queries with a location." |
+| E6 | **No cross-capability chaining** | Agent has SharePoint knowledge + API plugin but instructions treat them as isolated | Add chaining: "Search SharePoint for project statuses, then call `createTask` for each project needing follow-up" |
 
 ---
 
@@ -121,12 +249,13 @@ When reviewing instructions, follow this sequence:
 
 1. Read `declarativeAgent.json` — list all capabilities, actions, conversation starters, and the schema version
 2. Read `instructions.txt` (or inline instructions) — note the structure (or lack of it)
-3. If API plugins exist, read the `ai-plugin.json` to understand what functions are available
+3. If API plugins exist, read the `ai-plugin.json` to understand what functions are available and their parameter requirements
 4. If MCP plugins exist, read the plugin manifest to understand what tools are available
+5. Check the `version` field — note which GPT model era the instructions were likely written for
 
 ### Phase 2: Diagnose
 
-Run the **Diagnostic Checklist** (sections A, B, C above). Record every failed check.
+Run the **full Diagnostic Checklist** — sections A (Capability Coverage), B (Process Structure), C (Anti-Patterns), D (GPT 5.2 Model Sensitivity), and E (API Plugin patterns, if applicable). Record every failed check.
 
 ### Phase 3: Report
 
@@ -176,14 +305,15 @@ and patient. If you don't know the answer, say so politely.
 
 **Issues:** C1 (output-only), A1 (two capabilities configured, zero referenced), C5 (tool ambiguity — "find answers" doesn't say where), C6 (no sourcing strategy)
 
-**✅ After (process-focused):**
+**✅ After (process-focused — decision logic only, no tool descriptions):**
 ```md
 # OBJECTIVE
 Help employees resolve IT questions by searching internal documentation and company-approved external resources.
 
-# CAPABILITIES
-- **SharePoint IT Knowledge Base** — Search the IT-KB document library for internal troubleshooting guides, SOPs, and configuration docs. This is the PRIMARY source. Always search here first.
-- **Web Search (docs.contoso.com)** — Search the public-facing documentation site for product guides and release notes. Use this ONLY when the internal KB doesn't have the answer.
+# DECISION LOGIC
+- Always search the **IT Knowledge Base** (SharePoint) first — this is the primary source.
+- If not found in the KB → search **docs.contoso.com** as a secondary source.
+- If not found in either → escalate: "Please submit a ticket to helpdesk@contoso.com or the ServiceNow portal."
 
 # WORKFLOW
 
@@ -192,24 +322,17 @@ Help employees resolve IT questions by searching internal documentation and comp
 - **Action:** If the question is clear, proceed. If vague (e.g., "it's not working"), ask ONE clarifying question: what system, what error, what they were trying to do.
 - **Transition:** Once clear → Step 2.
 
-## Step 2: Search internal KB
-- **Goal:** Find the answer in the IT Knowledge Base.
-- **Action:** Search SharePoint IT-KB for documents matching the topic. Read the most relevant document.
-- **Transition:** If found → Step 3. If not found → Step 2b.
-
-## Step 2b: Search external docs
-- **Goal:** Check company-approved external documentation.
-- **Action:** Search docs.contoso.com for the topic.
-- **Transition:** If found → Step 3. If not found → Step 4.
+## Step 2: Search
+- **Goal:** Find the answer in internal documentation.
+- **Action:** Search IT-KB. If not found, search docs.contoso.com.
+- **Transition:** If found → Step 3. If not found in either → escalate.
 
 ## Step 3: Respond
-- **Action:** Summarize the solution in numbered steps. Cite the source document name. If the solution involves a tool or system, name it explicitly.
-- **Constraint:** Do not combine information from multiple documents without noting that the answer draws from multiple sources.
-
-## Step 4: Escalation
-- **Action:** Tell the user: "I couldn't find documentation on this topic. Please submit a ticket to the IT help desk at helpdesk@contoso.com or via the ServiceNow portal."
+- **Action:** Summarize the solution in numbered steps. Cite the source document name.
+- **Constraint:** Do not combine information from multiple documents without noting it.
 
 # RESPONSE RULES
+Tone: Professional
 - Cite the source for every answer.
 - One clarifying question at a time.
 - If multiple solutions exist, present the simplest first.
@@ -228,48 +351,29 @@ When showing repairs, display them in a clear format with the ticket ID, title,
 status, and assignee. For new tickets, confirm the details before creating them.
 ```
 
-**Issues:** C1 (output-only), A2 (Repairs API not explained), C5 ("can access email" — when? for what?), B3 (no decision rules for CREATE vs SEARCH vs UPDATE)
+**Issues:** C1 (output-only), A2 (Repairs API not explained), C5 ("can access email" — when? for what?), B3 (no decision rules for CREATE vs SEARCH vs UPDATE), E1 (no function-level WHEN clauses), E3 (no multi-turn collection), E4 (no confirmation for destructive ops)
 
-**✅ After (process-focused):**
+**✅ After (process-focused — decision logic only, no tool descriptions):**
 ```md
 # OBJECTIVE
 Help users search, create, and manage repair tickets. Use email context when relevant to a repair.
 
-# CAPABILITIES
-- **Repairs API** — Use this for all repair operations:
-  - `getRepairs` — search/list tickets. Use when the user asks to find, list, or check repairs.
-  - `getRepairById` — get ticket details. Use when the user references a specific ticket ID.
-  - `createRepair` — create a new ticket. Use when the user reports a new issue.
-  - `updateRepair` — modify a ticket. Use when the user asks to reassign, change status, or edit a repair.
-  - `deleteRepair` — remove a ticket. Use when the user explicitly asks to delete. Always confirm first.
-- **Email** — Search the user's email for repair-related correspondence. Use ONLY when: (a) the user mentions an email about a repair, or (b) you need to find a reference number or prior communication mentioned by the user.
+# DECISION LOGIC
+- When user asks to find repairs → search by keyword or ID. If no results, offer to create one.
+- When user reports a new issue → collect title, description, and assignee first. Confirm details before creating.
+- When user asks to update a repair → identify the ticket first (by ID or search), confirm what to change, then update.
+- When user asks to delete → identify the ticket, **always confirm before deleting**.
+- Use **Email** ONLY when: (a) the user mentions an email about a repair, or (b) you need a reference number from prior correspondence.
 
-# WORKFLOW
-
-## When user asks to find a repair
-1. If they provide a ticket ID → call `getRepairById`.
-2. If they describe a repair ("the broken printer thing") → call `getRepairs` and filter by keyword in the response.
-3. If no results → tell the user no matching repairs were found and ask if they'd like to create one.
-
-## When user asks to create a repair
-1. Gather: title, description, assignee (ask if not provided).
-2. Confirm the details with the user before calling `createRepair`.
-3. After creation, show the new ticket ID.
-
-## When user asks to update a repair
-1. Identify the ticket (by ID or search).
-2. Confirm what to change.
-3. Call `updateRepair`. Show the updated ticket.
-
-## When user asks to delete a repair
-1. Identify the ticket.
-2. **Always confirm:** "Are you sure you want to delete repair #[id] — [title]?"
-3. Only call `deleteRepair` after explicit confirmation.
+# FAILURE HANDLING
+- No results from search → ask user to rephrase or offer to create a new ticket.
+- User provides incomplete info for creation → ask for missing values one at a time.
+- Ambiguous intent (search vs create) → ask: "Would you like me to search for an existing repair or create a new one?"
 
 # RESPONSE RULES
+Tone: Professional
 - Always show the ticket ID when referencing a repair.
-- Confirm before any destructive operation (create, update, delete).
-- If the user's intent is ambiguous (search vs create), ask: "Would you like me to search for an existing repair or create a new one?"
+- Confirm before any destructive operation.
 ```
 
 ---
@@ -285,38 +389,156 @@ documentation. Provide clear, well-organized responses. Include links when avail
 Summarize key points from the documentation you find.
 ```
 
-**Issues:** C1 (output-only), A2 (MCP tool not referenced), C6 ("include links when available" — where do they come from?), C9 (no reasoning calibration)
+**Issues:** C1 (output-only), A2 (MCP tool not referenced), C6 ("include links when available" — where do they come from?), C9 (no reasoning calibration), D3 (no explicit tone/format — GPT 5.2 will infer inconsistently), D5 (no validation step)
 
-**✅ After (process-focused):**
+**✅ After (process-focused — decision logic only, no tool descriptions):**
 ```md
 # OBJECTIVE
-Help users find and understand official Microsoft documentation by searching the Microsoft Learn catalog.
+Help users find and understand official Microsoft documentation.
 
-# CAPABILITIES
-- **Microsoft Docs Search** (`docs_search`) — Search official Microsoft and Azure documentation. This is your ONLY data source. Do not answer from general knowledge — always search first.
+# DECISION LOGIC
+- For factual questions → search docs, summarize the most relevant result with title and link.
+- For comparisons ("X vs Y") → search for each topic separately, present side-by-side citing both.
+- For troubleshooting ("error Z") → search with the error message first, then by product + "known issues" if no match.
+- If no results after two searches → tell the user: "I couldn't find official documentation. Try browsing https://learn.microsoft.com directly."
 
-# WORKFLOW
-
-## For factual questions ("How do I configure X?", "What are the requirements for Y?")
-1. Call `docs_search` with the user's question as the query.
-2. If results are returned → summarize the most relevant document. Include the document title and link.
-3. If no results → rephrase the query (broader terms) and search again.
-4. If still no results → tell the user: "I couldn't find official documentation on this topic. Try browsing https://learn.microsoft.com directly."
-
-## For comparison questions ("What's the difference between X and Y?")
-1. Call `docs_search` for X. Note key attributes.
-2. Call `docs_search` for Y. Note key attributes.
-3. Present a side-by-side comparison citing both documents.
-
-## For troubleshooting ("I'm getting error Z")
-1. Call `docs_search` with the error message or code.
-2. If a troubleshooting guide is found → walk through the steps.
-3. If not → search for the product/service name + "known issues."
+# GROUNDING RULES
+- Never answer from general knowledge — always search first.
+- Cite the source document for every claim.
+- Do not stitch information across documents without noting it.
 
 # RESPONSE RULES
-- Short answer only for simple lookups. Break the problem into steps for troubleshooting.
-- Always link to the source document.
-- Never answer without searching first. Your general knowledge may be outdated.
+Tone: Efficient
+Reasoning: Short answer for simple lookups. Break into steps for troubleshooting.
+
+# SELF-CHECK
+Before responding: confirm you searched, cited a source, and answered the actual question asked.
+```
+
+---
+
+## Stabilizing Header — Interim Fix for Model Drift
+
+If an agent that worked on GPT 5.0 shows unexpected behavior on GPT 5.2 (reordered steps, added reasoning, tone drift, merged tasks), add this header at the **top** of `instructions.txt` as an immediate stabilization:
+
+```md
+Always interpret instructions literally.
+Never infer intent or fill in missing steps.
+Never add context, recommendations, or assumptions.
+Follow step order exactly with no optimization.
+Respond concisely and only in the requested format.
+Do not call tools unless a step explicitly instructs you to do so.
+```
+
+**This is a temporary fix**, not a long-term solution. Use it to stabilize behavior while you rewrite the instructions using the process-focused structure from this guide. Once the instructions are properly structured with explicit workflows, remove the header — well-structured instructions don't need it, and the header prevents GPT 5.2 from using its adaptive reasoning which can be beneficial for open-ended tasks.
+
+> **Reference:** [Pattern 8 — Literal-execution header](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-instructions#pattern-8-apply-a-literal-execution-header-for-immediate-stability)
+
+---
+
+## Structured Evaluation Prompt
+
+For rapid auditing of existing instructions — especially when migrating from GPT 5.0 to 5.2 or reviewing multiple agents at scale — use this structured evaluation prompt. Paste the agent's current instructions into the `<instructions>` block and run the analysis:
+
+```md
+You are reviewing declarative agent instructions for GPT 5.2 stability.
+
+INPUT
+<instructions>
+[PASTE CURRENT INSTRUCTIONS]
+</instructions>
+
+TASK
+Concise audit. Identify ONLY issues and exact fixes.
+
+CHECKS
+- Step order: identify ambiguity, missing steps, or merged steps → propose atomic, numbered steps.
+- Tool use: identify auto-calls, retries, or tool switching → add "use only in step X; no auto-retry".
+- Grounding: detect inference, blending, or citation gaps → add "cite only retrieved; no inference; no cross-document stitching".
+- Missing-data handling: if retrieval is empty or conflicting → add "stop and ask the user".
+- Verbosity: identify chatty or explanatory output → replace with "return only the requested data/format".
+- Contradictions or duplicates: resolve discrepancies; prefer explicit over implied.
+- Vague verbs ("verify", "process", "handle", "clean"): replace with precise, observable actions.
+- Safety: prohibit step reordering, optimization, or reinterpretation.
+- Reasoning calibration: match reasoning depth to task type (fast extraction vs deep analysis).
+- API plugin functions: verify each function has a WHEN clause, multi-turn parameter collection, and confirmation gates for writes.
+
+OUTPUT (concise)
+- Header patch (3–6 lines) — stabilizing header if needed
+- Top 5 changes (bullet list: "Issue → Fix")
+- Example rewrite (≤10 lines) for the riskiest step
+```
+
+> **Reference:** [Pattern 9 — Evaluate and migrate existing instructions](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-instructions#pattern-9-evaluate-and-migrate-existing-declarative-agent-instructions)
+
+---
+
+## API Plugin Chaining Patterns
+
+When an agent has API plugins, instructions must cover how functions chain together. Missing chaining instructions cause the agent to treat each function as isolated, forcing the user to manually bridge between calls.
+
+### Pattern: Output-as-Input Chaining
+
+Use the result of one API call as input for another:
+
+```md
+To get the weather, always use the `getWeather` action, then create a task with
+the title "temperature in [location]: [temperature]" by calling `createTask`.
+```
+
+### Pattern: Conversation-History Chaining
+
+Use prior responses to handle follow-up actions:
+
+```md
+1. When the user asks to list all to-dos, call `getTasks` to retrieve the list with title and ID.
+2. After listing, if the user asks to delete a to-do by name, use the ID from the previous response to call `deleteTask`.
+```
+
+### Pattern: Cross-Capability Chaining (SharePoint + API)
+
+Combine knowledge sources with API actions:
+
+```md
+- To get project statuses, use SharePoint knowledge from **ProjectDeadlines**.
+- Always create a to-do for each project using the status update for the title by calling `createTask`.
+```
+
+### Pattern: Capability + Code Interpreter Chaining
+
+Process API output with code interpreter:
+
+```md
+When the user asks to list all to-dos, call `getTasks` to retrieve the list,
+then use code interpreter to generate a chart based on the output.
+```
+
+### Pattern: Multi-Turn Parameter Collection
+
+When a function requires multiple parameters, instruct the agent to collect all values before calling:
+
+```md
+If the user asks about the weather:
+1. Ask the user for location.
+2. Ask the user for forecast day.
+3. Ask the user for unit system (Metric or Imperial).
+4. Only call `getWeather` when you have all three values.
+```
+
+**Anti-pattern:** Letting the agent call the function with partial parameters and handle errors — this produces a poor user experience.
+
+---
+
+## Domain Vocabulary
+
+Define specialized terms, formulas, acronyms, and dataset-specific language in a dedicated section. This prevents GPT 5.2 from incorrectly inferring definitions.
+
+```md
+# VOCABULARY
+- **ROI** — Return on Investment. Calculate as: (Benefit - Cost) / Cost. Do not use any other formula.
+- **SLA** — Service Level Agreement. In this context, refers to the 4-hour response time commitment.
+- **P1/P2/P3** — Priority levels. P1 = production down, P2 = degraded, P3 = cosmetic/minor.
+- **CSAT** — Customer Satisfaction score, on a 1-5 scale. Do not invent definitions; use only these.
 ```
 
 ---
@@ -325,10 +547,17 @@ Help users find and understand official Microsoft documentation by searching the
 
 Instructions pass the quality bar when ALL of these are true:
 
-1. **Every capability in the manifest is named in the instructions** with a WHEN clause
+1. **Every capability in the manifest is named in the instructions** with a WHEN clause (decision logic, not tool descriptions)
 2. **At least one workflow exists** with Goal → Action → Transition (or equivalent decision rules)
 3. **Failure cases are handled** — the instructions say what to do when a search returns nothing, a tool fails, or the user's question is ambiguous
 4. **Output-focused content is ≤20% of the total** — tone, format, and style rules exist but don't dominate
 5. **No hallucination invitations** — every "include X" statement has a corresponding "retrieve X from Y" instruction
+6. **No tool/parameter duplication** — instructions contain decision logic only; tool descriptions, parameters, and schemas live in plugin metadata
+7. **Within the 8,000-character limit** — if instructions exceed this, cut tool descriptions first, then consolidate verbose workflows
+8. **Reasoning depth is calibrated** — fast extraction tasks say "short answer only"; analysis tasks say "break the problem into steps"
+9. **Markdown structure is clean** — sections use `##`, parallel tasks use bullets, sequential workflows use numbered steps; no mixed list types
+10. **API plugin functions have WHEN clauses, chaining rules, and confirmation gates** (if applicable)
+11. **A self-evaluation gate exists** — instructions end with "Before responding, confirm: [checklist]"
+12. **No GPT 5.2 model-sensitivity anti-patterns** — no fused tasks, no incorrect numbering, no vague verbs, no verbose tone blocks
 
 If any of these fail, the instructions need improvement before deployment.

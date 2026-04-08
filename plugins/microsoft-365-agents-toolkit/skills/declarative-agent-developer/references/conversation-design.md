@@ -6,6 +6,14 @@
 
 The `instructions` field in `declarativeAgent.json` references an external `instructions.txt` file. This keeps the JSON manifest clean and makes instructions easy to edit. This is the most critical aspect of agent design.
 
+### Instruction Limits and Token Budget
+
+**Instructions are limited to 8,000 characters.** Every character counts — be concise and deliberate about what goes into `instructions.txt`.
+
+**⛔ Do NOT duplicate tool/capability metadata in instructions.** Tool names, descriptions, parameters, and schemas are already available to the orchestrator through `ai-plugin.json` (`description_for_model`), MCP plugin manifests (`mcp_tool_description.tools[]`), and capability configuration in the agent manifest. Listing them in instructions wastes the 8,000-character budget.
+
+Instructions should contain **decision logic only**: WHEN to use each capability, HOW to chain them, and WHAT to do on failure. See [Instruction Review](instruction-review.md) for the full anti-pattern catalog.
+
 ### Instruction Structure
 
 In `declarativeAgent.json`, reference the instructions file using `${{file:instructions.txt}}`:

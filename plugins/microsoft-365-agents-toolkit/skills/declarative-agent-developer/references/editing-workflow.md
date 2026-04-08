@@ -120,16 +120,17 @@ npx -y --package @microsoft/m365agentstoolkit-cli atk add action --api-plugin-ty
 4. **Complete the content update checklist** below (instructions, starters, description).
 
 **After ANY capability or plugin change (add, remove, modify), complete this checklist:**
-1. ☐ **Update instructions** — Add a section describing the new/changed capability with WHEN and HOW clauses. For removals, delete all references.
-2. ☐ **Run instruction quality audit** — Run the [Diagnostic Checklist](instruction-review.md) against the updated instructions. Every capability must be named with a WHEN clause, at least one workflow must exist, and failure cases must be handled. If any check fails, fix it before deploying.
-3. ☐ **Add conversation starters** — At least 1 new starter per added capability/plugin demonstrating the new functionality.
-4. ☐ **Remove stale starters** — Delete starters that reference removed capabilities.
-5. ☐ **Update `manifest.json` description** if the agent's purpose has expanded.
-6. ☐ **Review existing instructions** for stale references to removed capabilities.
+1. ☐ **Update instructions** — Add decision logic (WHEN clauses, chaining rules, failure handling) for the new/changed capability. For removals, delete all references. **Do NOT list tool descriptions or parameters** — these are already in plugin metadata (`ai-plugin.json`, MCP manifests, capability config). Instructions should contain decision logic only.
+2. ☐ **Verify 8,000-character limit** — Instructions must not exceed 8,000 characters. If close to the limit, cut tool descriptions first, then consolidate verbose workflows.
+3. ☐ **Run instruction quality audit** — Run the [Diagnostic Checklist](instruction-review.md) against the updated instructions. Every capability must be named with a WHEN clause, at least one workflow must exist, and failure cases must be handled. If any check fails, fix it before deploying.
+4. ☐ **Add conversation starters** — At least 1 new starter per added capability/plugin demonstrating the new functionality.
+5. ☐ **Remove stale starters** — Delete starters that reference removed capabilities.
+6. ☐ **Update `manifest.json` description** if the agent's purpose has expanded.
+7. ☐ **Review existing instructions** for stale references to removed capabilities.
 
 **This checklist is NOT optional.** Adding a capability without updating instructions and starters is incomplete work.
 
-**⚠️ Instruction quality matters as much as JSON correctness.** Output-focused instructions (tone, format, style only) are a known failure pattern — they cause agents to give generic answers and ignore configured capabilities. See [Instruction Review](instruction-review.md) for the anti-pattern catalog and before/after rewrites.
+**⚠️ Instruction quality matters as much as JSON correctness.** Output-focused instructions (tone, format, style only) are a known failure pattern — they cause agents to give generic answers and ignore configured capabilities. Listing tool descriptions and parameters in instructions wastes the 8,000-character budget — this metadata is already available to the orchestrator. See [Instruction Review](instruction-review.md) for the anti-pattern catalog and before/after rewrites.
 
 **Reference:** [schema.md](schema.md) for proper manifest structure
 **Reference:** [api-plugins.md](api-plugins.md) for adaptive card enhancement guidelines after adding a plugin
