@@ -166,7 +166,7 @@ Help employees find answers to HR policy questions using the company's official 
 ```
 
 **Why this works:**
-- Every capability has a named role and a WHEN clause
+- Every data source has a clear role and intent (WHEN and WHY to use it)
 - The model has a decision tree, not just a personality description
 - Failure cases are handled ("if not found → tell the user")
 - The response rules are minimal and complementary to the process, not a substitute for it
@@ -181,11 +181,11 @@ Run this checklist against any set of instructions. Each failed check is a speci
 
 | # | Check | How to verify | Failure signal |
 |---|-------|---------------|----------------|
-| A1 | Every capability in the manifest has a matching section in instructions | Compare `capabilities[]` array in `declarativeAgent.json` against instruction text | Capability is configured but never mentioned → model won't know when to use it |
-| A2 | Every action/plugin has a matching section in instructions | Compare `actions[]` array against instruction text | Plugin exists but instructions don't reference it → model may never invoke it |
-| A3 | Each capability/action section has a WHEN clause | Look for conditional language: "when the user asks about...", "use X for Y" | Capability is mentioned but model has no trigger for using it |
+| A1 | Every configured capability has clear intent coverage in instructions | For each capability in `capabilities[]`, check whether the instructions describe **when and why** the agent should use the underlying data source — e.g., "search company documents" covers `OneDriveAndSharePoint` even without naming it. The exact capability name is NOT required; what matters is that the instructions give the model a clear reason and context to invoke it. | Capability is configured but instructions provide no context for when to use it → model may underuse it or use it at the wrong time |
+| A2 | Every action/plugin has a matching section in instructions | Compare `actions[]` array against instruction text. Unlike built-in capabilities, plugins are custom and SHOULD be referenced by name so the model knows they exist. | Plugin exists but instructions don't reference it → model may never invoke it |
+| A3 | Each data source or action has a WHEN clause | Look for conditional intent: "when the user asks about...", "for X questions, search Y", "use [data source] for [scenario]". For built-in capabilities, the WHEN clause can reference the data source by purpose ("search internal docs") rather than by capability name. For plugins, reference functions by name. | Instructions mention a data source but provide no trigger or decision logic for when to use it |
 | A4 | Instructions provide decision logic, not tool descriptions | Check that instructions don't duplicate `description_for_model`, parameter lists, or schemas from plugin metadata | Token waste — this information is already available to the orchestrator |
-| A5 | Instructions don't assume capabilities that aren't configured | Read instruction text for keywords that imply a capability (see Capability Reference below). Cross-check each against `capabilities[]` in the manifest. | Instructions say "search email" but Email capability isn't configured → the agent will try and fail, or hallucinate |
+| A5 | Instructions don't assume data sources that aren't configured | Read instruction text for intent that implies a specific capability (see Capability Reference below). Cross-check against `capabilities[]` in the manifest. Focus on **intent mismatch** — e.g., instructions say "check the user's calendar" but no `Meetings` capability is configured. Minor phrasing overlaps (e.g., "look up" could mean many things) should NOT be flagged. | Instructions clearly direct the agent to use a data source that isn't configured → the agent will try and fail, or hallucinate |
 
 ### B. Process Structure
 
@@ -202,9 +202,9 @@ Run this checklist against any set of instructions. Each failed check is a speci
 |---|---|---|---|
 | C1 | **Output-only instructions** | 80%+ of text is about tone, format, length, style | Add a CAPABILITIES section and at least one WORKFLOW |
 | C2 | **Personality-first instructions** | Opens with "You are a friendly, helpful..." and stays there | Move personality to a short RESPONSE RULES section at the end; lead with OBJECTIVE and CAPABILITIES |
-| C3 | **Capability gap** | `declarativeAgent.json` has 3 capabilities and 2 plugins; instructions mention 1 | Add a section per missing capability with WHEN and HOW |
+| C3 | **Capability gap** | `declarativeAgent.json` has 3 capabilities and 2 plugins; instructions provide intent coverage for only 1 | Add decision logic for each uncovered data source — describe WHEN and WHY the agent should use it (exact capability names are not required for built-in capabilities) |
 | C4 | **Orphaned starters** | Conversation starter references a capability not mentioned in instructions | Either add the capability to instructions or remove the starter |
-| C5 | **Tool ambiguity** | Instructions say "search for documents" without specifying which capability | Name the capability: "Search the **HR Policies** SharePoint library" |
+| C5 | **Tool ambiguity** | Instructions say "search for documents" but the agent has multiple document sources and no guidance on which to prefer | Clarify the intent: "Search the **HR Policies** library first; if not found, try the **Company Wiki**" |
 | C6 | **Hallucination invitation** | "Include [specific data] in your response" without specifying where to find it | Add: "Retrieve [data] from [capability]. If not found, do not include it." |
 | C7 | **Compound tasks** | "Extract metrics and summarize findings and create a report" | Break into separate atomic steps with transitions |
 | C8 | **Over-restriction** | Long list of "do NOT" rules with few "DO" rules | Rewrite as positive directives; keep restrictions to genuine guardrails only |
@@ -244,9 +244,11 @@ These apply specifically to agents with API plugins (actions).
 
 ## Capability Reference (v1.6)
 
-Use this table to detect capability gaps in both directions — instructions that assume unconfigured capabilities, and configured capabilities that instructions ignore.
+Use this table to understand what each built-in capability provides and to detect intent mismatches between instructions and the manifest. This is a **guide for understanding intent**, not a keyword checklist.
 
-| Capability name | What it does | Instruction keywords that imply this capability |
+> **⚠️ IMPORTANT: M365 Copilot uses internal names for built-in capabilities** that differ from the manifest identifiers (e.g., `OneDriveAndSharePoint`). The orchestrator already knows which capabilities are configured — instructions do NOT need to use the exact capability name. What matters is that the instructions convey **clear intent** for when and why the agent should access each data source. For example, "search our internal HR documents" is sufficient coverage for `OneDriveAndSharePoint` — you don't need to write "use the OneDriveAndSharePoint capability."
+
+| Capability name | What it provides | Instruction intent that implies this capability |
 |----------------|-------------|--------------------------------------------------|
 | `WebSearch` | Search the web for grounding | "search the web", "look online", "find on the internet", "web results", "current news" |
 | `OneDriveAndSharePoint` | Search SharePoint sites, OneDrive files, document libraries | "SharePoint", "OneDrive", "documents", "files", "shared files", "document library", "site" |
@@ -261,7 +263,7 @@ Use this table to detect capability gaps in both directions — instructions tha
 | `Meetings` | Search calendar events, meeting details, **and meeting transcripts** | "meetings", "calendar", "events", "schedule", "invites", "attendees", "join link", "transcript", "what was discussed", "meeting notes", "recording" |
 | `EmbeddedKnowledge` | Use files bundled in the app package | "embedded files", "local files", "bundled docs" (not yet available) |
 
-> **How to use this table:** During Phase 2 (Comprehension Check) and Phase 3 (Diagnose, check A1 and A5), scan the instruction text for the keywords in the rightmost column. If a keyword appears but the corresponding capability is not in `capabilities[]` → flag as A5. If a capability is in the manifest but no keywords from its row appear in instructions → flag as A1.
+> **How to use this table:** During Phase 2 (Comprehension Check) and Phase 3 (Diagnose), use this table to understand intent alignment — not for strict keyword matching. For **A1**: if a capability is in the manifest but the instructions never describe a scenario where the agent would use that data source (even in general terms), flag it as a gap — but do NOT require the exact capability name. For **A5**: if the instructions clearly direct the agent to access a data source that has no corresponding capability configured, flag it as an intent mismatch. Ambiguous phrasing that could apply to multiple capabilities should NOT be flagged.
 
 > **Advanced capability configuration:** Some capabilities support scoping (e.g. `OneDriveAndSharePoint` with `items_by_url`, `Email` with `shared_mailbox` and `folders`, `TeamsMessages` with specific channel URLs, `Meetings` with `items_by_id`, `People` with `include_related_content`). When reviewing instructions, also check whether scoping in the manifest aligns with what the instructions describe — e.g. instructions say "search all SharePoint" but the capability is scoped to a single site.
 
@@ -378,7 +380,7 @@ Present findings to the user in this format:
 | # | Issue | Severity | Description |
 |---|-------|----------|-------------|
 | 1 | C1 — Output-only | High | Instructions describe response format but have no workflow for finding answers |
-| 2 | A1 — Capability gap | High | Email capability is configured but never referenced in instructions |
+| 2 | A1 — Intent gap | Medium | Email capability is configured but instructions never describe when the agent should search email — no decision logic for this data source |
 | 3 | C11 — Token waste | Medium | Tool descriptions duplicated from plugin metadata — reclaim ~800 chars |
 | 4 | C6 — Hallucination risk | Medium | "Include policy numbers" but no instruction on where to find them |
 
@@ -398,7 +400,7 @@ When rewriting:
 - Incorporate the domain context and clarifications gathered in Phase 2 — use the user's own terminology and process descriptions
 - Do NOT invent domain-specific content (policy names, SharePoint URLs, process details) — ask the user
 - Structure using the process-focused pattern: OBJECTIVE → DECISION LOGIC → WORKFLOW → FAILURE HANDLING → RESPONSE RULES → SELF-CHECK
-- Ensure every configured capability appears in the instructions with WHEN clauses and chaining rules
+- Ensure every configured capability has clear intent coverage in the instructions with WHEN clauses and chaining rules — built-in capabilities don't need exact names, but actions/plugins should be named
 - **Do NOT add tool descriptions or parameters** — these are already in plugin metadata
 - **Measure the result** — verify the rewritten instructions are within 8,000 characters. If over, cut in this priority order:
   1. Remove any remaining tool descriptions/parameter lists (C11)
@@ -421,7 +423,7 @@ Be thorough but concise. Use bullet points when listing steps. Always be profess
 and patient. If you don't know the answer, say so politely.
 ```
 
-**Issues:** C1 (output-only), A1 (two capabilities configured, zero referenced), C5 (tool ambiguity — "find answers" doesn't say where), C6 (no sourcing strategy)
+**Issues:** C1 (output-only), A1 (two capabilities configured, zero intent coverage — instructions don't describe when to use any data source), C5 (tool ambiguity — "find answers" doesn't say where), C6 (no sourcing strategy)
 
 **✅ After (process-focused — decision logic only, no tool descriptions):**
 ```md
@@ -665,7 +667,7 @@ Define specialized terms, formulas, acronyms, and dataset-specific language in a
 
 Instructions pass the quality bar when ALL of these are true:
 
-1. **Every capability in the manifest is named in the instructions** with a WHEN clause (decision logic, not tool descriptions)
+1. **Every configured capability has clear intent coverage in the instructions** — the instructions describe when and why the agent should use each data source. Built-in capabilities do NOT need to be referenced by their exact manifest name (M365 Copilot uses internal names); what matters is clear decision logic. Actions/plugins SHOULD be referenced by name.
 2. **At least one workflow exists** with Goal → Action → Transition (or equivalent decision rules)
 3. **Failure cases are handled** — the instructions say what to do when a search returns nothing, a tool fails, or the user's question is ambiguous
 4. **Output-focused content is ≤20% of the total** — tone, format, and style rules exist but don't dominate

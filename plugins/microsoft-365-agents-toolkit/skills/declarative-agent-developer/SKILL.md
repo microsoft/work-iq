@@ -154,7 +154,7 @@ When the user mentions an MCP server URL, follow the [MCP Plugin workflow](refer
 ### 6. Always Update Instructions & Starters After Changes
 
 Adding a capability or plugin without updating instructions is incomplete. After ANY change:
-1. Update instructions to describe the new/changed functionality — every capability must have a WHEN clause per the [Instruction Review](references/instruction-review.md) quality bar
+1. Update instructions to describe the new/changed functionality — every data source should have clear intent coverage (WHEN and WHY to use it) per the [Instruction Review](references/instruction-review.md) quality bar. Built-in capabilities don't need exact names; actions/plugins should be named.
 2. **Do NOT list tool names, descriptions, or parameters in instructions** — these are already in the plugin metadata (`ai-plugin.json`, MCP manifests, capability config). Instructions should contain decision logic only: WHEN to use each tool, chaining rules, and failure handling.
 3. **Stay within the 8,000-character instruction limit** — if close to the limit, cut tool descriptions first
 4. Add at least 1 conversation starter per added capability/plugin

@@ -124,7 +124,7 @@ npx -y --package @microsoft/m365agentstoolkit-cli atk add action --api-plugin-ty
 **After ANY capability or plugin change (add, remove, modify), complete this checklist:**
 1. ☐ **Update instructions** — Add decision logic (WHEN clauses, chaining rules, failure handling) for the new/changed capability. For removals, delete all references. **Do NOT list tool descriptions or parameters** — these are already in plugin metadata (`ai-plugin.json`, MCP manifests, capability config). Instructions should contain decision logic only.
 2. ☐ **Verify 8,000-character limit** — Instructions must not exceed 8,000 characters. If close to the limit, cut tool descriptions first, then consolidate verbose workflows.
-3. ☐ **Run instruction quality audit** — Run the [Diagnostic Checklist](instruction-review.md) against the updated instructions. Every capability must be named with a WHEN clause, at least one workflow must exist, and failure cases must be handled. If any check fails, fix it before deploying.
+3. ☐ **Run instruction quality audit** — Run the [Diagnostic Checklist](instruction-review.md) against the updated instructions. Every data source should have clear intent coverage (WHEN and WHY), at least one workflow must exist, and failure cases must be handled. Built-in capabilities don't need exact names; actions/plugins should be named. If any check fails, fix it before deploying.
 4. ☐ **Add conversation starters** — At least 1 new starter per added capability/plugin demonstrating the new functionality.
 5. ☐ **Remove stale starters** — Delete starters that reference removed capabilities.
 6. ☐ **Update `manifest.json` description** if the agent's purpose has expanded.
