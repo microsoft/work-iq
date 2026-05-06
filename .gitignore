@@ -419,3 +419,7 @@ evals/
 *.msix
 *.msm
 *.msp
+
+# Playwright
+playwright-report/
+test-results/

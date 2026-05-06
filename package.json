@@ -1,0 +1,17 @@
+{
+  "name": "work-iq",
+  "version": "1.0.0",
+  "description": "The official Microsoft Work IQ plugin collection for GitHub Copilot",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:report": "playwright show-report"
+  },
+  "keywords": [],
+  "author": "Microsoft",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "typescript": "^6.0.3"
+  }
+}
