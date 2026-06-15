@@ -372,6 +372,8 @@ Core requirements:
 ## DevTunnels Setup
 
 > **Local testing only.** DevTunnels are for development and testing on your machine. Before sharing the agent more broadly, deploy both the MCP server and widget assets to a hosted environment (e.g., Azure App Service, Azure Static Web Apps, or another hosting provider) and update the agent manifest URLs accordingly.
+>
+> **Going to Azure?** To make the Agents Toolkit **Provision** and **Deploy** actions create Azure resources (Bicep) and push the MCP server to Azure App Service, see [references/azure-provision-deploy.md](references/azure-provision-deploy.md). It rewrites `m365agents.yml`, adds `infra/` Bicep, and fixes the `env/.env.<env>` files.
 
 DevTunnels expose your localhost MCP server to M365 Copilot using **named tunnels** for stable URLs. See [references/devtunnels.md](references/devtunnels.md) for setup scripts, command reference, and troubleshooting.
 
