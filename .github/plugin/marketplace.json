@@ -29,7 +29,7 @@
     {
       "name": "microsoft-365-agents-toolkit",
       "source": "./plugins/microsoft-365-agents-toolkit",
-      "version": "1.3.1",
+      "version": "1.5.0",
       "description": "Toolkit for building and evaluating Microsoft 365 Copilot declarative agents — scaffolding, JSON manifest development, capability configuration, and eval workflows.",
       "skills": [
         "./plugins/microsoft-365-agents-toolkit/skills/install-atk",

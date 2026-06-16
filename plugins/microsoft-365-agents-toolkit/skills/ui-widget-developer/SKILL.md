@@ -89,6 +89,7 @@ This skill triggers when building MCP servers with OAI app or widget rendering f
 | **Existing M365 agent, new MCP server** | MCP server + widgets + mcpPlugin.json | Start at [Implementation](#implementation) |
 | **Existing MCP server, add Copilot widgets** | Widget support added to existing server | Start at [Copilot Widget Protocol](references/copilot-widget-protocol.md#adaptation-checklist-existing-mcp-server) |
 | **Language choice** (non-TypeScript) | Protocol requirements | See [Copilot Widget Protocol](references/copilot-widget-protocol.md) for what to implement, [MCP Server Pattern (TypeScript)](references/mcp-server-pattern.md) as a reference |
+| **Deploy to Azure** (remote hosting, not just devtunnel) | Provision + Deploy wired in `m365agents.yml` with Bicep, managed identity, App Insights | Follow [Azure Provision & Deploy](references/azure-provision-deploy.md) |
 
 ---
 
@@ -414,6 +415,25 @@ On first run, provision the agent once the tunnel is up (see AGENT PROVISIONING 
    ```
 
 3. **Provision + test** — see AGENT PROVISIONING rule for when this is needed; bump `version` in manifest.json if Copilot doesn't reflect changes
+
+## Deploy to Azure (remote hosting)
+
+The devtunnel workflow above is for **local** development. To host the MCP server on Azure
+so it has a stable public URL (and the agent works without a developer machine running),
+follow [references/azure-provision-deploy.md](references/azure-provision-deploy.md).
+
+That reference makes the Agents Toolkit **Provision** and **Deploy** buttons do real Azure
+work by adding an `arm/deploy` step and a `deploy:` stage to `m365agents.yml`, plus Bicep
+under `infra/`. It provisions, with an identity-first, monitoring-ready posture:
+
+- a resource group (created — with a location choice — or reused), with its id saved to env
+- an App Service (Linux, Node 22) on a **B1** plan by default, with larger SKUs offered
+- a **user-assigned managed identity** instead of secrets (Key Vault reference offered when
+  a secret is unavoidable)
+- **Application Insights** + Log Analytics for monitoring and debugging
+
+Use it whenever the user asks to deploy/host the MCP server on Azure, fix a Provision or
+Deploy that does nothing, or wire `m365agents.yml` to Azure infrastructure.
 
 ## Best Practices
 
