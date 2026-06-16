@@ -47,6 +47,7 @@ npx -y --package @microsoft/m365-copilot-eval@latest runevals --prompts-file eva
 |-------|-------------|
 | [**install-atk**](./skills/install-atk/SKILL.md) | Install or update the ATK CLI and VS Code extension |
 | [**declarative-agent-developer**](./skills/declarative-agent-developer/SKILL.md) | Scaffolding, JSON manifest authoring, capability configuration, security patterns, deployment via ATK CLI |
+| [**teams-app-developer**](./skills/teams-app-developer/SKILL.md) | Build, test, and deploy code-based Teams apps (Custom Engine Agents, bots, tabs, message extensions) via the ATK CLI |
 | [**ui-widget-developer**](./skills/ui-widget-developer/SKILL.md) | Build MCP servers with OpenAI Apps SDK widget rendering for Copilot Chat |
 | [**m365-agent-evaluator**](./skills/m365-agent-evaluator/SKILL.md) | Generate, run, and analyze evaluation suites for M365 Copilot declarative agents |
 

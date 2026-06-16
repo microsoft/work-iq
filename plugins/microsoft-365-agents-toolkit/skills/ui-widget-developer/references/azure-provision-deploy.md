@@ -45,6 +45,14 @@ It fixes the two real-world failures:
 > atk provision --env dev      # or: npx teamsapp provision --env dev
 > atk deploy    --env dev      # or: npx teamsapp deploy    --env dev
 > ```
+>
+> **Headless terminal (no browser)?** Interactive sign-in (`atk account login azure`)
+> can hang because it can't open a browser. Add `--interactive false` to
+> `provision`/`deploy` to reuse cached tokens. `arm/deploy` and `azureAppService/zipDeploy`
+> still need an Azure credential — run them from the VS Code Provision/Deploy buttons
+> (which handle login), or, when only Azure auth is missing, provision the Bicep with
+> `az deployment group create` and deploy with `az webapp deploy` using an already
+> signed-in Azure CLI.
 
 ## What this skill is NOT
 
@@ -269,13 +277,17 @@ resource site 'Microsoft.Web/sites@2023-12-01' = {
     httpsOnly: true
     siteConfig: {
       linuxFxVersion: nodeVersion
+      // Strategy B (compiled JS + prebuilt node_modules, no Oryx build). For a
+      // TypeScript server run via tsx, use Strategy A instead: REMOVE this
+      // appCommandLine and set SCM_DO_BUILD_DURING_DEPLOYMENT='true' (see the
+      // "Linux startup, Oryx, and node_modules" callout below).
       appCommandLine: 'node server/dist/index.js'  // adjust to the staged layout
       alwaysOn: appServicePlanSku != 'F1' && appServicePlanSku != 'D1'
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
       appSettings: [
         { name: 'WEBSITE_NODE_DEFAULT_VERSION', value: '~22' }
-        { name: 'SCM_DO_BUILD_DURING_DEPLOYMENT', value: 'false' }
+        { name: 'SCM_DO_BUILD_DURING_DEPLOYMENT', value: 'false' }  // Strategy A: set 'true' and drop appCommandLine
         // Application Insights — connection string only, no instrumentation secret
         { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsights.properties.ConnectionString }
         { name: 'ApplicationInsightsAgent_EXTENSION_VERSION', value: '~3' }
@@ -293,6 +305,48 @@ output appServiceResourceId string = site.id
 output mcpServerUrl string = 'https://${site.properties.defaultHostName}'
 output managedIdentityClientId string = uami.properties.clientId
 ```
+
+### CRITICAL — Linux startup, Oryx, and `node_modules`
+
+App Service for Linux uses **Oryx**. How you start the app and whether Oryx builds
+must be a **single coherent choice** — mixing them is the most common cause of a
+container that builds fine but then crash-loops with `ERR_MODULE_NOT_FOUND` /
+`Cannot find package '...'`.
+
+When Oryx builds (`SCM_DO_BUILD_DURING_DEPLOYMENT=true`) it often **compresses
+`node_modules` into `node_modules.tar.gz` and replaces it with a symlink**. That
+tarball is only expanded by **Oryx's default startup script**. If you set a custom
+`appCommandLine`, that script is replaced and **the extraction never runs** — so
+`node_modules` is empty at runtime even though the build "succeeded". A tell-tale
+symptom is the runtime log showing a tool being fetched from `/root/.npm/_npx/...`
+(npx hit the network because the local copy wasn't there).
+
+Pick **one** of these — do not mix:
+
+**Strategy A (recommended for Node/TS) — let Oryx install + start:**
+- `SCM_DO_BUILD_DURING_DEPLOYMENT=true`
+- **No** `appCommandLine`. Put a `start` script in the deployed `package.json`;
+  Oryx's default startup extracts `node_modules` and runs `npm start`.
+- Ship **source + a slim production `package.json`** — do **not** ship
+  `node_modules` (avoids Windows long-path zip corruption and Linux/native-module
+  mismatches). Drop `package-lock.json` from the stage unless it matches the slim
+  `package.json`, or Oryx's `npm ci` will fail.
+- TypeScript: add `tsx` as a **runtime dependency** and use `"start": "tsx main.ts"`.
+  Never start with `npx tsx ...` — `npx` fetches tsx over the network instead of
+  using the local copy.
+
+**Strategy B — fully self-contained, no Oryx build:**
+- `SCM_DO_BUILD_DURING_DEPLOYMENT=false`
+- Ship a **prebuilt** artifact (compiled `dist/` **and** a real, uncompressed
+  `node_modules` directory) in the zip.
+- A custom `appCommandLine` (e.g. `node dist/index.js`) is fine here, because Oryx
+  isn't compressing anything, so `node_modules` stays a real directory.
+
+If you remember nothing else: **a custom `appCommandLine` on top of an Oryx build
+= empty `node_modules` at runtime.** The Bicep above uses Strategy B; for a
+TypeScript server run via `tsx`, prefer Strategy A — set
+`SCM_DO_BUILD_DURING_DEPLOYMENT=true`, remove `appCommandLine`, and rely on the
+`start` script instead.
 
 > **No storage needed?** Delete the `storage` account, the `storageBlobRole` assignment,
 > and the `STORAGE_ACCOUNT_NAME` app setting. Keep the managed identity, Log Analytics,
@@ -448,6 +502,44 @@ deploy-stage/
 
 Skip this whole step if a single `dist/` folder is enough.
 
+### Strategy A variant — TypeScript run via `tsx` (no compile step)
+
+When the server runs TypeScript directly with `tsx` (no `dist/` compile), the stage
+should ship **source + a slim production `package.json`** and let Oryx install deps.
+Do **not** copy `node_modules` and do **not** set a custom `appCommandLine`:
+
+```js
+// infra/stage.mjs — produces ./deploy-stage for azureAppService/zipDeploy.
+// Run AFTER `npm run build` (which produces any prebuilt assets, e.g. a widget HTML).
+import fs from "node:fs";
+import path from "node:path";
+
+const root = process.cwd();
+const stage = path.join(root, "deploy-stage");
+fs.rmSync(stage, { recursive: true, force: true });
+fs.mkdirSync(stage, { recursive: true });
+
+// Server entry + source (+ any prebuilt assets the server reads at runtime)
+for (const f of ["main.ts", "server.ts"]) fs.copyFileSync(path.join(root, f), path.join(stage, f));
+fs.cpSync(path.join(root, "src"), path.join(stage, "src"), { recursive: true });
+// e.g. a prebuilt widget shell consumed by an MCP resource handler:
+// fs.mkdirSync(path.join(stage, "dist"), { recursive: true });
+// fs.copyFileSync(path.join(root, "dist/widget.html"), path.join(stage, "dist/widget.html"));
+
+// Slim production package.json: runtime deps only (incl. tsx), no build script,
+// so Oryx installs prod deps and `npm start` launches the server.
+const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf-8"));
+fs.writeFileSync(path.join(stage, "package.json"), JSON.stringify({
+  name: pkg.name, version: pkg.version, type: pkg.type, private: true,
+  engines: { node: ">=22 <23" },
+  scripts: { start: "tsx main.ts" },   // tsx MUST be in dependencies, not devDependencies
+  dependencies: pkg.dependencies,
+}, null, 2) + "\n");
+```
+
+Pair this with `SCM_DO_BUILD_DURING_DEPLOYMENT=true`, **no** `appCommandLine`, and a
+`deploy:` stage whose `zipDeploy` `artifactFolder` is `deploy-stage` (see Step 6).
+
 ## Step 6 — Rewrite `m365agents.yml`
 
 This is the file that actually wires the **Provision** and **Deploy** buttons. The
@@ -589,6 +681,10 @@ If anything fails, consult the troubleshooting table before changing unrelated t
 | `Unresolved placeholders ["FOO_BAR"]` during deploy | Variable name in yaml doesn't match what `arm/deploy` wrote | Bicep outputs become `UPPERCASENOUNDERSCORE`. Use `${{APPSERVICERESOURCEID}}`, not `${{APP_SERVICE_RESOURCE_ID}}`. |
 | `MissingEnvironmentVariablesError ... SECRET_X` | Secret missing from `env/.env.<env>.user` | Secrets must be prefixed `SECRET_` and live in the `.user` file. |
 | App Service responds 404 / `Cannot GET /mcp` | Wrong `appCommandLine` or wrong `artifactFolder` layout | Make `appCommandLine` match the staged layout (`server/dist/index.js`). |
+| **Container builds OK but crash-loops** with `Cannot find package '...'` / `ERR_MODULE_NOT_FOUND`; runtime log shows a tool fetched from `/root/.npm/_npx/...` | A **custom `appCommandLine` bypassed Oryx's `node_modules` extraction** (Oryx compressed it to `node_modules.tar.gz` + a `/node_modules` symlink that only the default startup script expands) | Remove the custom `appCommandLine` and use a `start` script (Strategy A), **or** disable the Oryx build and ship a real uncompressed `node_modules` (Strategy B). Never start with `npx <tool>` — ship the tool (e.g. `tsx`) as a runtime dependency. |
+| `az webapp deploy` / `zipDeploy` reports **"Site failed to start within 10 mins"** but the site is actually up | The deploy poller can time out seconds before the container's warm-up probe succeeds | Check `GET /health` and the docker log (`Site started ...` with the new deployment id) before assuming failure — only re-deploy if health is genuinely down. |
+| Deployed `node_modules` is **missing files** / native modules fail to load on Linux | `node_modules` was built on Windows and zipped (long-path truncation or OS-specific binaries) | Don't ship `node_modules`; use Strategy A and let Oryx install on Linux. |
+| Oryx build fails running `npm run build` (missing vite/tsc entry, etc.) | Oryx auto-runs a `build` script if present, but the stage doesn't include build inputs | Ship a **slim `package.json` with no `build` script** (Strategy A) so Oryx only runs `npm install`; prebuild assets locally before staging. |
 | App Service 401/500 on a specific route | Runtime app settings missing (e.g. `AAD_APP_CLIENT_SECRET`) | Add to Bicep `appSettings`; re-provision; secret comes from the `${{SECRET_*}}` parameter. |
 | `arm/deploy` leaks a secret in deployment outputs | `output ... = ...storageConnectionString` | Don't output it, or annotate `#disable-next-line outputs-should-not-contain-secrets`. |
 | `AuthorizationFailed` / `RoleAssignmentUpdateNotPermitted` during Provision | The Bicep `roleAssignments` resource needs the deployer to have **Owner** or **User Access Administrator** on the resource group | Grant that role on the RG (or have an owner run Provision once); role assignments can't be created by Contributor alone. |
@@ -620,3 +716,13 @@ If anything fails, consult the troubleshooting table before changing unrelated t
 8. **Stage before zipDeploy**: never zip the source repo. Always stage a clean folder.
 9. **Idempotence**: `arm/deploy` with the same `deploymentName` is a safe upsert — re-run
    Provision freely.
+10. **Linux startup is one coherent choice** (Strategy A *or* B, never mixed):
+    **A)** Oryx build (`SCM_DO_BUILD_DURING_DEPLOYMENT=true`) + a `start` script + **no**
+    `appCommandLine`, shipping source + a slim `package.json` (no `node_modules`); or
+    **B)** no Oryx build (`=false`) + a prebuilt, uncompressed `node_modules` + a custom
+    `appCommandLine`. A custom `appCommandLine` on top of an Oryx build leaves
+    `node_modules` empty at runtime. For TypeScript, ship `tsx` as a **runtime
+    dependency** and use `"start": "tsx main.ts"` (never `npx tsx`).
+11. **Trust `/health`, not the deploy poller**: `zipDeploy` may report a start timeout
+    seconds before the container is actually ready — verify `GET /health` and the docker
+    log before re-deploying.

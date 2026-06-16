@@ -34,6 +34,7 @@
       "skills": [
         "./plugins/microsoft-365-agents-toolkit/skills/install-atk",
         "./plugins/microsoft-365-agents-toolkit/skills/declarative-agent-developer",
+        "./plugins/microsoft-365-agents-toolkit/skills/teams-app-developer",
         "./plugins/microsoft-365-agents-toolkit/skills/ui-widget-developer",
         "./plugins/microsoft-365-agents-toolkit/skills/m365-agent-evaluator"
       ]
