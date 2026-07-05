@@ -1,6 +1,7 @@
 # Widget Patterns
 
 ## Table of Contents
+- [Required Dependencies](#required-dependencies)
 - [Widget Template](#widget-template)
 - [Data Access Pattern](#data-access-pattern)
 - [Theme Support Pattern](#theme-support-pattern)
@@ -9,313 +10,195 @@
 - [XSS Prevention](#xss-prevention)
 - [Action Buttons](#action-buttons)
 
-HTML widgets for OpenAI Apps SDK with Copilot Chat.
+React widgets for OpenAI Apps SDK with Copilot Chat.
+
+MANDATORY: Use Fluent UI (`@fluentui/react-components` and `@fluentui/react-icons`) for widget UI. Avoid raw HTML string rendering for app content.
+
+## Required Dependencies
+
+Widget projects MUST include these package dependencies before implementation:
+
+- `@fluentui/react-components`
+- `@fluentui/react-icons`
+- `react`
+- `react-dom`
+
+If any required dependency is missing, install it before generating widget code.
 
 ## Widget Template
 
-```html
+```tsx
+// index.html (minimal shell)
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Widget Name</title>
   <style>
-    /* CSS Variables - Theme definitions at :root level */
-    :root {
-      --text-color: #1a1a1a;
-      --secondary-text: #666;
-      --border-color: #e5e5e5;
-      --card-bg: #ffffff;
-      --hover-bg: #f5f5f5;
-      --bg-color: #f9fafb;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --text-color: #f5f5f5;
-        --secondary-text: #a3a3a3;
-        --border-color: #404040;
-        --card-bg: #262626;
-        --hover-bg: #333333;
-        --bg-color: #1a1a1a;
-      }
-    }
-
-    /* Theme classes override media query when set by JS */
-    body.theme-dark {
-      --text-color: #f5f5f5;
-      --secondary-text: #a3a3a3;
-      --border-color: #404040;
-      --card-bg: #262626;
-      --hover-bg: #333333;
-      --bg-color: #1a1a1a;
-    }
-
-    body.theme-light {
-      --text-color: #1a1a1a;
-      --secondary-text: #666;
-      --border-color: #e5e5e5;
-      --card-bg: #ffffff;
-      --hover-bg: #f5f5f5;
-      --bg-color: #f9fafb;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg-color);
-      padding: 16px;
-      color: var(--text-color);
-    }
-
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-    }
-
-    .header {
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .header h1 {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text-color);
-    }
-
-    .header .subtitle {
-      font-size: 13px;
-      color: var(--secondary-text);
-      margin-top: 4px;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
-      transition: box-shadow 0.2s, transform 0.2s;
-    }
-
-    .card:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      transform: translateY(-2px);
-    }
-
-    .btn {
-      padding: 8px 16px;
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      background: var(--card-bg);
-      color: var(--text-color);
-      font-size: 14px;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .btn:hover {
-      background: var(--hover-bg);
-    }
-
-    .btn.primary {
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-      border-color: transparent;
-      color: white;
-    }
+    html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; }
+    #root { height: 100%; overflow-y: auto; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1 id="title">Loading...</h1>
-      <div class="subtitle" id="subtitle"></div>
-    </div>
-    <div id="content">
-      <!-- Dynamic content -->
-    </div>
-  </div>
-
-  <script>
-    (function() {
-      let rendered = false;
-
-      // Debug mock data for testing outside BizChat
-      const DEBUG_DATA = {
-        title: "Debug Title",
-        items: [
-          { name: "Item 1", value: "Value 1" },
-          { name: "Item 2", value: "Value 2" }
-        ]
-      };
-
-      // Apply theme from openai.theme or browser preference
-      function applyTheme() {
-        if (window.openai && window.openai.theme) {
-          const theme = window.openai.theme.toLowerCase();
-          console.log('Applying theme:', theme);
-          document.body.classList.remove('theme-light', 'theme-dark');
-          if (theme === 'dark') {
-            document.body.classList.add('theme-dark');
-          } else if (theme === 'light') {
-            document.body.classList.add('theme-light');
-          }
-        }
-      }
-      applyTheme();
-
-      // Debug logging
-      console.log('=== WIDGET DEBUG ===');
-      console.log('window.openai:', window.openai);
-      if (window.openai) {
-        console.log('toolOutput:', window.openai.toolOutput);
-        console.log('theme:', window.openai.theme);
-      }
-
-      function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str || '';
-        return div.innerHTML;
-      }
-
-      function renderWidget(data) {
-        console.log('renderWidget called with:', data);
-        if (!data) return;
-        rendered = true;
-
-        document.getElementById('title').textContent = data.title || 'Untitled';
-        document.getElementById('subtitle').textContent =
-          `${data.items?.length || 0} items`;
-
-        const content = document.getElementById('content');
-        if (data.items && data.items.length > 0) {
-          content.innerHTML = data.items.map(item => `
-            <div class="card">
-              <strong>${escapeHtml(item.name)}</strong>
-              <p style="color: var(--secondary-text); margin-top: 4px;">
-                ${escapeHtml(item.value)}
-              </p>
-            </div>
-          `).join('');
-        } else {
-          content.innerHTML = '<p style="color: var(--secondary-text);">No items</p>';
-        }
-      }
-
-      function getWidgetData() {
-        // Priority: toolOutput > widgetState > structuredContent > data > DEBUG
-        if (window.openai) {
-          return window.openai.toolOutput ||
-                 window.openai.widgetState ||
-                 window.openai.structuredContent ||
-                 window.openai.data ||
-                 null;
-        }
-        // Fallback for local testing
-        console.log('No window.openai - using DEBUG_DATA');
-        return DEBUG_DATA;
-      }
-
-      function initialize() {
-        const data = getWidgetData();
-        if (data) {
-          renderWidget(data);
-        }
-
-        // Listen for state changes
-        if (window.openai && typeof window.openai.onStateChange === 'function') {
-          window.openai.onStateChange(function(newState) {
-            console.log('onStateChange:', newState);
-            renderWidget(newState);
-          });
-        }
-      }
-
-      initialize();
-
-      // Poll if not rendered (data might arrive late)
-      if (!rendered) {
-        let attempts = 0;
-        const maxAttempts = 50;
-        const poll = setInterval(function() {
-          attempts++;
-          const data = getWidgetData();
-          if (data) {
-            renderWidget(data);
-            clearInterval(poll);
-          } else if (attempts >= maxAttempts) {
-            clearInterval(poll);
-            document.getElementById('title').textContent = 'Unable to load';
-          }
-        }, 100);
-      }
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initialize);
-      }
-    })();
-  </script>
+  <div id="root"></div>
+  <script type="module" src="./main.tsx"></script>
 </body>
 </html>
+
+// main.tsx
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { FluentProvider, webDarkTheme, webLightTheme } from "@fluentui/react-components";
+import { Widget } from "./Widget";
+import { useOpenAiGlobal } from "../hooks/useOpenAiGlobal";
+
+function App() {
+  const theme = (useOpenAiGlobal<string>("theme") ?? "light").toLowerCase();
+  return (
+    <FluentProvider theme={theme === "dark" ? webDarkTheme : webLightTheme}>
+      <Widget />
+    </FluentProvider>
+  );
+}
+
+createRoot(document.getElementById("root")!).render(<App />);
+
+// Widget.tsx
+import React from "react";
+import {
+  Body1,
+  Card,
+  Table,
+  TableBody,
+  TableCell,
+  TableCellLayout,
+  TableHeader,
+  TableHeaderCell,
+  TableRow,
+  Title3,
+  makeStyles,
+  tokens,
+} from "@fluentui/react-components";
+import { useOpenAiGlobal } from "../hooks/useOpenAiGlobal";
+
+type WidgetData = {
+  title?: string;
+  items?: Array<{ name: string; value: string }>;
+};
+
+const useStyles = makeStyles({
+  root: { padding: "16px", display: "grid", gap: "12px" },
+  empty: { color: tokens.colorNeutralForeground3 },
+});
+
+export function Widget() {
+  const styles = useStyles();
+  const data = useOpenAiGlobal<WidgetData>("toolOutput") ?? { title: "Untitled", items: [] };
+
+  if (!data.items?.length) {
+    return <div className={styles.root}><Body1 className={styles.empty}>No items</Body1></div>;
+  }
+
+  return (
+    <div className={styles.root}>
+      <Title3>{data.title ?? "Untitled"}</Title3>
+      <Card>
+        <Table size="small">
+          <TableHeader>
+            <TableRow>
+              <TableHeaderCell>Name</TableHeaderCell>
+              <TableHeaderCell>Value</TableHeaderCell>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.items.map((item, idx) => (
+              <TableRow key={idx}>
+                <TableCell><TableCellLayout>{item.name}</TableCellLayout></TableCell>
+                <TableCell>{item.value}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
+  );
+}
 ```
 
 ## Data Access Pattern
 
-```javascript
-// Priority order for data access
-const data = window.openai.toolOutput ||      // Primary: MCP tool response
-             window.openai.widgetState ||     // Alternative state
-             window.openai.structuredContent || // Structured content
-             window.openai.data ||            // Generic data
-             DEBUG_DATA;                      // Local testing fallback
+```tsx
+import { useEffect, useState } from "react";
+
+type OpenAIKey =
+  | "toolOutput"
+  | "widgetState"
+  | "structuredContent"
+  | "data"
+  | "theme"
+  | "displayMode";
+
+declare global {
+  interface Window {
+    openai?: Record<string, unknown>;
+  }
+}
+
+export function useOpenAiGlobal<T = unknown>(key: OpenAIKey): T | undefined {
+  const [value, setValue] = useState<T | undefined>(() => window.openai?.[key] as T | undefined);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const next = window.openai?.[key] as T | undefined;
+      setValue((prev) => (JSON.stringify(prev) !== JSON.stringify(next) ? next : prev));
+    }, 200);
+
+    return () => clearInterval(id);
+  }, [key]);
+
+  return value;
+}
+
+// Priority order for widget content data
+const data = useOpenAiGlobal("toolOutput") ??
+             useOpenAiGlobal("widgetState") ??
+             useOpenAiGlobal("structuredContent") ??
+             useOpenAiGlobal("data");
 ```
 
 ## Theme Support Pattern
 
-```javascript
-function applyTheme() {
-  if (window.openai && window.openai.theme) {
-    const theme = window.openai.theme.toLowerCase();
-    document.body.classList.remove('theme-light', 'theme-dark');
-    document.body.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-light');
-  }
-  // Otherwise falls back to prefers-color-scheme media query
+```tsx
+import { FluentProvider, webDarkTheme, webLightTheme } from "@fluentui/react-components";
+
+function ThemedRoot({ children }: { children: React.ReactNode }) {
+  const theme = (window.openai?.theme as string | undefined)?.toLowerCase() ?? "light";
+
+  return (
+    <FluentProvider theme={theme === "dark" ? webDarkTheme : webLightTheme}>
+      {children}
+    </FluentProvider>
+  );
 }
 ```
 
 ## CSS Variables (Required)
 
-Always define at `:root` level with dark mode override:
+Use Fluent tokens first. If custom CSS is needed, keep variables at `:root` and support dark mode:
 
 ```css
 :root {
-  --text-color: #1a1a1a;
-  --secondary-text: #666;
-  --border-color: #e5e5e5;
-  --card-bg: #ffffff;
-  --hover-bg: #f5f5f5;
-  --bg-color: #f9fafb;
+  --widget-surface: #f9fafb;
+  --widget-card-bg: #ffffff;
+  --widget-border: #e5e7eb;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text-color: #f5f5f5;
-    --secondary-text: #a3a3a3;
-    --border-color: #404040;
-    --card-bg: #262626;
-    --hover-bg: #333333;
-    --bg-color: #1a1a1a;
+    --widget-surface: #1b1b1b;
+    --widget-card-bg: #262626;
+    --widget-border: #3f3f46;
   }
 }
 
@@ -327,42 +210,52 @@ body.theme-light { /* Same as light :root */ }
 
 Always include fallback data for local testing:
 
-```javascript
+```tsx
 const DEBUG_DATA = {
-  // Match your structuredContent shape
   title: "Debug Mode",
-  items: [
-    { name: "Test Item", value: "Test Value" }
-  ]
+  items: [{ name: "Test Item", value: "Test Value" }],
 };
 
 function getWidgetData() {
   if (window.openai) {
-    return window.openai.toolOutput || /* ... */;
+    return window.openai.toolOutput ||
+           window.openai.widgetState ||
+           window.openai.structuredContent ||
+           window.openai.data ||
+           null;
   }
-  return DEBUG_DATA; // Local testing
+
+  return DEBUG_DATA;
 }
 ```
 
 ## XSS Prevention
 
-Always escape user-provided content:
+Prefer React rendering over `innerHTML`. React escapes text content by default:
 
-```javascript
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str || '';
-  return div.innerHTML;
-}
+```tsx
+// Safe by default in React
+<Body1>{userData}</Body1>
 
-// Usage
-content.innerHTML = `<span>${escapeHtml(userData)}</span>`;
+// Avoid raw HTML unless trusted and sanitized first
+// <div dangerouslySetInnerHTML={{ __html: trustedHtml }} />
 ```
 
 ## Action Buttons
 
-```html
-<a href="mailto:${escapeHtml(email)}" class="btn primary">Email</a>
-<a href="https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(email)}"
-   class="btn" target="_blank">Chat</a>
+```tsx
+import { Button } from "@fluentui/react-components";
+
+<Button appearance="primary" as="a" href={`mailto:${email}`}>
+  Email
+</Button>
+
+<Button
+  appearance="outline"
+  as="a"
+  target="_blank"
+  href={`https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(email)}`}
+>
+  Chat
+</Button>
 ```

@@ -11,7 +11,7 @@ Parses Teams meeting chat messages for action-oriented language — commitments,
 ## Prerequisites
 | Requirement | Details |
 |-------------|---------|
-| WorkIQ CLI | User profile, meeting details, chat messages (read queries via `ask_work_iq`) |
+| WorkIQ CLI | User profile, meeting details, chat messages (read queries via `ask`) |
 
 ## Required Inputs
 | Input | Type | Description |
@@ -25,7 +25,7 @@ Parses Teams meeting chat messages for action-oriented language — commitments,
 
 ### Step 1: Retrieve User Profile, Meeting Details, and Attendees
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "What is my profile including display name and time zone? Also find the meeting matching '<meeting_identifier>' on <date> and list all attendees with their names and email addresses."
 )
 ```
@@ -33,7 +33,7 @@ Extract: `displayName`, time zone, attendee list with names and emails.
 
 ### Step 2: Pull Teams Meeting Chat Messages
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Get all chat messages from the Teams meeting '<meeting subject>' held on <date>, including sender names and timestamps."
 )
 ```

@@ -1,0 +1,26 @@
+{
+  "last_sync": "2026-05-19",
+  "source_repo": "OfficeDev/microsoft-365-agents-toolkit",
+  "source_ref": "main",
+  "source_commit": "c461cfb618b81d7934d8098e108340aa9809b51b",
+  "source_prefix": "packages/vscode-extension/skills/microsoft-365-agents-toolkit",
+  "target_skill": "teams-app-developer",
+  "manually_maintained": [
+    "SKILL.md"
+  ],
+  "da_redirect_injected": [
+    "create-project/create-project.md",
+    "provision-deploy/provision-deploy.md"
+  ],
+  "synced_dirs": [
+    "experts",
+    "docs",
+    "toolkit",
+    "test-playground",
+    "test-teams",
+    "troubleshoot",
+    "slack-to-teams",
+    "create-project",
+    "provision-deploy"
+  ]
+}

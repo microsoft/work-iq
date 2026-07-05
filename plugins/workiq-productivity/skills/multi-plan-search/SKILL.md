@@ -20,7 +20,7 @@ Search for tasks across every Planner plan you have access to. Filter by keyword
 ### Step 1: Identify the User
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "What is my profile information including display name, email address, and time zone?"
 )
 ```
@@ -30,7 +30,7 @@ Extract **displayName**, **email**, and **timeZone**.
 ### Step 2: Get All Plans
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "List all Planner plans I have access to, including each plan's name."
 )
 ```
@@ -42,7 +42,7 @@ Collect all plans the user has access to. Note each plan name for subsequent que
 If the user searches by person name, resolve the person:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Look up the person named <person name or email> in the directory. Return their display name and email."
 )
 ```
@@ -53,42 +53,42 @@ Query tasks across plans based on the user's search criteria. Consolidate relate
 
 **Search by assignee:**
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Find all Planner tasks assigned to <person name> across all my plans. For each task include the task title, plan name, assignee, due date, status, and priority."
 )
 ```
 
 **Search by status:**
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Find all Planner tasks with status 'in progress' across all my plans. For each task include the task title, plan name, assignee, due date, and priority."
 )
 ```
 
 **Search by priority:**
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Find all urgent priority Planner tasks across all my plans. For each task include the task title, plan name, assignee, due date, and status."
 )
 ```
 
 **Search by due date:**
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Find all Planner tasks due on or before <date> across all my plans. For each task include the task title, plan name, assignee, due date, status, and priority."
 )
 ```
 
 **Search by keyword:**
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Find all Planner tasks containing '<keyword>' in the title across all my plans. For each task include the task title, plan name, assignee, due date, status, and priority."
 )
 ```
 
 **Combined filters (overdue tasks for a person):**
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Find all overdue Planner tasks assigned to <person name> across all my plans. For each task include the task title, plan name, due date, status, and priority."
 )
 ```
@@ -182,7 +182,7 @@ Sort results by:
 
 | MCP Server | Tool | Purpose |
 |---|---|---|
-| workiq (Local WorkIQ CLI) | `ask_work_iq` | User identity, person lookup, plan discovery, and cross-plan task search with filters |
+| workiq (Local WorkIQ CLI) | `ask` | User identity, person lookup, plan discovery, and cross-plan task search with filters |
 
 ## Tips
 
@@ -212,21 +212,21 @@ The skill fetches all tasks from every plan and applies a case-insensitive clien
 **Find everything overdue assigned to a teammate:**
 > "What tasks is Firstname1 overdue on across all plans?"
 
-The skill resolves "Firstname1" via `ask_work_iq`, queries each plan filtered by assignee, then applies a client-side overdue filter (dueDateTime < today AND status ≠ completed), presenting all overdue items grouped by plan with an assignee summary.
+The skill resolves "Firstname1" via `ask`, queries each plan filtered by assignee, then applies a client-side overdue filter (dueDateTime < today AND status ≠ completed), presenting all overdue items grouped by plan with an assignee summary.
 
 ## Error Handling
 
 **No plans found**
-If `ask_work_iq` returns no plans, the user may not have access to any Planner plans or the WorkIQ CLI connection may have failed. Inform the user and suggest verifying their Microsoft 365 permissions or checking the WorkIQ CLI configuration.
+If `ask` returns no plans, the user may not have access to any Planner plans or the WorkIQ CLI connection may have failed. Inform the user and suggest verifying their Microsoft 365 permissions or checking the WorkIQ CLI configuration.
 
 **Person name cannot be resolved**
-If `ask_work_iq` returns no match for a person name or email, prompt the user to provide the full display name or email address. Avoid proceeding with an unresolved assignee filter, as it will return no results.
+If `ask` returns no match for a person name or email, prompt the user to provide the full display name or email address. Avoid proceeding with an unresolved assignee filter, as it will return no results.
 
 **Task query returns an error or incomplete data**
-If `ask_work_iq` returns an error for a task search, retry with a narrower scope (e.g., search one plan at a time). Note any plans that could not be searched in the output (e.g., "⚠️ Sprint 42: could not retrieve tasks") and continue with available results.
+If `ask` returns an error for a task search, retry with a narrower scope (e.g., search one plan at a time). Note any plans that could not be searched in the output (e.g., "⚠️ Sprint 42: could not retrieve tasks") and continue with available results.
 
 **Large number of plans causes slow response**
-If the user has many plans, a single cross-plan query may return incomplete results. Break the search into multiple `ask_work_iq` calls scoped to individual plans and aggregate the results.
+If the user has many plans, a single cross-plan query may return incomplete results. Break the search into multiple `ask` calls scoped to individual plans and aggregate the results.
 
 **No results match the filter**
-If `ask_work_iq` returns zero matching tasks, confirm the filter criteria with the user (e.g., check spelling of a keyword, verify the assignee name, or widen the date range) rather than returning a silent empty result.
+If `ask` returns zero matching tasks, confirm the filter criteria with the user (e.g., check spelling of a keyword, verify the assignee name, or widen the date range) rather than returning a silent empty result.

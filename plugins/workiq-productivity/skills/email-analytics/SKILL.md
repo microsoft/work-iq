@@ -21,7 +21,7 @@ Get a data‑driven view of your email life. This skill scans your inbox and sen
 ### Step 1: Identify the User
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "What is my profile information including display name and email address?"
 )
 ```
@@ -33,7 +33,7 @@ Extract **displayName** and **mail** for report personalization.
 Pull all received emails across the analysis period:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "List all emails I received in the last <time period>. For each email include the sender name and email, subject, received date and time, read/unread status, importance level, whether it has attachments, and flag status."
 )
 ```
@@ -48,7 +48,7 @@ For longer periods, run multiple queries to capture the full window:
 Pull all sent emails for response analysis:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "List all emails I sent in the last <time period>. For each email include the recipients, subject, sent date and time, and whether it has attachments."
 )
 ```
@@ -166,7 +166,7 @@ A formatted analytics dashboard with bar charts for volume trends, ranked sender
 
 | MCP Server | Tool | Purpose |
 |---|---|---|
-| workiq (Local WorkIQ CLI) | `ask_work_iq` | User identity, email retrieval (received and sent), and message metadata for analytics |
+| workiq (Local WorkIQ CLI) | `ask` | User identity, email retrieval (received and sent), and message metadata for analytics |
 
 ## Tips
 
@@ -200,18 +200,18 @@ Focuses the output on the Top Senders table. Even when requesting a narrow slice
 ## Error Handling
 
 **No emails found for the requested period**
-If `ask_work_iq` returns no email results, verify the time period phrasing (e.g., use "last 30 days" instead of a specific date range). The query is natural-language driven — overly precise date strings may not match. Retry with a broader phrase.
+If `ask` returns no email results, verify the time period phrasing (e.g., use "last 30 days" instead of a specific date range). The query is natural-language driven — overly precise date strings may not match. Retry with a broader phrase.
 
 **Incomplete or partial data**
-If `ask_work_iq` returns fewer results than expected or omits certain metadata fields, compute analytics on the available data. Append a note to the dashboard: *"Some messages could not be fully retrieved and were excluded from analysis."*
+If `ask` returns fewer results than expected or omits certain metadata fields, compute analytics on the available data. Append a note to the dashboard: *"Some messages could not be fully retrieved and were excluded from analysis."*
 
 **Large volumes causing slow response**
 For periods longer than 90 days or inboxes with very high traffic (1 000+ messages), a single query may return incomplete results. In this case:
-- Reduce the analysis window (e.g., analyze one month at a time with separate `ask_work_iq` calls).
+- Reduce the analysis window (e.g., analyze one month at a time with separate `ask` calls).
 - Use `detail level: summary` to rely on aggregate counts only.
 
 **Sent folder unavailable**
 If the sent-mail query returns no results and the user expects sent data, confirm that the account's Sent Items folder is accessible. Set `include sent: false` to proceed with received-email analytics only.
 
 **Identity lookup failure**
-If `ask_work_iq` cannot resolve the user profile, the dashboard still generates but displays the email address (from email results) instead of the display name. No analytics data is lost.
+If `ask` cannot resolve the user profile, the dashboard still generates but displays the email address (from email results) instead of the display name. No analytics data is lost.

@@ -21,7 +21,7 @@ Produce a consolidated summary of activity across multiple Microsoft Teams chann
 ### Step 1: Identify the User
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "What is my profile information including display name, email, and time zone?"
 )
 ```
@@ -33,7 +33,7 @@ Extract **displayName**, **email**, and **timeZone**.
 List all teams and their channels:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "List all Microsoft Teams teams I belong to and their channels."
 )
 ```
@@ -49,7 +49,7 @@ Build a channel inventory:
 For each target channel, fetch recent messages within the lookback window:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Show me the last 30 messages in the '<channel name>' channel of the '<team name>' team including replies. For each message include the sender name, date and time, message content, reply count, any @mentions, reactions count, and any attachments or shared links."
 )
 ```
@@ -97,7 +97,7 @@ For each channel, classify the messages into categories:
 Cast a wider net for the user's mentions:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Find all Teams channel messages that mention me or are directed at me in the last <lookback period>. Include the team name, channel name, sender, date, and message content for each."
 )
 ```
@@ -179,7 +179,7 @@ Action Items Needing You:
 
 | MCP Server | Tool | Purpose |
 |---|---|---|
-| workiq (Local WorkIQ CLI) | `ask_work_iq` | User identity, team/channel discovery, message retrieval, and mention search |
+| workiq (Local WorkIQ CLI) | `ask` | User identity, team/channel discovery, message retrieval, and mention search |
 
 ## Tips
 
@@ -216,21 +216,21 @@ Uses the `Focus` parameter to filter output to **Key Decisions** and **Action It
 ## Error Handling
 
 **No teams or channels found**
-- `ask_work_iq` returns an empty result if the user is not a member of any team, or if the account lacks access to the Teams API.
+- `ask` returns an empty result if the user is not a member of any team, or if the account lacks access to the Teams API.
 - *Resolution:* Confirm the user's account has Microsoft Teams access and is a member of at least one team. Ask the user to specify a team name manually if discovery fails.
 
 **Channel message fetch returns empty or partial results**
-- `ask_work_iq` may return fewer messages than expected if the channel has low activity or if the lookback window predates available message history (Teams message retention policies vary).
+- `ask` may return fewer messages than expected if the channel has low activity or if the lookback window predates available message history (Teams message retention policies vary).
 - *Resolution:* Proceed with available messages and note in the digest that history may be limited. Surface "No messages in period" for those channels in the **Quiet Channels** section rather than failing silently.
 
 **Permission denied on a channel**
-- Private channels require explicit membership; `ask_work_iq` will indicate an access error if the user is not a member of a private channel even within a team they belong to.
+- Private channels require explicit membership; `ask` will indicate an access error if the user is not a member of a private channel even within a team they belong to.
 - *Resolution:* Skip the inaccessible channel, log it as "access restricted" in the digest output, and continue processing remaining channels.
 
 **Search for mentions returns no results**
-- The mentions query via `ask_work_iq` may return empty results for broad queries or large tenants.
+- The mentions query via `ask` may return empty results for broad queries or large tenants.
 - *Resolution:* Fall back to the mentions already captured during the per-channel message retrieval. Note that the mention search could not be completed so the **Your Mentions** section may be incomplete.
 
 **Slow responses with many channels**
-- Querying messages from a large number of channels requires multiple `ask_work_iq` calls and may be slow.
+- Querying messages from a large number of channels requires multiple `ask` calls and may be slow.
 - *Resolution:* Process channels in batches. Inform the user of the delay and suggest narrowing scope with the `Teams` or `Channels` parameters.

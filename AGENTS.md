@@ -11,6 +11,7 @@ work-iq/
 │       └── marketplace.json  # Plugin marketplace registry
 ├── plugins/                  # Plugin packages (skills + MCP servers)
 │   ├── workiq/
+│   ├── workiq-preview/
 │   ├── microsoft-365-agents-toolkit/
 │   └── workiq-productivity/
 ├── server.json               # MCP server manifest
@@ -28,6 +29,7 @@ This repo is a [Copilot CLI plugin marketplace](https://docs.github.com/en/copil
 
 ```bash
 copilot plugin install ./plugins/workiq
+copilot plugin install ./plugins/workiq-preview
 copilot plugin install ./plugins/microsoft-365-agents-toolkit
 copilot plugin install ./plugins/workiq-productivity
 ```
@@ -44,6 +46,7 @@ copilot plugin list
 
 ```bash
 copilot plugin uninstall workiq
+copilot plugin uninstall workiq-preview
 copilot plugin uninstall microsoft-365-agents-toolkit
 copilot plugin uninstall workiq-productivity
 ```
@@ -64,14 +67,20 @@ plugins/<plugin-name>/
 
 ### Available plugins
 
-- **workiq** — Query Microsoft 365 data with natural language. Bundles:
-  - `workiq` skill — Guides usage of the `ask_work_iq` MCP tool for emails, meetings, documents, Teams messages, and people
-  - MCP server (`@microsoft/workiq`) with tools: `ask_work_iq`, `accept_eula`, `get_debug_link`
+- **workiq** — Full WorkIQ tool surface for Microsoft 365 (read + write). Bundles:
+  - `workiq` skill — Guides usage of `ask` for semantic questions plus the entity tools for fast, structured M365 reads and writes
+  - Hosted MCP server (`workiq`) with tools: `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `upload_blob_work_iq`, `accept_eula`, `get_debug_link`
+
+- **workiq-preview** — Preview build with the full WorkIQ tool surface (read + write). Bundles:
+  - `workiq-preview` skill — Guides usage of `ask_work_iq` for semantic questions plus the entity tools for fast, structured M365 reads and writes
+  - Hosted MCP server (`workiq-preview`) with tools: `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `upload_blob_work_iq`, `accept_eula`, `get_debug_link`
 
 - **microsoft-365-agents-toolkit** — Toolkit for building M365 Copilot declarative agents. Bundles:
   - `install-atk` skill — Install or update the M365 Agents Toolkit CLI and VS Code extension
   - `declarative-agent-developer` skill — Scaffolding, JSON manifest authoring, capability configuration, deployment
+  - `teams-app-developer` skill — Build, test, and deploy code-based Teams apps: bots, CEA, tabs, message extensions, Agents Playground, Azure provision/deploy, and Slack-to-Teams migration
   - `ui-widget-developer` skill — Build MCP servers with OpenAI Apps SDK widget rendering for Copilot Chat
+  - `m365-agent-evaluator` skill — Generate, run, and analyze evaluation suites for M365 Copilot declarative agents
 
 - **workiq-productivity** — Read-only WorkIQ productivity insights. Bundles:
   - `action-item-extractor` skill — Extract action items with owners, deadlines, and priorities

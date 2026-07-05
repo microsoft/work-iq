@@ -22,7 +22,7 @@ Audit all Microsoft Teams channels across your teams to assess activity levels a
 ### Step 1: Identify the User
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "What is my profile information including display name, email, and time zone?"
 )
 ```
@@ -34,7 +34,7 @@ Extract **displayName**, **email**, and **timeZone** for date calculations.
 List every team and their channels:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "List all Microsoft Teams teams I belong to. For each team, list all channels including the channel name, description, type (standard, private, shared), and creation date."
 )
 ```
@@ -48,7 +48,7 @@ Build an inventory of every channel:
 If the response is too large or truncated, query teams individually:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "List all channels in the '<team name>' team including channel name, description, type, and creation date."
 )
 ```
@@ -58,7 +58,7 @@ workiq-ask_work_iq (
 For each channel (or batch of channels within a team), pull recent messages to measure activity:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Show me the 10 most recent messages in the '<channel name>' channel of the '<team name>' team. For each message include the sender, date, content summary, reply count, and whether it was from a bot or connector."
 )
 ```
@@ -76,7 +76,7 @@ For each channel, calculate:
 For each channel (especially those flagged as low‑activity):
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "How many members are in the '<channel name>' channel of the '<team name>' team? List the member count."
 )
 ```
@@ -195,7 +195,7 @@ Compare channel names and descriptions across teams to find potential duplicates
 
 | MCP Server | Tool | Purpose |
 |---|---|---|
-| workiq (Local WorkIQ CLI) | `ask_work_iq` | User identity, team/channel discovery, message activity retrieval, and membership data |
+| workiq (Local WorkIQ CLI) | `ask` | User identity, team/channel discovery, message activity retrieval, and membership data |
 
 ## Tips
 
@@ -230,15 +230,15 @@ Runs a full scan but filters the output to dead channels (90+ days without posts
 ## Error Handling
 
 **Cannot retrieve user details**
-- Cause: `ask_work_iq` returns an authentication or permission error.
+- Cause: `ask` returns an authentication or permission error.
 - Action: Re-authenticate and retry. Ensure the WorkIQ CLI has proper Microsoft 365 permissions.
 
 **Team list is empty or incomplete**
-- Cause: `ask_work_iq` returns no teams or only a subset of expected teams.
+- Cause: `ask` returns no teams or only a subset of expected teams.
 - Action: Confirm the user is an active member of the expected teams in the Teams admin center. Guest accounts may have restricted visibility.
 
 **Channel message retrieval fails for one or more channels**
-- Cause: `ask_work_iq` returns an error or no data for private or shared channels where the user lacks membership.
+- Cause: `ask` returns an error or no data for private or shared channels where the user lacks membership.
 - Action: The audit skips inaccessible channels and notes them in the report as `⚠️ Access Restricted`. Request channel membership or ask a channel owner to run the audit.
 
 **No messages returned but channel exists**
@@ -246,9 +246,9 @@ Runs a full scan but filters the output to dead channels (90+ days without posts
 - Action: The channel is treated as **Dead** (0 days activity) and flagged for archiving. Verify manually before archiving if the channel was recently created.
 
 **Member list unavailable**
-- Cause: `ask_work_iq` cannot retrieve membership data for a private channel due to permission restrictions.
+- Cause: `ask` cannot retrieve membership data for a private channel due to permission restrictions.
 - Action: Member count and activity ratio are omitted for that channel; all other metrics are still reported. The channel is still classified by message activity alone.
 
 **Large workspace timeouts**
-- Cause: Auditing teams with dozens of channels may require many `ask_work_iq` calls and take significant time.
+- Cause: Auditing teams with dozens of channels may require many `ask` calls and take significant time.
 - Action: Scope the audit to a single team (e.g., "audit the Marketing team only") to reduce call volume, or run the audit during off-peak hours.

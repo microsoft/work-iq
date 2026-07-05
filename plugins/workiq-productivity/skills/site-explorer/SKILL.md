@@ -21,7 +21,7 @@ Navigate your SharePoint environment interactively. Search for sites, browse the
 ### Step 1: Identify the User
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "What is my profile information including display name and email address?"
 )
 ```
@@ -30,14 +30,14 @@ workiq-ask_work_iq (
 
 **Search by name:**
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Search for SharePoint sites matching '<site name or partial name>'. For each site return the site name and URL."
 )
 ```
 
 **Browse top sites (no specific name):**
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "What SharePoint sites do I have access to? List each site's name and URL."
 )
 ```
@@ -61,7 +61,7 @@ Which site would you like to explore?
 Retrieve all lists and document libraries on the selected site:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "What lists and document libraries are on the '<site name>' SharePoint site? For each list include the name, item count, and last modified date. For each document library include the name and file count."
 )
 ```
@@ -95,7 +95,7 @@ Display:
 View column definitions for a list:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "What are the columns in the '<list name>' list on the '<site name>' SharePoint site? For each column include the name, data type, whether it is required, and description."
 )
 ```
@@ -123,7 +123,7 @@ Display:
 Retrieve list items:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Show me the items in the '<list name>' list on the '<site name>' SharePoint site. Include all columns for each item."
 )
 ```
@@ -150,7 +150,7 @@ Display items in a table format, using column names as headers. Show the first 2
 Browse a library's contents:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Show me the files and folders in the '<library name>' document library on the '<site name>' SharePoint site. For each item include the name, type (file or folder), size, and last modified date."
 )
 ```
@@ -177,7 +177,7 @@ Display:
 ### Step 7: Browse Into Folders
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Show me the contents of the '<folder name>' folder in the '<library name>' document library on the '<site name>' SharePoint site. Include file name, type, size, and last modified date."
 )
 ```
@@ -187,7 +187,7 @@ workiq-ask_work_iq (
 For text file contents:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Show me the contents of the file '<file name>' in the '<library name>' document library on the '<site name>' SharePoint site."
 )
 ```
@@ -195,7 +195,7 @@ workiq-ask_work_iq (
 For metadata only:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "What are the metadata details for the file '<file name>' in the '<library name>' document library on the '<site name>' SharePoint site? Include size, type, created date, modified date, and author."
 )
 ```
@@ -203,7 +203,7 @@ workiq-ask_work_iq (
 ### Step 9: Search for Files
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Search for files matching '<file name or keyword>' across my SharePoint sites. Include the file name, site, library, size, and last modified date for each result."
 )
 ```
@@ -211,7 +211,7 @@ workiq-ask_work_iq (
 ### Step 10: List Subsites
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "What are the subsites under the '<site name>' SharePoint site? Include each subsite's name and URL."
 )
 ```
@@ -228,7 +228,7 @@ workiq-ask_work_iq (
 
 | MCP Server | Tool | Purpose |
 |---|---|---|
-| workiq (Local WorkIQ CLI) | `ask_work_iq` | Site discovery, list/library browsing, schema inspection, item retrieval, file preview, and file search |
+| workiq (Local WorkIQ CLI) | `ask` | Site discovery, list/library browsing, schema inspection, item retrieval, file preview, and file search |
 
 ## Tips
 
@@ -243,7 +243,7 @@ workiq-ask_work_iq (
 
 > "What SharePoint sites do I have access to?"
 
-Claude queries your accessible sites via `ask_work_iq`, then presents them in a numbered table. You can select any site by number or name to continue exploring.
+Claude queries your accessible sites via `ask`, then presents them in a numbered table. You can select any site by number or name to continue exploring.
 
 ---
 
@@ -251,7 +251,7 @@ Claude queries your accessible sites via `ask_work_iq`, then presents them in a 
 
 > "Show me the columns and items in the Vendor Tracker list on the Procurement site."
 
-1. Claude searches for the Procurement site via `ask_work_iq`.
+1. Claude searches for the Procurement site via `ask`.
 2. Retrieves all lists and locates Vendor Tracker.
 3. Fetches the list schema to display column names, types, and required flags.
 4. Retrieves items to show the first 20 rows in a table, with a prompt to filter or export.
@@ -262,17 +262,17 @@ Claude queries your accessible sites via `ask_work_iq`, then presents them in a 
 
 > "Open the Shared Documents library on the Project Alpha site and show me what's in the Contracts folder."
 
-1. Claude resolves the site via `ask_work_iq`.
+1. Claude resolves the site via `ask`.
 2. Lists document libraries on the site.
 3. Shows top-level contents of Shared Documents.
 4. Drills into the Contracts folder.
-5. If you say "read README.md", Claude previews its contents inline via `ask_work_iq`.
+5. If you say "read README.md", Claude previews its contents inline via `ask`.
 
 ## Error Handling
 
 ### Site Not Found
 
-**Symptom:** `ask_work_iq` returns no results for a site name search.
+**Symptom:** `ask` returns no results for a site name search.
 
 **Resolution:**
 - Verify the site name or URL is correct (check spelling, use a partial name for broader search).
@@ -283,7 +283,7 @@ Claude queries your accessible sites via `ask_work_iq`, then presents them in a 
 
 ### Permission Denied
 
-**Symptom:** `ask_work_iq` indicates a permission or access error when querying a site, list, library, or file.
+**Symptom:** `ask` indicates a permission or access error when querying a site, list, library, or file.
 
 **Resolution:**
 - You do not have access to that resource. Contact the site owner to request permission.
@@ -293,7 +293,7 @@ Claude queries your accessible sites via `ask_work_iq`, then presents them in a 
 
 ### List or Library Not Found
 
-**Symptom:** `ask_work_iq` returns lists but the expected list is missing, or no libraries are reported.
+**Symptom:** `ask` returns lists but the expected list is missing, or no libraries are reported.
 
 **Resolution:**
 - The list may be hidden (set to not appear in navigation). Ask the site admin to confirm it exists.
@@ -303,7 +303,7 @@ Claude queries your accessible sites via `ask_work_iq`, then presents them in a 
 
 ### File Too Large to Preview
 
-**Symptom:** `ask_work_iq` cannot return the contents of a large file.
+**Symptom:** `ask` cannot return the contents of a large file.
 
 **Resolution:**
 - Ask for file metadata only (size, type, modified date) instead of full content.
@@ -313,7 +313,7 @@ Claude queries your accessible sites via `ask_work_iq`, then presents them in a 
 
 ### Inconsistent Search Results
 
-**Symptom:** `ask_work_iq` returns fewer site results than expected.
+**Symptom:** `ask` returns fewer site results than expected.
 
 **Resolution:**
 - SharePoint search indexes may lag by a few minutes after site creation or rename.

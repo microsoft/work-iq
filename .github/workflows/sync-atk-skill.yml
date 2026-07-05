@@ -1,0 +1,112 @@
+name: Sync ATK Skill
+
+on:
+  schedule:
+    # Run every Monday at 09:00 UTC
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "ATK branch, tag, or commit SHA to sync from"
+        required: false
+        default: "main"
+      dry_run:
+        description: "Dry run (no files written, no PR created)"
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout work-iq
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve ATK ref
+        id: atk
+        env:
+          REF: ${{ github.event.inputs.ref || 'main' }}
+        run: |
+          COMMIT=$(curl -sSf \
+            -H "User-Agent: sync-atk-skill-workflow" \
+            "https://api.github.com/repos/OfficeDev/microsoft-365-agents-toolkit/commits/$REF" \
+            | jq -r '.sha')
+          echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "ATK ref: $REF -> $COMMIT"
+
+      - name: Check if already up-to-date
+        id: check
+        run: |
+          LAST=$(jq -r '.source_commit // ""' scripts/sync-manifest.json 2>/dev/null || echo "")
+          echo "last_commit=$LAST" >> "$GITHUB_OUTPUT"
+          if [ "$LAST" = "${{ steps.atk.outputs.commit }}" ]; then
+            echo "up_to_date=true" >> "$GITHUB_OUTPUT"
+            echo "Already up-to-date at $LAST, nothing to do."
+          else
+            echo "up_to_date=false" >> "$GITHUB_OUTPUT"
+            echo "New commit available: $LAST -> ${{ steps.atk.outputs.commit }}"
+          fi
+
+      - name: Run sync script
+        if: steps.check.outputs.up_to_date == 'false'
+        shell: pwsh
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          $dryRun = $env:DRY_RUN -eq 'true'
+          $params = @{ Ref = "${{ steps.atk.outputs.ref }}" }
+          if ($dryRun) { $params['DryRun'] = $true }
+          ./scripts/sync-atk-skill.ps1 @params
+
+      - name: Check for changes
+        if: steps.check.outputs.up_to_date == 'false'
+        id: git_status
+        run: |
+          git diff --quiet && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create pull request
+        if: |
+          steps.check.outputs.up_to_date == 'false' &&
+          steps.git_status.outputs.changed == 'true' &&
+          github.event.inputs.dry_run != 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: |
+            chore: sync teams-app-developer skill from ATK ${{ steps.atk.outputs.commit }}
+          branch: chore/sync-atk-skill-${{ steps.atk.outputs.commit }}
+          delete-branch: true
+          title: "chore: sync teams-app-developer skill from ATK"
+          body: |
+            Automated sync of the `teams-app-developer` skill from
+            [OfficeDev/microsoft-365-agents-toolkit](https://github.com/OfficeDev/microsoft-365-agents-toolkit).
+
+            | Field | Value |
+            |-------|-------|
+            | Source ref | `${{ steps.atk.outputs.ref }}` |
+            | Source commit | `${{ steps.atk.outputs.commit }}` |
+            | Previous commit | `${{ steps.check.outputs.last_commit }}` |
+
+            **Manually maintained files (not synced):** `SKILL.md`
+
+            **DA redirect notices** were re-injected into:
+            - `create-project/create-project.md`
+            - `provision-deploy/provision-deploy.md`
+
+            Please review before merging.
+          labels: automated,skill-sync
+
+      - name: No changes detected
+        if: steps.check.outputs.up_to_date == 'false' && steps.git_status.outputs.changed == 'false'
+        run: echo "Sync ran but no file changes detected — skill content is already current."
+
+      - name: Already up-to-date
+        if: steps.check.outputs.up_to_date == 'true'
+        run: echo "Skipped — already at ATK commit ${{ steps.atk.outputs.commit }}"

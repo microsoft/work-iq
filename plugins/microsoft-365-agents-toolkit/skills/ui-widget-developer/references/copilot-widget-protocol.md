@@ -8,7 +8,7 @@ Language-agnostic protocol requirements for MCP servers that render widgets in M
 - [Server Capabilities](#server-capabilities)
 - [MCP Resources for Widgets](#mcp-resources-for-widgets)
 - [MCP Tool Response Format](#mcp-tool-response-format)
-- [Widget HTML Serving](#widget-html-serving)
+- [Widget Shell and Asset Serving](#widget-shell-and-asset-serving)
 - [Widget-Resource-Tool Triplet](#widget-resource-tool-triplet)
 - [Environment Configuration](#environment-configuration)
 - [Adaptation Checklist: Existing MCP Server](#adaptation-checklist-existing-mcp-server)
@@ -107,7 +107,7 @@ Without `resources: {}`, Copilot will not call `resources/list` or `resources/re
 
 ## MCP Resources for Widgets
 
-Each widget requires an MCP resource registration. Resources tell Copilot how to fetch widget HTML via the MCP protocol.
+Each widget requires an MCP resource registration. Resources tell Copilot how to fetch the widget shell via the MCP protocol.
 
 **`resources/list` response:**
 ```json
@@ -137,7 +137,7 @@ Each widget requires an MCP resource registration. Resources tell Copilot how to
     {
       "uri": "ui://widget/my-widget.html",
       "mimeType": "text/html+skybridge",
-      "text": "<!DOCTYPE html><html>...widget HTML...</html>",
+      "text": "<!DOCTYPE html><html>...widget shell HTML...</html>",
       "_meta": {
         "openai/widgetDomain": "https://your-server.example.com",
         "openai/widgetCSP": {
@@ -187,22 +187,24 @@ Tool responses must include three parts: a text summary, structured data for the
 | `_meta.openai/toolInvocation/invoking` | Status text shown while tool executes |
 | `_meta.openai/toolInvocation/invoked` | Status text shown when tool completes |
 
-## Widget HTML Serving
+## Widget Shell and Asset Serving
 
-Your server must serve widget HTML files over HTTP at a `/widgets/` route:
+Your server must serve widget shell HTML files over HTTP at a `/widgets/` route:
 
 ```
 GET /widgets/my-widget.html → 200 OK (Content-Type: text/html, Access-Control-Allow-Origin: <reflected-origin>)
 ```
 
 Requirements:
-- Serve files from a `widgets/` directory (or equivalent)
+- Serve shell files from a `widgets/` directory (or equivalent)
+- Serve built JS/CSS bundles from an `/assets/` route
 - Apply the same origin-checking CORS as the `/mcp` endpoint (see [CORS Configuration](#cors-configuration))
-- Guard against path traversal (ensure resolved paths stay within the widgets directory)
+- Guard against path traversal for both widgets and assets directories
 
-Widget HTML uses the OpenAI Apps SDK — see [widget-patterns.md](widget-patterns.md) for templates and patterns. Key points:
-- Data is available at `window.openai.toolOutput`
-- Theme detection via `window.openai.theme` or `prefers-color-scheme`
+Widgets should be built with React + Fluent UI and loaded by the shell. See [widget-patterns.md](widget-patterns.md) for templates and patterns. Key points:
+- Wrap app UI with `FluentProvider` (`webLightTheme`/`webDarkTheme`)
+- Build UI with `@fluentui/react-components` and `@fluentui/react-icons`
+- Read data from `window.openai` through shared hooks (for example, `useOpenAiGlobal("toolOutput")`)
 - Include debug fallback data for local testing
 
 ## Widget-Resource-Tool Triplet
@@ -211,16 +213,16 @@ Every widget requires three coordinated parts. If any part is missing, the widge
 
 | Part | What it does | Key identifiers |
 |------|-------------|-----------------|
-| **Widget HTML** | The rendered UI served via HTTP | `GET /widgets/<name>.html` |
-| **MCP Resource** | Serves widget HTML to Copilot via MCP protocol | `uri: "ui://widget/<name>.html"`, `mimeType: "text/html+skybridge"` |
+| **Widget shell + assets** | Shell returned by resource loads built React bundle | `GET /widgets/<name>.html`, `GET /assets/<name>.js` |
+| **MCP Resource** | Serves shell HTML to Copilot via MCP protocol | `uri: "ui://widget/<name>.html"`, `mimeType: "text/html+skybridge"` |
 | **MCP Tool** | Triggers widget rendering, returns data | `_meta.openai/outputTemplate: "ui://widget/<name>.html"` |
 
 **When a part is missing:**
-- **No Resource** → Copilot can't fetch widget HTML, widget won't render
+- **No Resource** → Copilot can't fetch the shell, widget won't render
 - **No Tool** → Widget exists but nothing triggers it
-- **No Widget HTML** → Resource returns empty/404, tool invocation shows empty widget
+- **No shell/assets** → Resource loads empty/404 or missing scripts, tool invocation shows empty widget
 
-Always create all three parts together for each new widget. See [best-practices.md](best-practices.md#16-widget-resource-tool-triplet) for additional detail.
+Always create all three parts together for each new widget. See [best-practices.md](best-practices.md#20-widget-resource-tool-triplet) for additional detail.
 
 ## Environment Configuration
 
@@ -251,12 +253,12 @@ The resource `_meta` CSP fields must reference these values so that Copilot's Co
 If you have an existing MCP server and want to add Copilot widget support, complete this checklist:
 
 - [ ] Add `resources: {}` capability to your server's `initialize` response (see [Server Capabilities](#server-capabilities))
-- [ ] Create widget HTML files in a `widgets/` directory (see [widget-patterns.md](widget-patterns.md) for templates)
+- [ ] Create widget shell HTML files in `widgets/` and build React + Fluent UI bundles into `assets/` (see [widget-patterns.md](widget-patterns.md))
 - [ ] Register MCP resources with `ui://widget/<name>.html` URIs and `text/html+skybridge` mime type (see [MCP Resources for Widgets](#mcp-resources-for-widgets))
 - [ ] Add `_meta` to resources with CSP configuration (`openai/widgetDomain`, `openai/widgetCSP`)
-- [ ] Implement `resources/read` handler that returns widget HTML for each registered URI
+- [ ] Implement `resources/read` handler that returns shell HTML for each registered URI
 - [ ] Update tool responses to return `structuredContent` + `_meta` with `openai/outputTemplate` (see [MCP Tool Response Format](#mcp-tool-response-format))
-- [ ] Add `/widgets/*.html` HTTP serving route with origin-checking CORS (see [CORS Configuration](#cors-configuration))
+- [ ] Add `/widgets/*.html` and `/assets/*` HTTP serving routes with origin-checking CORS (see [CORS Configuration](#cors-configuration))
 - [ ] Configure CORS on `/mcp` endpoint (see [CORS Configuration](#cors-configuration))
 - [ ] Create `mcpPlugin.json` manifest (see [plugin-schema.md](plugin-schema.md))
 - [ ] Set up devtunnel for local testing (see [devtunnels.md](devtunnels.md))

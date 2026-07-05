@@ -1,9 +1,13 @@
 {
   "mcpServers": {
     "workiq": {
-      "command": "npx",
-      "args": ["-y", "@microsoft/workiq@latest", "mcp"],
-      "tools": ["*"]
+      "type": "http",
+      "url": "https://workiq.svc.cloud.microsoft/mcp",
+      "oauthClientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87",
+      "oauthPublicClient": true,
+      "auth": {
+        "redirectPort": 12798
+      }
     }
   }
 }

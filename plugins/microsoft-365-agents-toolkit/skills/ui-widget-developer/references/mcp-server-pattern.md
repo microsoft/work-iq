@@ -381,7 +381,7 @@ httpServer.listen(port, () => {
 
 For local development, the MCP server can serve static assets (JS, CSS, images) that widgets reference via `<script>` and `<link>` tags. This avoids needing a separate asset server during development.
 
-> **Note**: This pattern is for local development convenience only. For production distribution, assets should be hosted on a CDN or bundled into the widget HTML.
+> **Note**: This pattern is for local development convenience only. For production distribution, assets should be hosted on a CDN or packaged with your deployment pipeline.
 
 Add an `/assets/*` route to the HTTP server:
 
@@ -435,7 +435,7 @@ When the MCP server is behind a devtunnel, widgets that load external JS/CSS nee
 // Widget base URL: use tunnel URL in remote mode, localhost in local mode
 const widgetBaseUrl = process.env.WIDGET_BASE_URL ?? process.env.MCP_SERVER_URL ?? `http://localhost:${port}`;
 
-// Use in widget HTML templates or pass via structuredContent
+// Use in widget templates or pass via structuredContent
 const structuredContent = {
   baseUrl: widgetBaseUrl,
   // ... other widget data

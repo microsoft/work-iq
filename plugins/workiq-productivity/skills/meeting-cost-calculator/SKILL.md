@@ -21,7 +21,7 @@ Analyzes your calendar to compute exactly how much time you spend in meetings ov
 ### Step 1: Get User Profile, Timezone, and Working Hours
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "What is my display name, email address, time zone, and configured working hours (start time, end time, and working days of the week)?"
 )
 ```
@@ -33,7 +33,7 @@ Extract `displayName`, `mail`, `timeZone`, working hours start/end, and working 
 Determine the analysis period from the user's request (default: current week). For multi-week analysis, pull the full range.
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "List all my calendar events from {period start date} to {period end date} including the subject, start time, end time, attendees list with count, whether it is an all-day event, whether it is cancelled, recurrence details, organizer, showAs status, and event type."
 )
 ```
@@ -155,7 +155,7 @@ Compute actionable insights:
 
 | MCP Server | Tool | Purpose |
 |------------|------|---------|
-| workiq (Local WorkIQ CLI) | `ask_work_iq` | Get user profile, timezone, working hours, and retrieve calendar events for the analysis period |
+| workiq (Local WorkIQ CLI) | `ask` | Get user profile, timezone, working hours, and retrieve calendar events for the analysis period |
 
 ## Tips
 
@@ -194,11 +194,11 @@ Claude retrieves four weeks of calendar data, groups recurring series across the
 
 ### Calendar data unavailable or empty
 
-If `ask_work_iq` returns no events for the requested period, confirm the date range is correct and that the authenticated account has calendar read permissions. Remind the user that events on secondary or shared calendars are not included unless those calendars are surfaced in the primary view.
+If `ask` returns no events for the requested period, confirm the date range is correct and that the authenticated account has calendar read permissions. Remind the user that events on secondary or shared calendars are not included unless those calendars are surfaced in the primary view.
 
 ### Timezone or working-hours settings missing
 
-If `ask_work_iq` returns no working hours information, fall back to a standard 40-hour work week (Mon–Fri, 9 AM – 5 PM UTC) and inform the user that results may not reflect their actual schedule. Prompt them to verify timezone settings in their Microsoft 365 profile.
+If `ask` returns no working hours information, fall back to a standard 40-hour work week (Mon–Fri, 9 AM – 5 PM UTC) and inform the user that results may not reflect their actual schedule. Prompt them to verify timezone settings in their Microsoft 365 profile.
 
 ### Attendee count is zero or undefined
 

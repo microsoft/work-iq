@@ -40,6 +40,7 @@ copilot
 
 # 3. Install any plugin
 /plugin install workiq@work-iq
+/plugin install workiq-preview@work-iq
 /plugin install microsoft-365-agents-toolkit@work-iq
 /plugin install workiq-productivity@work-iq
 ```
@@ -170,7 +171,8 @@ workiq mcp
 | Plugin | Description |
 |--------|-------------|
 | [**workiq**](./plugins/workiq/) | Query Microsoft 365 data with natural language — emails, meetings, documents, Teams messages, and more. |
-| [**microsoft-365-agents-toolkit**](./plugins/microsoft-365-agents-toolkit/) | Toolkit for building M365 Copilot declarative agents — scaffolding, manifest authoring, and capability configuration. |
+| [**workiq-preview**](./plugins/workiq-preview/) | **Preview build.** Same natural-language access as `workiq`, plus a broader set of entity tools (fetch, create, update, delete, do-action, call-function, blob upload/download, schema discovery) for direct, structured M365 reads and writes. |
+| [**microsoft-365-agents-toolkit**](./plugins/microsoft-365-agents-toolkit/) | Toolkit for building and evaluating M365 Copilot declarative agents — scaffolding, manifest authoring, capability configuration, and eval workflows. |
 | [**workiq-productivity**](./plugins/workiq-productivity/) | Read-only WorkIQ productivity insights — email triage, meeting costs, org charts, channel audits, and more. |
 
 > 📖 **See [PLUGINS.md](./PLUGINS.md)** for the full plugin catalog with detailed skill listings, example prompts, MCP server info, and installation instructions.

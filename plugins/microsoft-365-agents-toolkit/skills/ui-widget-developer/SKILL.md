@@ -1,18 +1,26 @@
 ---
 name: ui-widget-developer
 description: |
-  Build MCP (Model Context Protocol) servers for Copilot Chat using the OpenAI Apps SDK or MCP Apps SDK widget rendering support (any language). Use this skill when:
+  Build MCP servers for Copilot Chat using the OpenAI Apps SDK or MCP Apps SDK widget rendering support (any language). Use this skill when:
   - Creating MCP servers that integrate with M365 Copilot declarative agents
-  - Building rich interactive widgets (HTML) that render in Copilot Chat
+  - Building rich interactive widgets (React + Fluent UI) that render in Copilot Chat
   - Implementing tools that return structuredContent for widget rendering
   - Adapting an existing MCP server to support Copilot widget rendering
   - Setting up devtunnels for localhost MCP server exposure
   - Configuring mcpPlugin.json manifests with RemoteMCPServer runtime
   Do NOT use this skill for general agent development (scaffolding, manifests, deployment) — use declarative-agent-developer instead. This skill is ONLY for MCP server + widget development.
-  Triggers: "MCP server for Copilot", "OpenAI Apps SDK", "Copilot widget", "structuredContent", "MCP plugin", "devtunnels MCP", "bizchat MCP", "OAI app", "widget rendering", "text/html+skybridge", "UI widget"
+  Triggers: "MCP server for Copilot", "OpenAI Apps SDK", "Copilot widget", "structuredContent", "MCP plugin", "devtunnels MCP", "OAI app", "widget rendering", "UI widget"
 ---
 
 # Copilot MCP Server Development
+
+## Telemetry Tagging
+
+Before running any `atk` CLI commands, set the session environment variable so all CLI invocations are tagged as skill-initiated:
+```bash
+export ATK_CLI_SKILL=true
+```
+Run this once at the start of the session. All subsequent `atk` commands in the same terminal will inherit it.
 
 ## 🔀 PATH SELECTION
 
@@ -33,7 +41,15 @@ description: |
 
 ### MCP Apps: Install ext-apps Plugin
 
-If the user chooses MCP Apps, provide these instructions:
+If the user chooses MCP Apps, do this automatically (do not stop at explanation-only):
+
+1. Run `/plugin marketplace add modelcontextprotocol/ext-apps`
+2. Run `/plugin install mcp-apps@mcp-apps`
+3. Confirm the plugin is available, then invoke the correct ext-apps skill based on user intent
+
+If plugin commands are unavailable in the current environment, provide the exact commands below and ask the user to run them once, then continue by invoking the selected ext-apps skill.
+
+Reference commands:
 
 ```
 To build an MCP App, install the ext-apps plugin from the marketplace:
@@ -51,6 +67,12 @@ After installing, invoke the relevant skill to continue.
 ```
 
 > **Note:** The ext-apps plugin lives in the external `modelcontextprotocol/ext-apps` marketplace — it is not part of this plugin collection.
+
+**Handoff mapping after install:**
+- New MCP app from scratch → `create-mcp-app`
+- Add app UI to existing MCP server → `add-app-to-server`
+- Migrate existing OAI app → `migrate-oai-app`
+- Convert an existing web app → `convert-web-app`
 
 ---
 
@@ -71,6 +93,21 @@ This skill triggers when building MCP servers with OAI app or widget rendering f
 ---
 
 ## 🚨 CRITICAL EXECUTION RULES 🚨
+
+
+**FLUENT UI ENFORCEMENT (REQUIRED):** Widget implementations MUST use React + Fluent UI components. Before writing any widget code, the agent MUST read and follow:
+- `references/widget-patterns.md`
+- `references/best-practices.md`
+**FLUENT UI PACKAGE REQUIREMENT (REQUIRED):** The widget project MUST include Fluent UI dependencies before implementation. At minimum, install and keep these in the widget package dependencies:
+- `@fluentui/react-components`
+- `react`
+- `react-dom`
+
+If any of these packages are missing, install them automatically before continuing with widget code generation.
+
+If the generated widget does not include React entry files (for example `widgets/src/<widget-name>/main.tsx` and a React component file) and Fluent imports from `@fluentui/react-components`, the task is incomplete and MUST be corrected before returning results.
+
+**NO RAW HTML-ONLY WIDGETS (DEFAULT):** Do not implement app content directly with static HTML templates and inline JS as the final widget solution. A minimal shell HTML file is allowed only as a loader for built React assets. Raw/self-contained HTML-only widgets are allowed only when the user explicitly requests a non-React prototype.
 
 **BACKGROUND PROCESSES:** MCP server and devtunnel MUST be spawned as independent OS processes — NOT run inside the agent's shell session. `isBackground: true`, `mode: "async"`, and `Start-Job` all run inside the agent's shell session and will be killed between messages. The only reliable approach is to spawn a detached OS process.
 
@@ -119,7 +156,7 @@ sleep 3 && tail tunnel.log server.log
 
 **There is no exception to this rule.** The most common failure mode is reasoning "the user's request makes it obvious, so asking is redundant." This reasoning is always wrong — invoke `AskUserQuestion` regardless. A user saying "build an MCP server with widgets" is NOT an answer to this question. A user invoking this skill by name is NOT an answer. Only an explicit answer to the question counts. See [PATH SELECTION](#-path-selection) above for the exact question to ask.
 
-**AGENT PROVISIONING:** Re-provisioning is only required when the **agent manifest** changes (e.g., mcpPlugin.json tool definitions, MCP server URL, declarativeAgent.json, instruction.txt). MCP server code changes (tool implementations, widget HTML, server logic) do **NOT** require re-provisioning the agent — running or deploying the server picks up changes automatically.
+**AGENT PROVISIONING:** Re-provisioning is only required when the **agent manifest** changes (e.g., mcpPlugin.json tool definitions, MCP server URL, declarativeAgent.json, instruction.txt). MCP server code changes (tool implementations, React widget code, server logic) do **NOT** require re-provisioning the agent — running or deploying the server picks up changes automatically.
 
 When provisioning is needed:
 1. **Bump the version** in `manifest.json` (increment the patch version, e.g., `1.0.0` → `1.0.1`)
@@ -159,22 +196,24 @@ Other envs: {SHARE_LINK from env/.env.{environment}}
 
 **AGENT PROJECT DELEGATION:** This skill builds MCP servers and widgets, NOT declarative agent projects. If the user's request involves creating or configuring the declarative agent itself (scaffolding, `m365agents.yml`, `m365agents.local.yml`, `declarativeAgent.json`, manifest lifecycle), delegate to the `declarative-agent-developer` skill.
 
-**MCP RESOURCE REGISTRATION:** Every widget MUST have a matching MCP resource. Without resources, Copilot cannot fetch widget HTML through the MCP protocol and widgets will not render.
+**MCP RESOURCE REGISTRATION:** Every widget MUST have a matching MCP resource. Without resources, Copilot cannot fetch widget shells through the MCP protocol and widgets will not render.
 
 For each new widget, complete this checklist:
-1. ☐ Create widget HTML file in `widgets/` directory (see widget-patterns.md)
+1. ☐ Create a widget shell HTML file in `widgets/` and a React widget entry under `widgets/src/<widget-name>/` (see widget-patterns.md)
 2. ☐ Define a `ui://widget/<name>.html` URI constant
 3. ☐ Add a `Resource` entry to the `resources` array with:
    - `uri`: the `ui://widget/<name>.html` URI
    - `mimeType`: `"text/html+skybridge"`
    - `_meta`: CSP config with `openai/widgetDomain` and `openai/widgetCSP` (from environment)
-4. ☐ Add a handler for `resources/read` that returns the widget HTML for this URI
+4. ☐ Add a handler for `resources/read` that returns the widget shell HTML for this URI
 5. ☐ Add the tool with `_meta.openai/outputTemplate` pointing to the same `ui://widget/<name>.html` URI
 6. ☐ Verify the server capabilities include `resources: {}` in the initialize response
 
-**Widget HTML size considerations:**
-- **Simple widgets**: The `resources/read` handler can return the full self-contained HTML (inline CSS/JS)
-- **Complex widgets** (React, large UIs): The resource HTML should be a minimal shell that links to JS/CSS assets served from the MCP server's `/assets/` route:
+**Widget shell + asset considerations:**
+- **Preferred (React + Fluent UI)**: Resource HTML should be a minimal shell that links to built JS/CSS assets served from the MCP server's `/assets/` route.
+- **Exception only**: Self-contained HTML via `resources/read` is for explicit user-requested prototypes only. Default and production path is React + Fluent UI.
+
+Example shell for React build output:
   ```html
   <!doctype html><html><head>
     <script type="module" src="${serverUrl}/assets/my-widget.js"></script>
@@ -218,7 +257,7 @@ Build MCP servers that integrate with Microsoft 365 Copilot Chat and render rich
 ## Architecture
 
 ```
-M365 Copilot ──▶ mcpPlugin.json ──▶ MCP Server ──▶ structuredContent ──▶ HTML Widget
+M365 Copilot ──▶ mcpPlugin.json ──▶ MCP Server ──▶ structuredContent ──▶ React + Fluent UI Widget
      │              (RemoteMCPServer)    (Streamable HTTP)                  (window.openai.toolOutput)
      │
      └── Capabilities (People, etc.) provide data to pass to MCP tools
@@ -237,7 +276,10 @@ project/
 │   └── instruction.txt         # Agent behavior instructions
 ├── mcp-server/
 │   ├── src/index.ts            # Server with Streamable HTTP
-│   ├── widgets/*.html          # OpenAI Apps SDK widgets
+│   ├── widgets/                # Widget shells + React source
+│   │   ├── my-widget.html      # Minimal shell returned by resources/read
+│   │   └── src/my-widget/      # React + Fluent UI source
+│   ├── assets/                 # Built widget bundles served at /assets
 │   └── package.json
 ├── scripts/
 │   ├── setup-devtunnel.sh      # Linux/Mac devtunnel setup
@@ -256,7 +298,7 @@ Your MCP server must implement these protocol requirements to render widgets in 
 3. **Server capabilities** — `initialize` response must declare `resources: {}` and `tools: {}`
 4. **MCP resources** — Register widgets with `ui://widget/<name>.html` URIs, `text/html+skybridge` mime type, and CSP `_meta`
 5. **Tool response format** — Return `content` (text) + `structuredContent` (widget data) + `_meta` with `openai/outputTemplate`
-6. **Widget serving** — HTTP route at `/widgets/*.html` with origin-checking CORS
+6. **Widget serving** — HTTP route at `/widgets/*.html` for shell files and `/assets/*` for built bundles, both with origin-checking CORS
 
 For full protocol details, JSON shapes, and an adaptation checklist for existing MCP servers, see [references/copilot-widget-protocol.md](references/copilot-widget-protocol.md).
 
@@ -310,10 +352,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest)
 See [references/widget-patterns.md](references/widget-patterns.md) for complete examples.
 
 Core requirements:
-- Access data: `window.openai.toolOutput` (primary source)
-- Theme support: `window.openai.theme` or `prefers-color-scheme`
-- Debug fallback: Embedded mock data when `window.openai` unavailable
-- CSS variables for theming at `:root` level
+- Use React + Fluent UI components (`@fluentui/react-components`)
+- Ensure widget package dependencies include `@fluentui/react-components`, `react`, and `react-dom`
+- Theme with `FluentProvider` (`webLightTheme`/`webDarkTheme`) and Fluent `tokens`
+- Access data through shared hooks (e.g., `useOpenAiGlobal("toolOutput")`)
+- Debug fallback: embedded mock data when `window.openai` unavailable
 - Handle "Unknown" values gracefully (e.g., hide action buttons)
 
 ### Plugin Schema
@@ -377,7 +420,7 @@ See [references/best-practices.md](references/best-practices.md) for detailed gu
 Key points:
 1. **Rendering tools**: Accept data as input, don't fetch internally
 2. **Instructions**: Tell agent to use capabilities FIRST, then pass data to MCP tools
-3. **Themes**: Always support dark/light via CSS variables
+3. **Themes**: Use `FluentProvider` + Fluent `tokens` for dark/light support
 4. **Debug mode**: Include fallback data for local widget testing
 5. **Partial data**: Handle missing fields with "Unknown" defaults
 6. **Action buttons**: Hide email/chat buttons when data is "Unknown"

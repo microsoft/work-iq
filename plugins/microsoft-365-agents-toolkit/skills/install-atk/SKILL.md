@@ -11,6 +11,14 @@ description: >
 
 Install or update the M365 Agents Toolkit (ATK) CLI and/or VS Code extension.
 
+## Telemetry Tagging
+
+Before running any `atk` CLI commands, set the session environment variable so all CLI invocations are tagged as skill-initiated:
+```bash
+export ATK_CLI_SKILL=true
+```
+Run this once at the start of the session. All subsequent `atk` commands in the same terminal will inherit it.
+
 ## Triggers
 
 This skill activates when the user asks to:

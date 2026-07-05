@@ -20,7 +20,7 @@ Render a visual ASCII org chart for any person in the organization. Shows the ta
 ### Step 1: Identify the Current User
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "What is my profile information including display name, email, job title, and department?"
 )
 ```
@@ -34,7 +34,7 @@ If the user says "my org chart" or "me", the target is the current user from Ste
 Otherwise, look up the named person:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Look up the person named <name or email> in the company directory. Return their display name, email, job title, department, and office location."
 )
 ```
@@ -46,13 +46,13 @@ If the response indicates multiple matches, present the options and ask the user
 **3a. Get the target's manager and direct reports:**
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Who is <target name>'s manager? Include their display name, email, job title, and department."
 )
 ```
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Who are <target name>'s direct reports? For each person include their display name, email, job title, and department."
 )
 ```
@@ -62,12 +62,12 @@ workiq-ask_work_iq (
 After getting the target's manager, **recursively** ask about each manager's manager until you reach the top of the org:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "Who is <current manager name>'s manager? Include their display name, email, job title, and department."
 )
 ```
 
-Continue until `ask_work_iq` indicates there is no manager (meaning you've reached the **org root**).
+Continue until `ask` indicates there is no manager (meaning you've reached the **org root**).
 
 Store the entire chain as an ordered list: `[target, manager, manager's manager, …, org root]`.
 
@@ -76,7 +76,7 @@ Store the entire chain as an ordered list: `[target, manager, manager's manager,
 **Alternative — full chain in one call:** You can attempt to retrieve the entire chain at once:
 
 ```
-workiq-ask_work_iq (
+workiq-ask (
   question: "What is the full management chain for <target name> all the way up to the CEO? List each person in order from their direct manager to the top, including name, title, and email for each."
 )
 ```
@@ -239,7 +239,7 @@ Always end with a summary that includes the full reporting chain:
 
 | MCP Server | Tool | Purpose |
 |---|---|---|
-| workiq (Local WorkIQ CLI) | `ask_work_iq` | User identity, person lookup, manager chain traversal, and direct reports retrieval |
+| workiq (Local WorkIQ CLI) | `ask` | User identity, person lookup, manager chain traversal, and direct reports retrieval |
 
 ## Tips
 
@@ -255,7 +255,7 @@ Always end with a summary that includes the full reporting chain:
 
 **User:** Show me my org chart
 
-**Result:** Fetches your identity via `ask_work_iq`, walks the full management chain to the CEO, and renders a tree with your manager above and all your direct reports below — grouped by managers, senior ICs, and ICs.
+**Result:** Fetches your identity via `ask`, walks the full management chain to the CEO, and renders a tree with your manager above and all your direct reports below — grouped by managers, senior ICs, and ICs.
 
 ---
 
@@ -263,7 +263,7 @@ Always end with a summary that includes the full reporting chain:
 
 **User:** Draw the org chart for Firstname8 Lastname8
 
-**Result:** Resolves Firstname8 via `ask_work_iq`, fetches their manager and direct reports in parallel, walks the chain up to the org root, and renders a wide org chart with a compact list layout (since they have 7 direct reports).
+**Result:** Resolves Firstname8 via `ask`, fetches their manager and direct reports in parallel, walks the chain up to the org root, and renders a wide org chart with a compact list layout (since they have 7 direct reports).
 
 ---
 
@@ -271,7 +271,7 @@ Always end with a summary that includes the full reporting chain:
 
 **User:** Show the org chart for Firstname5
 
-**Result:** `ask_work_iq` returns multiple matches (e.g., Firstname5 Lastname5, Firstname5 Lastname17, Firstname5 Lastname18). Claude prompts:
+**Result:** `ask` returns multiple matches (e.g., Firstname5 Lastname5, Firstname5 Lastname17, Firstname5 Lastname18). Claude prompts:
 
 ```
 I found multiple people named Firstname5. Which one did you mean?
@@ -286,30 +286,30 @@ Once the user selects, the full org chart is rendered for the chosen person.
 
 ### Person Not Found
 
-If `ask_work_iq` returns no result for the given name or email:
+If `ask` returns no result for the given name or email:
 - Inform the user: *"I couldn't find anyone named '{name}' in the directory."*
 - Suggest trying the full name, email address, or alias.
 - Offer to search again with a partial name or department hint.
 
 ### No Manager Found (Org Root)
 
-When `ask_work_iq` indicates there is no manager for a person, treat that person as the **org root** — this is expected behavior and not an error. Render them at the top of the chain without a manager box.
+When `ask` indicates there is no manager for a person, treat that person as the **org root** — this is expected behavior and not an error. Render them at the top of the chain without a manager box.
 
 ### No Direct Reports
 
-If `ask_work_iq` indicates the person has no direct reports, render the chart without the branch lines below the target. Include a note:
+If `ask` indicates the person has no direct reports, render the chart without the branch lines below the target. Include a note:
 ```
 📊 Firstname5 Lastname5 has 0 direct reports.
 ```
 
 ### Ambiguous Name — Too Many Results
 
-If `ask_work_iq` returns multiple matches for a name, narrow the prompt:
+If `ask` returns multiple matches for a name, narrow the prompt:
 - *"I found too many people matching '{name}'. Could you provide a last name, department, or email?"*
 
 ### WorkIQ CLI Unavailable
 
-If `ask_work_iq` is not accessible or returns a connection error:
+If `ask` is not accessible or returns a connection error:
 - Inform the user: *"I'm unable to reach the directory service right now. Please check that the WorkIQ CLI is connected and try again."*
 - Do not attempt to guess or fabricate org data.
 
@@ -321,4 +321,4 @@ If the management chain exceeds 10 levels, stop recursing and display a truncati
 │
 👤 {deepest fetched ancestor}
 ```
-This prevents excessive sequential `ask_work_iq` calls for unusually deep org structures.
+This prevents excessive sequential `ask` calls for unusually deep org structures.

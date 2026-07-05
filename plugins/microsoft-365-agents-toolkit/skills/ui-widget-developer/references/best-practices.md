@@ -5,24 +5,65 @@
 > tool response format, widget-resource-tool triplet) are language-agnostic concepts.
 
 ## Table of Contents
-- [1. Rendering Tools Pattern](#1-rendering-tools-pattern)
-- [2. Handle Partial Data](#2-handle-partial-data)
-- [3. Agent Instructions](#3-agent-instructions)
-- [4. Theme Support](#4-theme-support)
-- [5. Debug Mode](#5-debug-mode)
-- [6. Version Management](#6-version-management)
-- [7. Input Schema Descriptions](#7-input-schema-descriptions)
-- [8. Consistent Tool Definitions](#8-consistent-tool-definitions)
-- [9. CORS Configuration](#9-cors-configuration)
-- [10. Widget Security](#10-widget-security)
-- [11. DevTunnels](#11-devtunnels)
-- [12. Declarative Agent Capabilities](#12-declarative-agent-capabilities)
-- [13. Error Handling in Widgets](#13-error-handling-in-widgets)
-- [14. Tool Response Format](#14-tool-response-format)
-- [15. Conversation Starters](#15-conversation-starters)
-- [16. Widget-Resource-Tool Triplet](#16-widget-resource-tool-triplet)
+- [1. ALWAYS Use Fluent UI for Widgets](#1-always-use-fluent-ui-for-widgets)
+- [2. Rendering Tools Pattern](#2-rendering-tools-pattern)
+- [3. Handle Partial Data](#3-handle-partial-data)
+- [4. Agent Instructions](#4-agent-instructions)
+- [5. Theme Support with FluentProvider](#5-theme-support-with-fluentprovider)
+- [6. Use Shared Hooks](#6-use-shared-hooks)
+- [7. Build Before Serve](#7-build-before-serve)
+- [8. Debug Mode](#8-debug-mode)
+- [9. Version Management](#9-version-management)
+- [10. Input Schema Descriptions](#10-input-schema-descriptions)
+- [11. Consistent Tool Definitions](#11-consistent-tool-definitions)
+- [12. CORS Configuration](#12-cors-configuration)
+- [13. Widget Security](#13-widget-security)
+- [14. DevTunnels](#14-devtunnels)
+- [15. MCP Server Working Directory](#15-mcp-server-working-directory)
+- [16. Environment Variable Initialization](#16-environment-variable-initialization)
+- [17. Declarative Agent Capabilities](#17-declarative-agent-capabilities)
+- [18. Tool Response Format](#18-tool-response-format)
+- [19. Conversation Starters](#19-conversation-starters)
+- [20. Widget-Resource-Tool Triplet](#20-widget-resource-tool-triplet)
 
-## 1. Rendering Tools Pattern
+## 1. ALWAYS Use Fluent UI for Widgets
+
+MANDATORY: All widget UI must be built with React and `@fluentui/react-components`.
+Do not use raw HTML/CSS templates or other UI frameworks for widget rendering.
+
+Required Fluent UI components:
+- `Card` for containers
+- `Badge` for labels/status
+- `Table` or `DataGrid` for tabular data
+- `Button` for actions
+- `Avatar` for entity visuals
+- `Tooltip` for hints
+- `Spinner` for loading states
+- `tokens` and `makeStyles` for styling
+
+```tsx
+import { Card, Badge, makeStyles, tokens } from "@fluentui/react-components";
+
+const useStyles = makeStyles({
+  root: {
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground1,
+  },
+});
+
+export function MyWidget() {
+  const styles = useStyles();
+  return (
+    <div className={styles.root}>
+      <Card>
+        <Badge appearance="filled">Title</Badge>
+      </Card>
+    </div>
+  );
+}
+```
+
+## 2. Rendering Tools Pattern
 
 Design MCP tools as **rendering tools** that accept data from the caller rather than fetching data internally.
 
@@ -33,56 +74,63 @@ Design MCP tools as **rendering tools** that accept data from the caller rather 
 
 **Pattern**:
 ```typescript
-// Good: Accept data as input
-inputSchema: {
-  type: "object",
-  properties: {
-    items: { type: "array", items: { /* ... */ } }
-  }
-}
+// Good: accept and validate caller-provided data
+const parser = z.object({
+  items: z.array(z.object({ name: z.string(), value: z.string() })),
+});
 
 // Avoid: Fetching data internally
 // const data = await fetchFromAPI(); // Don't do this
 ```
 
-## 2. Handle Partial Data
+## 3. Handle Partial Data
 
 Always normalize input data to handle missing fields gracefully. Fill in "Unknown" for any missing properties.
 
-**Server Pattern**:
+**Server Pattern** - use Zod defaults:
 ```typescript
+const parser = z.object({
+  title: z.string().default("Untitled"),
+  items: z.array(z.object({
+    name: z.string().default("Unknown"),
+    email: z.string().default("Unknown"),
+    location: z.string().default("Unknown"),
+  })).default([]),
+});
+
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const args = request.params.arguments as { title?: string; items?: Partial<Item>[] };
-
-  // Normalize data - fill in "Unknown" for missing fields
-  const title = args.title || "Default Title";
-  const items = (args.items || []).map(item => ({
-    name: item.name || "Unknown",
-    email: item.email || "Unknown",
-    location: item.location || "Unknown",
-  }));
-
-  const structuredContent = { title, items };
-  // ...
+  const parsed = parser.parse(request.params.arguments ?? {});
+  return {
+    content: [{ type: "text", text: `Rendered ${parsed.items.length} items` }],
+    structuredContent: parsed,
+    _meta: invocationMeta(MY_WIDGET),
+  };
 });
 ```
 
-**Widget Pattern** - Hide action buttons when data is "Unknown":
-```javascript
-function renderItem(item) {
-  const hasEmail = item.email && item.email !== 'Unknown';
-  const actionsHtml = hasEmail ? `
-    <a href="mailto:${escapeHtml(item.email)}" class="btn">Email</a>
-    <a href="https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(item.email)}"
-       class="btn">Chat</a>
-  ` : '';
+**Widget Pattern** - hide action buttons when data is "Unknown":
+```tsx
+import { Button } from "@fluentui/react-components";
+import { MailRegular, ChatRegular } from "@fluentui/react-icons";
 
-  return `
-    <div class="card">
-      <div class="name">${escapeHtml(item.name || 'Unknown')}</div>
-      ${actionsHtml}
-    </div>
-  `;
+function ContactActions({ email }: { email: string }) {
+  if (!email || email === "Unknown") return null;
+  return (
+    <>
+      <Button icon={<MailRegular />} as="a" href={`mailto:${email}`} appearance="subtle" size="small">
+        Email
+      </Button>
+      <Button
+        icon={<ChatRegular />}
+        as="a"
+        href={`https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(email)}`}
+        appearance="subtle"
+        size="small"
+      >
+        Chat
+      </Button>
+    </>
+  );
 }
 ```
 
@@ -98,7 +146,7 @@ function renderItem(item) {
 }
 ```
 
-## 3. Agent Instructions
+## 4. Agent Instructions
 
 Tell the agent to use capabilities FIRST, then pass data to MCP tools.
 
@@ -113,27 +161,77 @@ fetch data. You must:
 CRITICAL: Never call the MCP tools without first retrieving data from the capability.
 ```
 
-## 4. Theme Support
+## 5. Theme Support with FluentProvider
 
-See [widget-patterns.md](widget-patterns.md) for complete theme CSS variable implementation. Key rule: always support dark/light mode via CSS variables at `:root` level, detecting via `window.openai.theme` or `prefers-color-scheme`.
+Theme should be handled by `FluentProvider` in widget entry points.
 
-## 5. Debug Mode
+```tsx
+import { FluentProvider, webLightTheme, webDarkTheme } from "@fluentui/react-components";
+
+function getTheme() {
+  const openaiTheme = (window as any).openai?.theme;
+  if (openaiTheme === "dark") return webDarkTheme;
+  if (openaiTheme === "light") return webLightTheme;
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches
+    ? webDarkTheme
+    : webLightTheme;
+}
+```
+
+Never hand-code color systems for widget UI. Use Fluent `tokens` + `makeStyles`.
+
+## 6. Use Shared Hooks
+
+Reuse shared hooks from [widget-patterns.md](widget-patterns.md):
+- `useOpenAiGlobal(key)` for polling `window.openai[key]`
+- `useThemeColors()` for semantic theme palette
+- `useWidgetState(initial)` for state persistence through Apps SDK host
+
+```tsx
+function MyWidget() {
+  const toolOutput = useOpenAiGlobal("toolOutput");
+  const [state, setState] = useWidgetState({ expanded: false });
+
+  if (!toolOutput) return <Spinner label="Loading..." />;
+
+  return <Card>{/* render with toolOutput */}</Card>;
+}
+```
+
+## 7. Build Before Serve
+
+Always build widgets before starting the server. The server serves pre-built assets.
+
+```bash
+npm run install:all
+npm run build:widgets
+npm run dev:server
+```
+
+After every widget code change:
+
+```bash
+npm run build:widgets
+```
+
+Server reads assets on each request; restart is typically not required after rebuild.
+
+## 8. Debug Mode
 
 Include fallback data for local widget testing without BizChat.
 
-```javascript
-const DEBUG_DATA = { /* realistic test data */ };
+```tsx
+const DEBUG_DATA = { title: "Test", items: [{ name: "Alice", value: "123" }] };
 
-function getWidgetData() {
-  if (window.openai) {
-    return window.openai.toolOutput || /* other sources */;
-  }
-  console.log('Debug mode - using DEBUG_DATA');
+function useToolData() {
+  const toolOutput = useOpenAiGlobal("toolOutput");
+  if (toolOutput) return toolOutput;
+  console.log("Debug mode - using DEBUG_DATA");
   return DEBUG_DATA;
 }
 ```
 
-## 6. Version Management
+## 9. Version Management
 
 Bump manifest version for each deployment when changes aren't reflected.
 
@@ -142,7 +240,7 @@ Bump manifest version for each deployment when changes aren't reflected.
 { "version": "1.0.5" }  // Increment on each change
 ```
 
-## 7. Input Schema Descriptions
+## 10. Input Schema Descriptions
 
 Provide detailed descriptions with examples and default values in inputSchema.
 
@@ -161,7 +259,7 @@ Provide detailed descriptions with examples and default values in inputSchema.
 }
 ```
 
-## 8. Consistent Tool Definitions
+## 11. Consistent Tool Definitions
 
 Keep inputSchema identical in:
 1. MCP server tool definitions
@@ -169,56 +267,99 @@ Keep inputSchema identical in:
 
 Mismatches cause runtime errors.
 
-## 9. CORS Configuration
+## 12. CORS Configuration
 
-Always configure CORS for the MCP endpoint. Use origin-checking instead of a wildcard — validate the `Origin` header against an allowlist and reflect it back.
-
-**Required allowed origins**: `m365.cloud.microsoft` and `*.m365.cloud.microsoft`.
+Always configure CORS with an allowlist origin check.
 
 ```typescript
-// Origin checking — allow *.m365.cloud.microsoft and m365.cloud.microsoft
-function isAllowedOrigin(origin: string | undefined): boolean {
-  if (!origin) return false;
-  try {
-    const { hostname } = new URL(origin);
-    return hostname === "m365.cloud.microsoft" || hostname.endsWith(".m365.cloud.microsoft");
-  } catch {
-    return false;
-  }
-}
+import cors from "cors";
 
-// Preflight
-if (req.method === "OPTIONS" && url.pathname === "/mcp") {
-  const origin = req.headers.origin;
-  if (isAllowedOrigin(origin)) {
-    res.writeHead(204, {
-      "Access-Control-Allow-Origin": origin!,
-      "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, mcp-session-id, Last-Event-ID, mcp-protocol-version",
-      "Access-Control-Expose-Headers": "mcp-session-id, mcp-protocol-version",
-    });
-  }
-}
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) {
+      callback(null, origin ?? true);
+    } else {
+      callback(null, false);
+    }
+  },
+  methods: ["GET", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type", "Accept",
+    "Mcp-Session-Id", "mcp-session-id",
+    "Last-Event-ID",
+    "Mcp-Protocol-Version", "mcp-protocol-version",
+  ],
+  exposedHeaders: ["Mcp-Session-Id"],
+  credentials: false,
+};
 
-// All MCP requests — reflect origin if allowed
-const origin = req.headers.origin;
-if (isAllowedOrigin(origin)) {
-  res.setHeader("Access-Control-Allow-Origin", origin!);
-  res.setHeader("Access-Control-Expose-Headers", "mcp-session-id, mcp-protocol-version");
-}
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 ```
 
-## 10. Widget Security
+See [mcp-server-pattern.md](mcp-server-pattern.md) for full allowlist and `isOriginAllowed()` implementation.
 
-See the **Security** section in [widget-patterns.md](widget-patterns.md) for the `escapeHtml` implementation and XSS prevention patterns. Key rule: always sanitize user-provided data before inserting into widget HTML.
+## 13. Widget Security
 
-## 11. DevTunnels
+React escapes JSX by default. Do not use `dangerouslySetInnerHTML`.
 
-Use **named tunnels** for stable URLs that persist across restarts. See [devtunnels.md](devtunnels.md) for complete setup scripts and command reference.
+```tsx
+// Safe
+<Text>{userData.name}</Text>
 
-Key behavior: the URL stays the same across restarts, so `npx -y --package @microsoft/m365agentstoolkit-cli atk provision` is only needed once (and again only when the agent manifest changes — mcpPlugin.json, declarativeAgent.json, etc.).
+// Unsafe in widgets
+// <div dangerouslySetInnerHTML={{ __html: userData.name }} />
+```
 
-## 12. Declarative Agent Capabilities
+Validate dynamic URLs before rendering links.
+
+## 14. DevTunnels
+
+Use random tunnels for simple local loops:
+
+```bash
+devtunnel host -p 3001 --allow-anonymous
+```
+
+Pre-flight:
+1. Kill old tunnels: `pkill -f "devtunnel host" 2>/dev/null`
+2. Verify auth: `devtunnel user show`
+3. Verify server: `curl -s http://localhost:3001/health`
+
+Because URL changes each run, update `SERVER_BASE_URL` and provision again.
+
+## 15. MCP Server Working Directory
+
+Monorepo pattern (`server/` and `widgets/` each with separate package files):
+
+```bash
+# From mcp-server root
+npm run install:all
+npm run build:widgets
+npm run dev:server
+npm run start
+
+# Directly
+cd server && npm run dev
+cd widgets && npm run build
+```
+
+Common failure: running `npm run dev` at root when only `dev:server` is defined.
+
+## 16. Environment Variable Initialization
+
+Before first provision, populate all `${{VAR_NAME}}` placeholders used by `appPackage/`
+in `env/.env.local`.
+
+Set at least:
+
+```env
+SERVER_BASE_URL=http://localhost:3001
+```
+
+This placeholder allows initial provision before a tunnel URL is available.
+
+## 17. Declarative Agent Capabilities
 
 Only enable capabilities you need.
 
@@ -236,28 +377,7 @@ Available:
 - `OneDriveAndSharePoint` - File access
 - `WebSearch` - Web search
 
-## 13. Error Handling in Widgets
-
-Handle data loading failures gracefully.
-
-```javascript
-if (!rendered) {
-  let attempts = 0;
-  const poll = setInterval(() => {
-    attempts++;
-    const data = getWidgetData();
-    if (data) {
-      renderWidget(data);
-      clearInterval(poll);
-    } else if (attempts >= 50) {
-      clearInterval(poll);
-      showError("Unable to load data");
-    }
-  }, 100);
-}
-```
-
-## 14. Tool Response Format
+## 18. Tool Response Format
 
 Always include both text content and structuredContent.
 
@@ -265,18 +385,13 @@ Always include both text content and structuredContent.
 return {
   content: [{ type: "text", text: "Human-readable summary" }],
   structuredContent: { /* data for widget */ },
-  _meta: {
-    "openai/outputTemplate": "ui://widget/name.html",
-    "openai/widgetAccessible": true,
-    "openai/toolInvocation/invoking": "Processing...",
-    "openai/toolInvocation/invoked": "Complete",
-  }
+  _meta: invocationMeta(MY_WIDGET),
 };
 ```
 
-The text content serves as fallback and accessibility. The `_meta` fields are **required** — without `openai/widgetAccessible: true`, Copilot will not render the widget and the tool response will appear as null.
+The text content serves as fallback and accessibility.
 
-## 15. Conversation Starters
+## 19. Conversation Starters
 
 Add relevant conversation starters to help users discover your agent's capabilities.
 
@@ -293,23 +408,23 @@ Add relevant conversation starters to help users discover your agent's capabilit
 }
 ```
 
-## 16. Widget-Resource-Tool Triplet
+## 20. Widget-Resource-Tool Triplet
 
 Every widget in a Copilot MCP server requires three coordinated parts:
 
 | Part | What it does | Where it lives |
 |------|-------------|----------------|
-| **Widget HTML** | The rendered UI | `widgets/<name>.html` (simple) or `assets/<name>.js` + shell HTML (complex) |
-| **MCP Resource** | Serves widget HTML to Copilot via `ui://widget/<name>.html` | `resources` array + `ReadResourceRequestSchema` handler |
+| **Widget shell + assets** | Shell HTML loads rendered React + Fluent UI bundle | `widgets/<name>.html` + `assets/<name>.js` |
+| **MCP Resource** | Serves widget shell to Copilot via `ui://widget/<name>.html` | `resources` array + `ReadResourceRequestSchema` handler |
 | **MCP Tool** | Triggers widget rendering via `_meta.openai/outputTemplate` | `tools` array + `CallToolRequestSchema` handler |
 
 If any part is missing:
-- No Resource → Copilot can't fetch widget HTML, widget won't render
+- No Resource → Copilot can't fetch widget shell, widget won't render
 - No Tool → Widget exists but nothing triggers it
-- No Widget HTML → Resource returns 404, tool invocation shows empty widget
+- No shell/assets → Resource returns 404 or shell loads without scripts, tool invocation shows empty widget
 
 **Simple vs Complex widgets:**
-- Simple: Self-contained HTML with inline CSS/JS → `ReadResource` returns the full file
-- Complex (React, etc.): Minimal HTML shell linking to JS/CSS assets served via `/assets/` route → `ReadResource` returns the shell, assets load from `MCP_SERVER_URL/assets/`
+- Simple: Self-contained shell/widget for quick validation → `ReadResource` returns full file
+- Complex (React + Fluent UI, preferred): Minimal HTML shell linking to JS/CSS assets served via `/assets/` route → `ReadResource` returns shell HTML, assets load from `MCP_SERVER_URL/assets/`
 
 Always create all three parts together. When adding a new tool+widget, start from the resource pattern in [mcp-server-pattern.md](mcp-server-pattern.md).
