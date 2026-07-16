@@ -14,30 +14,31 @@ description: |
 
 # Copilot MCP Server Development
 
-## Telemetry Tagging
+Build MCP servers that integrate with Microsoft 365 Copilot Chat and render rich interactive widgets.
 
-Before running any `atk` CLI commands, set the session environment variable so all CLI invocations are tagged as skill-initiated:
-```bash
-export ATK_CLI_SKILL=true
-```
-Run this once at the start of the session. All subsequent `atk` commands in the same terminal will inherit it.
+Make two decisions **before writing any code**:
 
-## 🔀 PATH SELECTION
+1. **Architecture** — MCP Apps vs OAI Apps (this section).
+2. **Hosting model** — server-full vs serverless (next section).
 
-**Before proceeding, ask the user which path they want to take using AskUserQuestion.** Both are supported for M365 Copilot widget rendering. Present the tradeoffs and let them choose:
+> **Setup:** Before running any `atk` CLI commands, tag this session as skill-initiated by running `export ATK_CLI_SKILL=true` once at the start. All later `atk` commands in the same terminal inherit it.
 
-| | **OAI Apps** (this skill) | **MCP Apps Extension** (`modelcontextprotocol/ext-apps`) |
+## 1. Choose your architecture — START HERE 🔀
+
+**Before proceeding, ask the user which path they want to take using AskUserQuestion.** Both are supported for M365 Copilot widget rendering. **MCP Apps is the recommended default** — the official, cross-platform standard; prefer it unless the user has an existing OAI Apps investment. Present the tradeoffs and let them choose:
+
+| | **MCP Apps** ⭐ recommended (`modelcontextprotocol/ext-apps`) | **OAI Apps** (this skill) |
 |---|---|---|
-| **Standard** | OpenAI-specific | Official MCP standard |
-| **Works in** | ChatGPT + M365 Copilot | M365 Copilot, ChatGPT, VSCode, and more |
-| **Maturity** | Battle-tested, production-ready | New official standard, growing ecosystem |
-| **Design** | OpenAI Apps SDK | MCP Apps protocol (cross-platform) |
-| **When to choose** | Existing OAI app investment | Prefer the open standard, want broadest client support |
+| **Standard** | Official MCP standard | OpenAI-specific |
+| **Works in** | M365 Copilot, ChatGPT, VSCode, and more | ChatGPT + M365 Copilot |
+| **Maturity** | Official standard, growing ecosystem | Battle-tested, production-ready |
+| **Design** | MCP Apps protocol (cross-platform) | OpenAI Apps SDK |
+| **When to choose** | Default — open standard, broadest client support | Existing OAI app investment |
 
-**Ask:** _"Would you like to build an OAI app (OpenAI Apps SDK — battle-tested, works in ChatGPT and M365 Copilot) or an MCP app (new official standard — works in M365 Copilot, ChatGPT, VSCode, and more)?"_
+**Ask:** _"Would you like to build an MCP app (recommended — the official standard; works in M365 Copilot, ChatGPT, VSCode, and more) or an OAI app (OpenAI Apps SDK — battle-tested, works in ChatGPT and M365 Copilot)?"_
 
+- **MCP apps (recommended)** → Install the `modelcontextprotocol/ext-apps` plugin (see below), then use the appropriate skill from that plugin.
 - **OAI apps** → Continue below. This skill covers everything you need.
-- **MCP apps** → Install the `modelcontextprotocol/ext-apps` plugin (see below), then use the appropriate skill from that plugin.
 
 ### MCP Apps: Install ext-apps Plugin
 
@@ -76,6 +77,25 @@ After installing, invoke the relevant skill to continue.
 
 ---
 
+## 2. Choose your hosting model
+
+Decide where the MCP server runs in production. DevTunnels (later in this skill) are for **local development only** — they are not a hosting model.
+
+| | **Server-full** (always-on) | **Serverless** (pay-per-use) |
+|---|---|---|
+| **Where** | Azure App Service, Azure Container Apps, or any always-on Node/host | Azure Functions (Flex Consumption plan) |
+| **Best for** | Steady traffic, persistent sessions, predictable latency, existing infra | Spiky/low traffic, minimal ops, scale-to-zero, cost efficiency |
+| **Cost** | Pay for the running instance | Pay only for executions |
+| **Cold starts** | None (always warm) | Possible after idle |
+| **Path** | Continue in **this skill**, then deploy the finished server to your host | Use the **`mcp-apps-azure-functions`** skill |
+
+- **Server-full** → keep going here; deploy the finished MCP server to your always-on host and update the agent manifest URLs.
+- **Serverless** → hand off to the **`mcp-apps-azure-functions`** skill, which scaffolds, runs, and deploys a serverless MCP Apps server on Azure Functions with `azd` + Flex Consumption.
+
+> **Note:** the serverless skill uses the **MCP Apps** standard in **C# / .NET**. If you chose OAI Apps in TypeScript above and still want serverless, either adopt the MCP Apps path or deploy your Node server to an always-on (server-full) host.
+
+---
+
 ## 📛 PROJECT DETECTION 📛
 
 This skill triggers when building MCP servers with OAI app or widget rendering for Microsoft 365 Copilot Chat. The MCP server can be written in any language that supports the MCP protocol (TypeScript, Python, C#, etc.). The agent project and MCP server may live in the same repo, separate folders, or entirely different projects.
@@ -84,7 +104,7 @@ This skill triggers when building MCP servers with OAI app or widget rendering f
 
 | Starting Point | What You Need | Path |
 |---------------|---------------|------|
-| **Prefer MCP Apps standard** | Cross-platform widget support (M365 Copilot, ChatGPT, VSCode, and more) | Install `modelcontextprotocol/ext-apps`, then use `create-mcp-app` or `add-app-to-server` — see [Path Selection](#-path-selection) above |
+| **Prefer MCP Apps standard** | Cross-platform widget support (M365 Copilot, ChatGPT, VSCode, and more) | Install `modelcontextprotocol/ext-apps`, then use `create-mcp-app` or `add-app-to-server` — see **Choose your architecture** above |
 | **From scratch** (no agent, no MCP server) | Full OAI app setup | Delegate agent scaffolding to `declarative-agent-developer` first, then return here for MCP server + widgets |
 | **Existing M365 agent, new MCP server** | MCP server + widgets + mcpPlugin.json | Start at [Implementation](#implementation) |
 | **Existing MCP server, add Copilot widgets** | Widget support added to existing server | Start at [Copilot Widget Protocol](references/copilot-widget-protocol.md#adaptation-checklist-existing-mcp-server) |
@@ -152,9 +172,9 @@ sleep 3 && tail tunnel.log server.log
 
 **FULL AUTOMATION:** Never tell the user to run commands manually. Install tools, authenticate, start services — do everything automatically. Only ask the user for interactive input that truly requires them (like device code confirmation during `devtunnel user login -g -d`). If a tool isn't installed, install it. If a service needs starting, start it. The user expects full automation.
 
-**PATH SELECTION (REQUIRED — STOP BEFORE ANY CODE):** You MUST use `AskUserQuestion` to ask the user whether they want OAI Apps or MCP Apps Extension before writing any code, running any commands, or making any architectural decisions.
+**PATH SELECTION (REQUIRED — STOP BEFORE ANY CODE):** You MUST use `AskUserQuestion` to ask the user whether they want MCP Apps (recommended) or OAI Apps before writing any code, running any commands, or making any architectural decisions.
 
-**There is no exception to this rule.** The most common failure mode is reasoning "the user's request makes it obvious, so asking is redundant." This reasoning is always wrong — invoke `AskUserQuestion` regardless. A user saying "build an MCP server with widgets" is NOT an answer to this question. A user invoking this skill by name is NOT an answer. Only an explicit answer to the question counts. See [PATH SELECTION](#-path-selection) above for the exact question to ask.
+**There is no exception to this rule.** The most common failure mode is reasoning "the user's request makes it obvious, so asking is redundant." This reasoning is always wrong — invoke `AskUserQuestion` regardless. A user saying "build an MCP server with widgets" is NOT an answer to this question. A user invoking this skill by name is NOT an answer. Only an explicit answer to the question counts. See **Choose your architecture** above for the exact question to ask.
 
 **AGENT PROVISIONING:** Re-provisioning is only required when the **agent manifest** changes (e.g., mcpPlugin.json tool definitions, MCP server URL, declarativeAgent.json, instruction.txt). MCP server code changes (tool implementations, React widget code, server logic) do **NOT** require re-provisioning the agent — running or deploying the server picks up changes automatically.
 
@@ -252,9 +272,7 @@ The MCP Inspector shows the exact tool schema from your server. Copy it complete
 
 ---
 
-Build MCP servers that integrate with Microsoft 365 Copilot Chat and render rich interactive widgets.
-
-## Architecture
+## How it works
 
 ```
 M365 Copilot ──▶ mcpPlugin.json ──▶ MCP Server ──▶ structuredContent ──▶ React + Fluent UI Widget
@@ -371,7 +389,7 @@ Core requirements:
 
 ## DevTunnels Setup
 
-> **Local testing only.** DevTunnels are for development and testing on your machine. Before sharing the agent more broadly, deploy both the MCP server and widget assets to a hosted environment (e.g., Azure App Service, Azure Static Web Apps, or another hosting provider) and update the agent manifest URLs accordingly.
+> **Local testing only.** DevTunnels are for development and testing on your machine — not a hosting model. For production, pick a hosting model (see **Choose your hosting model** above): deploy to an always-on host (**server-full**), or hand off to the `mcp-apps-azure-functions` skill (**serverless**) — then update the agent manifest URLs accordingly.
 
 DevTunnels expose your localhost MCP server to M365 Copilot using **named tunnels** for stable URLs. See [references/devtunnels.md](references/devtunnels.md) for setup scripts, command reference, and troubleshooting.
 

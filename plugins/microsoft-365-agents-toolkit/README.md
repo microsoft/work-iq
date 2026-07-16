@@ -48,6 +48,7 @@ npx -y --package @microsoft/m365-copilot-eval@latest runevals --prompts-file eva
 | [**install-atk**](./skills/install-atk/SKILL.md) | Install or update the ATK CLI and VS Code extension |
 | [**declarative-agent-developer**](./skills/declarative-agent-developer/SKILL.md) | Scaffolding, JSON manifest authoring, capability configuration, security patterns, deployment via ATK CLI |
 | [**ui-widget-developer**](./skills/ui-widget-developer/SKILL.md) | Build MCP servers with OpenAI Apps SDK widget rendering for Copilot Chat |
+| [**mcp-apps-azure-functions**](./skills/mcp-apps-azure-functions/SKILL.md) | Scaffold, run, and deploy a serverless MCP Apps server on Azure Functions (C# / .NET) with azd + Flex Consumption |
 | [**m365-agent-evaluator**](./skills/m365-agent-evaluator/SKILL.md) | Generate, run, and analyze evaluation suites for M365 Copilot declarative agents |
 
 ## License

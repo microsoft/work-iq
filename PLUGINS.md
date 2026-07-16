@@ -79,7 +79,7 @@ copilot plugin uninstall workiq-productivity
 |---|--------|--------|-------------|
 | 1 | [**workiq**](#workiq) | 1 | Full WorkIQ tool surface — agentic queries plus direct M365 reads and writes |
 | 2 | [**workiq-preview**](#workiq-preview) | 1 | Preview build with the full entity tool surface (read + write) |
-| 3 | [**microsoft-365-agents-toolkit**](#microsoft-365-agents-toolkit) | 4 | Toolkit for building M365 Copilot declarative agents |
+| 3 | [**microsoft-365-agents-toolkit**](#microsoft-365-agents-toolkit) | 5 | Toolkit for building M365 Copilot declarative agents |
 | 4 | [**workiq-productivity**](#workiq-productivity) | 9 | Read-only productivity insights across M365 |
 
 ---
@@ -162,6 +162,7 @@ copilot plugin uninstall workiq-productivity
 | [**install-atk**](./plugins/microsoft-365-agents-toolkit/skills/install-atk/SKILL.md) | Install or update the M365 Agents Toolkit CLI and VS Code extension |
 | [**declarative-agent-developer**](./plugins/microsoft-365-agents-toolkit/skills/declarative-agent-developer/SKILL.md) | Scaffolding, JSON manifest authoring, capability configuration, deployment |
 | [**ui-widget-developer**](./plugins/microsoft-365-agents-toolkit/skills/ui-widget-developer/SKILL.md) | Build MCP servers with OpenAI Apps SDK widget rendering for Copilot Chat |
+| [**mcp-apps-azure-functions**](./plugins/microsoft-365-agents-toolkit/skills/mcp-apps-azure-functions/SKILL.md) | Scaffold, run, and deploy a serverless MCP Apps server on Azure Functions (C# / .NET) with azd + Flex Consumption |
 | [**m365-agent-evaluator**](./plugins/microsoft-365-agents-toolkit/skills/m365-agent-evaluator/SKILL.md) | Generate, run, and analyze evaluation suites for M365 Copilot declarative agents |
 
 ### Example prompts
@@ -170,6 +171,8 @@ copilot plugin uninstall workiq-productivity
 "Scaffold a new declarative agent for HR FAQ"
 "Add web search to my agent"
 "Deploy my agent with ATK"
+"Scaffold a serverless MCP Apps server on Azure Functions in C#"
+"Deploy my MCP Apps server to Azure Flex Consumption with azd"
 "Create eval prompts for my agent"
 "Run my evals and explain the failures"
 "Improve my agent instructions based on the latest eval results"

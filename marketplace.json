@@ -20,8 +20,8 @@
     {
       "name": "microsoft-365-agents-toolkit",
       "source": "./plugins/microsoft-365-agents-toolkit",
-      "description": "Toolkit for building and evaluating Microsoft 365 Copilot declarative agents \u2014 scaffolding, JSON manifest development, capability configuration, and eval workflows.",
-      "version": "1.3.1"
+      "description": "Toolkit for building and evaluating Microsoft 365 Copilot declarative agents \u2014 scaffolding, JSON manifest development, capability configuration, serverless MCP Apps hosting on Azure Functions, and eval workflows.",
+      "version": "1.4.0"
     },
     {
       "name": "workiq-productivity",
