@@ -45,7 +45,7 @@ After deploy, `azd` prints links to the created resources.
 
 ## Connect to the remote MCP server
 
-Built-in MCP authorization (Microsoft Entra) is enabled by default; VS Code handles the OAuth sign-in.
+Built-in MCP authorization (Microsoft Entra) is enabled by default; VS Code handles the OAuth sign-in. See **Authentication (built-in Entra) & hardening** below for the token-flow model and how to harden the endpoint.
 
 ```bash
 azd env get-value AZURE_FUNCTION_NAME
@@ -56,6 +56,23 @@ azd env get-value AZURE_FUNCTION_NAME
 3. Complete the Microsoft Entra sign-in to authorize access.
 4. In Copilot Agent mode, re-run the same prompt (e.g., `What's the weather in Seattle?`) — the code now
    runs securely in Azure and renders the same widget.
+
+## Authentication (built-in Entra) & hardening
+
+The `remote-mcp-functions-dotnet` template turns on **built-in Microsoft Entra authorization** for the
+Function app (App Service Authentication, a.k.a. "Easy Auth") via its Bicep — so the deployed MCP server
+validates the Copilot SSO token at the platform edge and you don't add a custom token guard.
+
+- **How the SSO token flow works** (issuance, validation, claims reaching your tool):
+  [`setup-sso-ui-widget` → sso-explained.md](../../setup-sso-ui-widget/references/sso-explained.md).
+- **Harden / verify the Authentication blade** — the same App Service Authentication feature applies to
+  Function apps: set **Allowed token audiences** to the app's **client id** (not the `api://…` URI) and
+  add the **Copilot host client id** to *Allowed client applications*, or valid tokens still get `403`.
+  Field-by-field guide: [`setup-sso-ui-widget` → easy-auth.md](../../setup-sso-ui-widget/references/easy-auth.md).
+- **Express / raw-http MCP servers** (from `ui-widget-developer` / `create-mcp-app`) don't get built-in
+  auth — add Entra SSO with the [`setup-sso-ui-widget`](../../setup-sso-ui-widget/SKILL.md) skill instead.
+- **Entra SSO vs third-party OAuth** for the plugin manifest:
+  [`declarative-agent-developer` → authentication.md](../../declarative-agent-developer/references/authentication.md).
 
 ## Alternative: Azure Functions Core Tools
 

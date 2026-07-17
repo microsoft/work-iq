@@ -2,6 +2,8 @@
 
 > **Local vs cloud.** The `auth.ts` JWKS guard this skill injects is for **local dev/testing**. When you **deploy** the MCP server to **Azure App Service**, prefer the platform's built-in authentication (**"Easy Auth"**) over the custom guard — it validates the Copilot SSO token at the platform edge, before your code runs, and offloads key/issuer handling. Configure it in **App Service → Authentication → Microsoft Entra identity provider**. This reference is the field-by-field companion to that blade; use it *instead of* relying on `auth.ts` once hosted.
 
+> **Serverless (Azure Functions).** The same App Service Authentication feature is available on **Function apps**. If you host a serverless MCP Apps server, see the [`mcp-apps-azure-functions`](../../mcp-apps-azure-functions/SKILL.md) skill — its template enables built-in Entra authorization by default, and the field mappings below apply to the Function app's Authentication blade.
+
 ## How this skill's values map to the blade
 
 The tables below use generic placeholders. Fill them from your project:

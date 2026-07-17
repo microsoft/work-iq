@@ -159,6 +159,23 @@ troubleshooting, see **[references/deployment.md](references/deployment.md)**.
 - **Tool naming:** MCP tool names must match `^[A-Za-z0-9_]+$` (no hyphens).
 - **Region:** `azd provision` only lists regions that currently support the **Flex Consumption** plan.
 
+## Authentication & SSO
+
+The `remote-mcp-functions-dotnet` template secures the deployed server with **built-in Microsoft Entra
+authorization** (App Service Authentication / "Easy Auth"), provisioned automatically by its Bicep — no
+custom token guard is required. Because SSO is built in, you typically do **not** need `setup-sso-ui-widget`
+here (that skill is for Express/raw-http servers). Use these for the model and for hardening:
+
+- **Token-flow mental model** (how the Copilot SSO token is issued/validated and how claims reach your
+  tool): [`setup-sso-ui-widget` → sso-explained.md](../setup-sso-ui-widget/references/sso-explained.md).
+- **Harden the Function app's Authentication blade** — audience = **client id** (not the `api://…` URI)
+  and allow-list the **Copilot host client id**; the same App Service Authentication feature applies to
+  Function apps: [`setup-sso-ui-widget` → easy-auth.md](../setup-sso-ui-widget/references/easy-auth.md).
+- **Adding SSO to a server-full Express / raw-http MCP server** (from `ui-widget-developer` /
+  `create-mcp-app`): [`setup-sso-ui-widget`](../setup-sso-ui-widget/SKILL.md).
+- **Entra SSO vs third-party OAuth** patterns for the plugin manifest:
+  [`declarative-agent-developer` → authentication.md](../declarative-agent-developer/references/authentication.md).
+
 ## References
 
 - [references/csharp-code-patterns.md](references/csharp-code-patterns.md) — `McpToolTrigger`,
