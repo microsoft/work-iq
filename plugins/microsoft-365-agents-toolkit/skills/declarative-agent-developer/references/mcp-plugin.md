@@ -720,3 +720,14 @@ You can integrate multiple MCP servers by adding multiple runtimes, each with it
 5. **Always add response semantics** — every function must have `capabilities.response_semantics`, even if using the default (empty body) pattern
 6. **Include all tools by default** — inline every tool from `tools/list` unless the developer explicitly asks to limit the set; for all included tools always keep the complete tool object with all properties
 7. **Logos are optional** — ask the user if they want a custom logo; if not, use the defaults from `npx -y --package @microsoft/m365agentstoolkit-cli atk new`. Logos must be **PNG only** (no JPG, SVG, etc.)
+
+---
+
+## Next Step — Add Entra SSO (optional)
+
+If the MCP server is **your own** (e.g. scaffolded with `create-mcp-app` or `ui-widget-developer`, running on a devtunnel) and you want it to receive the **signed-in M365 user's verified identity** — Entra SSO, no separate login — the companion **`setup-sso-ui-widget`** skill (in this same `microsoft-365-agents-toolkit` plugin) automates every step on top of the plugin you just added: Entra app registration, ATK OAuth (`MicrosoftEntra`), flipping the manifest's `runtimes[].auth` from `None` → `OAuthPluginVault`, a minimal JWKS bearer-token guard in the server, and sideload. It auto-detects and supports **both** the Express (MCP Apps) and raw-http (OAI Apps) server layouts. SSO only — no OBO.
+
+> This closes the **create-mcp-app → add MCP plugin (here) → SSO** path: `create-mcp-app` emits a standalone MCP server, this integration wraps it into the declarative agent (`declarativeAgent.json` + `{name}-plugin.json` + `m365agents.yml`), and `setup-sso-ui-widget` adds Entra SSO to that wrapped agent.
+
+**Tell the user** (after the MCP plugin is added, the server is running, and the agent is provisioned):
+> **Your MCP plugin is wired into the agent.** 🎉 Want me to add **Entra SSO** next, so your tools get the signed-in user's verified identity? I can run the **`setup-sso-ui-widget`** skill — just say the word. (SSO only, no OBO.)

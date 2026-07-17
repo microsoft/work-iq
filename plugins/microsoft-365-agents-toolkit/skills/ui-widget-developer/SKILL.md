@@ -129,6 +129,8 @@ If the generated widget does not include React entry files (for example `widgets
 
 **NO RAW HTML-ONLY WIDGETS (DEFAULT):** Do not implement app content directly with static HTML templates and inline JS as the final widget solution. A minimal shell HTML file is allowed only as a loader for built React assets. Raw/self-contained HTML-only widgets are allowed only when the user explicitly requests a non-React prototype.
 
+**SSO HANDOFF (REQUIRED AT COMPLETION):** Once the ui-widget agent is fully scaffolded, running, and provisioned, your final completion summary MUST end by offering the optional SSO next step — see [Next Step — Add SSO](#next-step--add-sso-optional). List it in your "next steps" and ask the user if they want to wire Entra SSO via the `setup-sso-ui-widget` skill. Do NOT omit this offer, even if you also list other suggestions.
+
 **BACKGROUND PROCESSES:** MCP server and devtunnel MUST be spawned as independent OS processes — NOT run inside the agent's shell session. `isBackground: true`, `mode: "async"`, and `Start-Job` all run inside the agent's shell session and will be killed between messages. The only reliable approach is to spawn a detached OS process.
 
 **Windows — use `Start-Process -WindowStyle Hidden`:**
@@ -443,3 +445,12 @@ Key points:
 5. **Partial data**: Handle missing fields with "Unknown" defaults
 6. **Action buttons**: Hide email/chat buttons when data is "Unknown"
 7. **Version bumping**: Bump manifest version when changes aren't reflected in Copilot
+
+## Next Step — Add SSO (optional)
+
+Once the ui-widget agent is scaffolded, running, and provisioned, you can add **Entra SSO** — so your MCP tools receive the signed-in user's verified identity — with the companion skill in this same plugin:
+
+▶ **`setup-sso-ui-widget`** — registers an Entra app, reuses your existing dev tunnel, injects a minimal JWKS token guard into your MCP server, wires `mcpPlugin.json` auth, and sideloads. SSO only, no OBO. (Run `/setup-sso-ui-widget` from the project root.)
+
+**Tell the user** (after the build/provision completes):
+> **Your ui-widget agent is ready.** 🎉 Want me to wire up **SSO** next, so your tools get the signed-in user's identity? I can run the **`setup-sso-ui-widget`** skill — just say the word.
