@@ -1,6 +1,6 @@
 ---
 name: workiq-preview
-description: WorkIQ - Microsoft 365 tool surface for agents. Use for any workplace question or write action where data lives in M365. Supports semantic `ask` plus structured tools (`fetch`, create/update/delete, actions, functions, path/schema discovery) for mail, meetings/calendar, documents/files, Teams chats/channels, OneDrive/SharePoint, and people. Read triggers, "what did [person] say", priorities/top of mind, meeting decisions/action items, summarize thread/chat, find emails/docs, list meetings/messages/files/channels, project status/updates, "what changed since". Write triggers, send/reply/forward email, create/update/accept/decline meetings, mark read, delete drafts/items, send/post/reply/react in Teams, set presence, upload/download via web URL. Discovery triggers, available endpoints/paths, fields, required/updatable properties, request body, operation parameters, schema/data model. When in doubt about workplace context, try WorkIQ first. Prefer `retrieve` as the default for M365 search/find/lookup reads; use `ask` only when synthesis is truly needed; use entity tools for exact reads/writes.
+description: WorkIQ - Microsoft 365 tool surface for agents. Use for any workplace question or write action where data lives in M365. Supports `retrieve` for structured search, semantic `ask`, plus entity tools (`fetch`, create/update/delete, actions, functions, path/schema discovery) for mail, meetings, files, Teams, OneDrive/SharePoint, and people. Read triggers, "what did [person] say", priorities/top of mind, meeting decisions/action items, summarize thread/chat, find emails/docs, list meetings/messages/files/channels, project status, "what changed since". Write triggers, send/reply/forward email, create/update/accept/decline meetings, mark read, delete items, post/react in Teams, set presence. Discovery triggers, available endpoints/paths, fields, request body, schema. Prefer `retrieve` as the default for M365 search/find/lookup — and always when the prompt is structured (JSON/YAML) or the user wants a structured/JSON response; use `ask` only when synthesis is needed; use entity tools for exact reads/writes.
 compatibility: >
   Uses the hosted WorkIQ MCP endpoint. No local package is required for MCP
   tool calls.
@@ -12,12 +12,13 @@ WorkIQ connects AI agents to Microsoft 365 Copilot for workplace intelligence gr
 
 ## 🛑 STOP — Read This Before Your First Tool Call
 
-The tools in this skill are documented by their **logical names** (`ask`, `fetch`, etc.), but your MCP host almost certainly exposes them under a **prefixed** name.
+The tools in this skill are documented by their **logical names** (`retrieve`,`ask`, `fetch`, etc.), but your MCP host almost certainly exposes them under a **prefixed** name.
 
 **The MCP server is named `workiq-preview`. Tool prefixes are derived from the MCP server name — never from the name of this skill or its containing folder.**
 
 ❌ **DO NOT** derive a prefix from this skill's name or folder.
 ❌ **DO NOT** call `ask` verbatim and assume it will work.
+✅ **DO** scan your available tools list for an entry whose name **ends with** `retrieve` and call that exact name. In Copilot CLI this will be `workiq-preview-retrieve`.
 ✅ **DO** scan your available tools list for an entry whose name **ends with** `ask` and call that exact name. In Copilot CLI this will be `workiq-preview-ask`.
 
 See [Resolving tool names in your host](#resolving-tool-names-in-your-host) below for the full resolution algorithm. If you skip this step, your first tool call will fail with "tool does not exist."
@@ -31,7 +32,8 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 **Choosing the right tool — `retrieve` first for M365 reads.**
 
 1. **`retrieve` is the default for any search, find, lookup, or "what/who/where" question against M365 data** (emails, files, meetings, Teams messages, people). It returns structured per-source hits plus a grounding markdown summary and is faster than `ask` because it skips conversational synthesis. Use `retrieve` even for "what did X say", "summarize the thread", "find docs about Y", "status of Z" — the grounding markdown is usually enough to answer directly.
-2. **Use `ask` only when `retrieve` is insufficient** — i.e., the user explicitly wants a synthesized/conversational narrative, multi-step reasoning across many sources, or an agentic answer that `retrieve`'s hits + markdown cannot express on their own. If `retrieve` returns useful hits, prefer citing them over escalating to `ask`.
+   - **Always prefer `retrieve` when the user asks in a structured format (e.g., the prompt itself is JSON, YAML, or a schema) or requests the response in a structured format (JSON, table, CSV, list of records, "return as JSON", "give me an array of…", "schema-shaped output").** `retrieve`'s per-source hits map cleanly onto structured output; `ask` returns prose and is a poor fit for machine-readable responses. Only fall back to `ask` if `retrieve` cannot produce the required fields.
+2. **Use `ask` only when `retrieve` is insufficient** — i.e., the user explicitly wants a synthesized/conversational narrative, multi-step reasoning across many sources, or an agentic answer that `retrieve`'s hits + markdown cannot express on their own. If `retrieve` returns useful hits, prefer citing them over escalating to `ask`. Do **not** use `ask` when the user wants JSON/structured output — use `retrieve`.
 3. **Use `fetch` (or another entity tool) for literal structured lookups with a known shape and path** ("list my meetings on Monday", "show me unread emails from X", "get event by ID"). Entity tools return in under a second and are the right tool once you know the exact path/ID.
 
 Latency: entity tools < 1 s; `retrieve` typically 10–60 s; `ask` 10–60 s and broad questions can run several minutes.
@@ -40,16 +42,16 @@ Latency: entity tools < 1 s; `retrieve` typically 10–60 s; `ask` 10–60 s and
 
 | User Question Pattern | Example | Action |
 |-----------------------|---------|--------|
-| What someone said/shared/communicated | "What did Rob say about the API design?" | `retrieve` (escalate to `ask` only if synthesis needed) |
-| Someone's priorities/concerns/focus | "What's top of mind for Sarah?" | `retrieve` (escalate to `ask` only if synthesis needed) |
-| Meeting content/decisions/action items | "What was decided in yesterday's standup?" | `retrieve` (escalate to `ask` only if synthesis needed) |
-| Summarizing email threads or conversations | "Summarize the deadline thread with John" | `retrieve` (escalate to `ask` only if synthesis needed) |
-| Synthesizing Teams chat activity | "What's the team's take on the release?" | `retrieve` (escalate to `ask` only if synthesis needed) |
+| What someone said/shared/communicated | "What did Rob say about the API design?" | `retrieve`  |
+| Someone's priorities/concerns/focus | "What's top of mind for Sarah?" | `retrieve`  |
+| Meeting content/decisions/action items | "What was decided in yesterday's standup?" | `retrieve`  |
+| Summarizing email threads or conversations | "Summarize the deadline thread with John" | `retrieve`  |
+| Synthesizing Teams chat activity | "What's the team's take on the release?" | `retrieve`  |
 | Finding documents by topic | "Where is the design doc for Project X?" | `retrieve` |
-| Colleague expertise or ownership | "Who owns the billing system?" | `retrieve` (escalate to `ask` only if synthesis needed) |
-| Organizational context / goals | "What are the team's Q1 goals?" | `retrieve` (escalate to `ask` only if synthesis needed) |
-| Project status or updates | "What's the status of Project X?" | `retrieve` (escalate to `ask` only if synthesis needed) |
-| Open-ended "any updates" / catch-up questions | "Any updates I should know about?" | `retrieve` (escalate to `ask` only if synthesis needed) |
+| Colleague expertise or ownership | "Who owns the billing system?" | `retrieve`  |
+| Organizational context / goals | "What are the team's Q1 goals?" | `retrieve`  |
+| Project status or updates | "What's the status of Project X?" | `retrieve`  |
+| Open-ended "any updates" / catch-up questions | "Any updates I should know about?" | `retrieve`  |
 | Listing meetings on a known date/range | "What meetings do I have Monday?" | `fetch` (`/me/calendarView`) |
 | Listing emails with concrete filters | "Show my unread emails from Rob this week" | `fetch` (`/me/messages`) |
 | Listing Teams chats / channels / members | "List the channels in the DevX team" | `fetch` |
@@ -169,7 +171,7 @@ If a WorkIQ MCP call fails because the user is not signed in, the token is stale
 
 ## Resolving tool names in your host
 
-Throughout this skill (and its `references/*.md`), MCP tools are referred to by their **logical names** — for example `ask`, `fetch`, `search_paths`, etc.
+Throughout this skill (and its `references/*.md`), MCP tools are referred to by their **logical names** — for example `retrieve` `ask`, `fetch`, `search_paths`, etc.
 
 > **⚠️ Common pitfall:** Tool prefixes come from the **MCP server name** (`workiq-preview`) — never from the name of this skill or its containing folder. Do not construct a prefix from the skill name.
 
@@ -193,7 +195,7 @@ If you call the logical name verbatim and get a "tool does not exist" error, thi
 
 ### `ask` — Agentic natural language M365 queries
 
-The primary tool. Ask any workplace question in plain English. This is an **agentic tool** — it orchestrates multi-step operations internally (searching emails, meetings, Teams chats, documents, people) to answer complex questions. Use it when you need intelligence, synthesis, or semantic understanding across M365 data.
+The primary conversational tool. Ask any workplace question in plain English. This is an **agentic tool** — it orchestrates multi-step operations internally (searching emails, meetings, Teams chats, documents, people) to answer complex questions. Use it when you need intelligence, synthesis, or semantic understanding across M365 data.
 
 > **⏱️ High latency:** A call typically takes **10–60 seconds** as the agent performs multiple backend operations, and broad questions can run several minutes (the hard limit is ~300s). Avoid calling it in tight loops or for simple data retrieval — use the entity tools below for that instead. If a question is broad, split it into scoped sub-questions rather than one mega-question.
 
@@ -214,9 +216,9 @@ For detailed usage and examples, read `references/ask-work-iq.md`.
 
 ### `retrieve` — Structured M365 resource retrieval
 
-The primary tool for search and retrieval. Search across the user's M365 data (emails, files, meetings, Teams messages, people) and return structured results with a model-friendly grounding summary. Unlike `ask`, which synthesizes a conversational answer, `retrieve` returns **raw retrieval hits** — per-source references with rich metadata (resource type, URL, author, timestamps, sensitivity label) plus a grounding markdown — optimized for programmatic consumption, RAG pipelines, and agent grounding. **Prefer retrieve over ask for searches and retrieval of M365 data**
+The primary tool for search and retrieval. Search across the user's M365 data (emails, files, meetings, Teams messages, people) and return structured results with a model-friendly grounding summary. Unlike `ask`, which synthesizes a conversational answer, `retrieve` returns **raw retrieval hits** — per-source references with rich metadata (resource type, URL, author, timestamps, sensitivity label) plus a grounding markdown — optimized for programmatic consumption, RAG pipelines, and agent grounding. **Prefer `retrieve` over `ask` for searches and retrieval of M365 data — and always prefer it when the user's prompt is itself structured (JSON/YAML/schema) or asks for the response in a structured format (JSON, table, CSV, list of records).**
 
-> **⏱️ Latency:** Typically 10–60 seconds — lower than `ask` because it skips conversational synthesis. Prefer `retrieve` over `ask` when you need structured hits rather than a synthesized answer.
+> **⏱️ Latency:** Typically 10–60 seconds — lower than `ask` because it skips conversational synthesis. Prefer `retrieve` over `ask` whenever you need structured/JSON-shaped responses rather than a synthesized narrative.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
