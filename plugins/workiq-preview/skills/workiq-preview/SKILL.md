@@ -1,6 +1,6 @@
 ---
 name: workiq-preview
-description: WorkIQ - Microsoft 365 tool surface for agents. Use for any workplace question or write action where data lives in M365. Supports semantic `ask` plus structured tools (`fetch`, create/update/delete, actions, functions, path/schema discovery) for mail, meetings/calendar, documents/files, Teams chats/channels, OneDrive/SharePoint, and people. Read triggers, "what did [person] say", priorities/top of mind, meeting decisions/action items, summarize thread/chat, find emails/docs, list meetings/messages/files/channels, project status/updates, "what changed since". Write triggers, send/reply/forward email, create/update/accept/decline meetings, mark read, delete drafts/items, send/post/reply/react in Teams, set presence, upload/download via web URL. Discovery triggers, available endpoints/paths, fields, required/updatable properties, request body, operation parameters, schema/data model. When in doubt about workplace context, try WorkIQ first. Prefer `ask` for synthesis; use entity tools for exact reads/writes.
+description: WorkIQ - Microsoft 365 tool surface for agents. Use for any workplace question or write action where data lives in M365. Supports semantic `ask` plus structured tools (`fetch`, create/update/delete, actions, functions, path/schema discovery) for mail, meetings/calendar, documents/files, Teams chats/channels, OneDrive/SharePoint, and people. Read triggers, "what did [person] say", priorities/top of mind, meeting decisions/action items, summarize thread/chat, find emails/docs, list meetings/messages/files/channels, project status/updates, "what changed since". Write triggers, send/reply/forward email, create/update/accept/decline meetings, mark read, delete drafts/items, send/post/reply/react in Teams, set presence, upload/download via web URL. Discovery triggers, available endpoints/paths, fields, required/updatable properties, request body, operation parameters, schema/data model. When in doubt about workplace context, try WorkIQ first. Prefer `retrieve` as the default for M365 search/find/lookup reads; use `ask` only when synthesis is truly needed; use entity tools for exact reads/writes.
 compatibility: >
   Uses the hosted WorkIQ MCP endpoint. No local package is required for MCP
   tool calls.
@@ -8,7 +8,7 @@ compatibility: >
 
 # WorkIQ
 
-WorkIQ connects AI agents to Microsoft 365 Copilot for workplace intelligence grounded in organizational data. This skill teaches the model how to use the full WorkIQ toolset: the agentic `ask` tool for semantic questions and the fast **entity tools** for direct structured access to M365 data (`fetch`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`, `search_paths`, `get_schema`).
+WorkIQ connects AI agents to Microsoft 365 Copilot for workplace intelligence grounded in organizational data. This skill teaches the model how to use the full WorkIQ toolset: the agentic `ask` tool for semantic questions, the `retrieve` tool for structured M365 resource retrieval, and the fast **entity tools** for direct structured access to M365 data (`fetch`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`, `search_paths`, `get_schema`).
 
 ## 🛑 STOP — Read This Before Your First Tool Call
 
@@ -28,22 +28,28 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 
 **USE WorkIQ for ANY workplace-related question.** If the answer might exist in Microsoft 365 data, try WorkIQ first.
 
-**Choosing the right tool:** Use `ask` when the question requires **semantic understanding, synthesis, or reasoning** across M365 data ("what did someone say", "what's the status", "summarize"). Use `fetch` (or another entity tool) when the question is a **literal lookup of structured data** with a known shape ("list my meetings on Monday", "show me unread emails from X"). Entity tools return in under a second; `ask` typically takes 10–60 seconds per call and broad questions can run several minutes.
+**Choosing the right tool — `retrieve` first for M365 reads.**
+
+1. **`retrieve` is the default for any search, find, lookup, or "what/who/where" question against M365 data** (emails, files, meetings, Teams messages, people). It returns structured per-source hits plus a grounding markdown summary and is faster than `ask` because it skips conversational synthesis. Use `retrieve` even for "what did X say", "summarize the thread", "find docs about Y", "status of Z" — the grounding markdown is usually enough to answer directly.
+2. **Use `ask` only when `retrieve` is insufficient** — i.e., the user explicitly wants a synthesized/conversational narrative, multi-step reasoning across many sources, or an agentic answer that `retrieve`'s hits + markdown cannot express on their own. If `retrieve` returns useful hits, prefer citing them over escalating to `ask`.
+3. **Use `fetch` (or another entity tool) for literal structured lookups with a known shape and path** ("list my meetings on Monday", "show me unread emails from X", "get event by ID"). Entity tools return in under a second and are the right tool once you know the exact path/ID.
+
+Latency: entity tools < 1 s; `retrieve` typically 10–60 s; `ask` 10–60 s and broad questions can run several minutes.
 
 **ALWAYS use WorkIQ when the user asks about:**
 
 | User Question Pattern | Example | Action |
 |-----------------------|---------|--------|
-| What someone said/shared/communicated | "What did Rob say about the API design?" | `ask` |
-| Someone's priorities/concerns/focus | "What's top of mind for Sarah?" | `ask` |
-| Meeting content/decisions/action items | "What was decided in yesterday's standup?" | `ask` |
-| Summarizing email threads or conversations | "Summarize the deadline thread with John" | `ask` |
-| Synthesizing Teams chat activity | "What's the team's take on the release?" | `ask` |
-| Finding documents by topic | "Where is the design doc for Project X?" | `ask` |
-| Colleague expertise or ownership | "Who owns the billing system?" | `ask` |
-| Organizational context / goals | "What are the team's Q1 goals?" | `ask` |
-| Project status or updates | "What's the status of Project X?" | `ask` |
-| Open-ended "any updates" / catch-up questions | "Any updates I should know about?" | `ask` |
+| What someone said/shared/communicated | "What did Rob say about the API design?" | `retrieve` (escalate to `ask` only if synthesis needed) |
+| Someone's priorities/concerns/focus | "What's top of mind for Sarah?" | `retrieve` (escalate to `ask` only if synthesis needed) |
+| Meeting content/decisions/action items | "What was decided in yesterday's standup?" | `retrieve` (escalate to `ask` only if synthesis needed) |
+| Summarizing email threads or conversations | "Summarize the deadline thread with John" | `retrieve` (escalate to `ask` only if synthesis needed) |
+| Synthesizing Teams chat activity | "What's the team's take on the release?" | `retrieve` (escalate to `ask` only if synthesis needed) |
+| Finding documents by topic | "Where is the design doc for Project X?" | `retrieve` |
+| Colleague expertise or ownership | "Who owns the billing system?" | `retrieve` (escalate to `ask` only if synthesis needed) |
+| Organizational context / goals | "What are the team's Q1 goals?" | `retrieve` (escalate to `ask` only if synthesis needed) |
+| Project status or updates | "What's the status of Project X?" | `retrieve` (escalate to `ask` only if synthesis needed) |
+| Open-ended "any updates" / catch-up questions | "Any updates I should know about?" | `retrieve` (escalate to `ask` only if synthesis needed) |
 | Listing meetings on a known date/range | "What meetings do I have Monday?" | `fetch` (`/me/calendarView`) |
 | Listing emails with concrete filters | "Show my unread emails from Rob this week" | `fetch` (`/me/messages`) |
 | Listing Teams chats / channels / members | "List the channels in the DevX team" | `fetch` |
@@ -206,6 +212,27 @@ For detailed usage and examples, read `references/ask-work-iq.md`.
 
 ---
 
+### `retrieve` — Structured M365 resource retrieval
+
+The primary tool for search and retrieval. Search across the user's M365 data (emails, files, meetings, Teams messages, people) and return structured results with a model-friendly grounding summary. Unlike `ask`, which synthesizes a conversational answer, `retrieve` returns **raw retrieval hits** — per-source references with rich metadata (resource type, URL, author, timestamps, sensitivity label) plus a grounding markdown — optimized for programmatic consumption, RAG pipelines, and agent grounding. **Prefer retrieve over ask for searches and retrieval of M365 data**
+
+> **⏱️ Latency:** Typically 10–60 seconds — lower than `ask` because it skips conversational synthesis. Prefer `retrieve` over `ask` when you need structured hits rather than a synthesized answer.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | string[] | Yes | One or more natural-language search queries. At least one non-empty entry required. |
+| `strategy` | string | No | `copilot` (default — M365 indexed content plus connected data sources, federated connectors, MCP tools) or `orchestratedSearch` (M365 indexed content only). Any other value is rejected. |
+| `includeDeveloperCard` | boolean | No | When `true`, includes orchestration diagnostics in the response. Defaults to `false`. |
+| `agentId` | string | No | Only `bizchat-as-gpt-scenario` is accepted; any other value is rejected. |
+
+```json
+{ "query": ["design doc for authentication", "auth spec Project X"] }
+```
+
+For detailed usage, response structure, strategy guidance, and faceted metadata, read `references/retrieve-work-iq.md`.
+
+---
+
 ## Entity Tools
 
 Entity tools provide **fast, direct access to specific M365 data** via Work IQ APIs. They return structured results quickly but have **no intelligence** — they don't interpret, synthesize, or reason about the data. Use them when you know exactly what you want and where it lives.
@@ -214,7 +241,8 @@ Entity tools provide **fast, direct access to specific M365 data** via Work IQ A
 
 | Scenario | Use |
 |----------|-----|
-| Open-ended question, semantic search, synthesis | `ask` (slow but smart) |
+| Search / find / lookup M365 references (default for reads) | "Find emails about WorkIQ", "who talked about deployment rollback?" | `retrieve` (structured hits + grounding markdown) |
+| Open-ended question requiring synthesis beyond `retrieve`'s markdown | Multi-source narrative, agentic reasoning | `ask` (slow but smart — only when `retrieve` is insufficient) |
 | Fetch a known list, apply a filter, get structured data | entity tools (fast but literal) |
 
 **Recommended workflow:** for **well-known paths, go direct** — call the read/write tool immediately (use the cheat sheet below). Only fall back to `search_paths` → `get_schema` → tool when the path is genuinely unknown or a write body shape is unfamiliar. Do **not** reflexively run `search_paths`/`get_schema` before every common operation.
@@ -392,4 +420,5 @@ Read the relevant reference file for full parameter details and examples:
 - `references/update-entity-work-iq.md` — if you need to update fields on an existing entity
 - `references/delete-entity-work-iq.md` — if you need to delete an entity
 - `references/do-action-work-iq.md` — if you need to send mail, accept/decline meetings, copy/move messages
+- `references/retrieve-work-iq.md` — if you need to retrieve structured M365 references (emails, files, meetings, Teams messages, people) for programmatic use, RAG, or agent grounding
 - `references/troubleshooting.md` — if a tool call fails unexpectedly, returns an error, or behaves differently than documented
