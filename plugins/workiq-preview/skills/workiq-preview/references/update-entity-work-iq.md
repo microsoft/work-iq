@@ -16,6 +16,7 @@ PATCH an existing WorkIQ entity. Only fields in the body are changed; other fiel
 - Update event subject, time, location
 - Change task status or due date
 - Update document metadata
+- Move a OneDrive driveItem by changing `parentReference`
 - Any partial update to an existing M365 entity
 
 ## Gotchas
@@ -48,6 +49,53 @@ PATCH an existing WorkIQ entity. Only fields in the body are changed; other fiel
   "jsonBody": "{\"subject\":\"Updated: Team Sync\",\"location\":{\"displayName\":\"Conference Room B\"}}"
 }
 ```
+
+### Rename a OneDrive file
+
+This is a known drive-scoped update contract. Do not call `search_paths` or
+`get_schema`, and do not PATCH `/me/drive/items/{id}` because that alias is not
+exposed for update in the deployed WorkIQ policy.
+
+1. Resolve the exact filename with one `call_function` call:
+   - `/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,parentReference,file&$top=10`
+2. Retain the result's `id` and `parentReference.driveId`.
+3. Rename it with `update_entity`:
+
+```json
+{
+  "entityUrl": "/drives/{driveId}/items/{itemId}",
+  "jsonBody": {"name": "Final filename.txt"}
+}
+```
+
+Use the complete bounded lookup URL above, including `$top=10`. Stop after the
+successful PATCH because its response contains the renamed driveItem. The
+workflow is exactly `call_function` then `update_entity`.
+
+### Move a OneDrive file into a folder
+
+This is a known update contract, not a `/move` action. Do not call
+`search_paths` or `get_schema` for it.
+
+1. Resolve both names with two `call_function` calls:
+   - `/me/drive/root/search(q='{urlEncodedSourceName}')?$select=id,name,parentReference,file,folder&$top=10`
+   - `/me/drive/root/search(q='{urlEncodedFolderName}')?$select=id,name,parentReference,file,folder&$top=10`
+2. Confirm the source result has a `file` facet and the target has a `folder`
+   facet. Keep the source `parentReference.driveId`, source `id`, and target
+   `id`. Do not put `eTag` or `@odata.etag` in `$select`; Graph rejects those
+   terms on drive search.
+3. Move the source with `update_entity`:
+
+```json
+{
+  "entityUrl": "/drives/{driveId}/items/{sourceId}",
+  "jsonBody": {"parentReference": {"id": "{folderId}"}}
+}
+```
+
+Do not fetch again solely to obtain an etag or verify the move. A successful
+drive-scoped PATCH response is sufficient unless the user explicitly requests
+verification.
 
 ### Update a Planner task's due date
 ```json

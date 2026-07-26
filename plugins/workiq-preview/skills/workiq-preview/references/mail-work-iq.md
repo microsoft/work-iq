@@ -5,19 +5,19 @@ drafting/sending/replying/forwarding, marking read, copying/moving, and deleting
 for synthesis questions ("summarize the deadline thread with John"), not for finding,
 listing, or mutating individual messages.
 
-## Mail delta: prefer `/me/messages/delta` for full-mailbox sync
+## Mail delta: use `/me/mailFolders/{id}/messages/delta` (folder-scoped)
 
-For "sync my mail", "fetch the mail delta", or "give me mail changes" with **no folder named**,
-route `call_function` to `/me/messages/delta` — full mailbox in one cursor.
-`/me/mailFolders/{folderId}/delta` (e.g. `/me/mailFolders/inbox/delta`) is folder-scoped; use it
-only when the user names a folder.
+Message delta is **always folder-scoped** — there is **no** tenant-wide `/me/messages/delta`
+endpoint. For "sync my mail", "fetch the mail delta", or "give me mail changes" with **no folder
+named**, default to the inbox cursor `/me/mailFolders/inbox/messages/delta`. When the user names a
+folder, target that folder's messages delta, e.g. `/me/mailFolders/{folderId}/messages/delta`.
 
 Paginate `@odata.nextLink` until you reach `@odata.deltaLink` (resume token for the next sync) —
 stopping at the first page is wrong.
 
 > **Always `call_function`, never `fetch`.** `delta` is an OData function. Calling
-> `/me/messages/delta` through `fetch` returns an `InvalidRequest` or wrong shape; route through
-> `call_function` with the function URL.
+> `/me/mailFolders/inbox/messages/delta` through `fetch` returns an `InvalidRequest` or wrong
+> shape; route through `call_function` with the function URL.
 
 ## Finding a message by subject — use `$search`, not `$filter=contains`
 
@@ -58,8 +58,8 @@ folder names are exact-match by design. Use it for `rename` / `move` / `delete` 
 | Permanently delete (bypasses Deleted Items) | `do_action` | `/me/messages/{id}/permanentDelete` |
 | List folders | `fetch` | `/me/mailFolders` |
 | Find a folder by name | `fetch` | `/me/mailFolders?$filter=displayName eq 'Specs'` |
-| Mail delta (no folder) | `call_function` | `/me/messages/delta` |
-| Mail delta (folder-scoped) | `call_function` | `/me/mailFolders/inbox/messages/delta` |
+| Mail delta (default / no folder named) | `call_function` | `/me/mailFolders/inbox/messages/delta` |
+| Mail delta (specific folder) | `call_function` | `/me/mailFolders/{folderId}/messages/delta` |
 
 ## "Draft" vs "send" — pick the right verb
 

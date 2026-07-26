@@ -25,6 +25,11 @@ For exact reads ("show/list/get latest messages", "list members", "show my chats
 > fails — delta is an OData **function** and must go through `call_function`. See
 > `references/call-function-work-iq.md`.
 
+> **Named OneDrive search is also a function.** For a file identified by exact
+> name, call `/me/drive/root/search(q='...')` through `call_function` once and
+> answer from that result. Do not follow it with `/me/drive/items/{id}` merely
+> to retrieve the same metadata again.
+
 ## Multi-fetch caveats
 
 - The batch result can report an error when **any one** URL fails, even if the other URLs
@@ -108,6 +113,25 @@ Never fabricate base64 content, `@odata.mediaContentType`, or an `@microsoft.gra
 { "entityUrls": ["/me"] }
 ```
 
+### Get the signed-in user's profile photo metadata
+
+Resolve the signed-in user's id, then read the photo through the exposed
+user-id path. Do not call the policy-denied `/me/photo` alias, and do not call
+`/$value`, which is binary content.
+
+```json
+{ "entityUrls": ["/me?$select=id"] }
+```
+
+```json
+{ "entityUrls": ["/users/{id}/photo?$select=id,width,height"] }
+```
+
+Do not put `@odata.mediaContentType` or `@odata.type` in `$select`; Graph rejects
+those annotations in a select expression. Read the media content type annotation
+from the metadata response when a profile photo exists. A `404 ImageNotFound`
+means the selected user currently has no profile photo.
+
 ### Get unread emails (top 10)
 ```json
 { "entityUrls": ["/me/messages?$top=10&$filter=isRead%20eq%20false&$select=subject,from,receivedDateTime"] }
@@ -131,6 +155,39 @@ Never fabricate base64 content, `@odata.mediaContentType`, or an `@microsoft.gra
 ### Get files from OneDrive
 ```json
 { "entityUrls": ["/me/drive/root/children?$select=name,size,lastModifiedDateTime"] }
+```
+
+### Get the first accessible SharePoint site's default drive or lists
+
+For prompts that say "the first SharePoint site I can access," use the first
+item returned by the exact site search below. Microsoft Graph's site collection
+uses the `search` parameter without a `$` prefix. Do not try `$search=*`, an
+empty search, guessed terms, or `ask`.
+
+```json
+{
+  "entityUrls": [
+    "/sites?search=*&$select=id,displayName,name,webUrl&$top=1"
+  ]
+}
+```
+
+Then use the returned site `id` in exactly one of these reads:
+
+```json
+{
+  "entityUrls": [
+    "/sites/{siteId}/drive?$select=id,name,driveType,owner,quota,webUrl,createdDateTime,lastModifiedDateTime,description,system"
+  ]
+}
+```
+
+```json
+{
+  "entityUrls": [
+    "/sites/{siteId}/lists?$select=id,displayName,name,webUrl&$top=200"
+  ]
+}
 ```
 
 ### Get Teams channels for a group
