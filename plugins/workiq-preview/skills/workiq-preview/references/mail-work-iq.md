@@ -1,23 +1,27 @@
 # Mail (Outlook messages and folders)
 
-Use the WorkIQ **entity tools** for mail requests — listing/searching messages, reading folders,
-drafting/sending/replying/forwarding, marking read, copying/moving, and deleting. Use `ask` only
-for synthesis questions ("summarize the deadline thread with John"), not for finding,
-listing, or mutating individual messages.
+Use `retrieve` for relevance-ranked M365 indexed mail grounding, especially for another
+agent or RAG workflow. Use `ask` for synthesis questions such as "summarize the deadline
+thread with John" or semantic search plus a human-facing summary of the top matches. If
+the user asks to find meaning-based matches **and** summarize or interpret them, route
+directly to `ask`; use `retrieve` only when the ranked mail evidence itself is the requested
+deliverable. Use the WorkIQ **entity tools** for authoritative records, exact counts,
+chronological ordering, deterministic filters, and for drafting, sending, replying,
+forwarding, marking read, copying, moving, and deleting messages.
 
-## Mail delta: prefer `/me/messages/delta` for full-mailbox sync
+## Mail delta: use `/me/mailFolders/{id}/messages/delta` (folder-scoped)
 
-For "sync my mail", "fetch the mail delta", or "give me mail changes" with **no folder named**,
-route `call_function` to `/me/messages/delta` — full mailbox in one cursor.
-`/me/mailFolders/{folderId}/delta` (e.g. `/me/mailFolders/inbox/delta`) is folder-scoped; use it
-only when the user names a folder.
+Message delta is **always folder-scoped** — there is **no** tenant-wide `/me/messages/delta`
+endpoint. For "sync my mail", "fetch the mail delta", or "give me mail changes" with **no folder
+named**, default to the inbox cursor `/me/mailFolders/inbox/messages/delta`. When the user names a
+folder, target that folder's messages delta, e.g. `/me/mailFolders/{folderId}/messages/delta`.
 
 Paginate `@odata.nextLink` until you reach `@odata.deltaLink` (resume token for the next sync) —
 stopping at the first page is wrong.
 
 > **Always `call_function`, never `fetch`.** `delta` is an OData function. Calling
-> `/me/messages/delta` through `fetch` returns an `InvalidRequest` or wrong shape; route through
-> `call_function` with the function URL.
+> `/me/mailFolders/inbox/messages/delta` through `fetch` returns an `InvalidRequest` or wrong
+> shape; route through `call_function` with the function URL.
 
 ## Finding a message by subject — use `$search`, not `$filter=contains`
 
@@ -58,19 +62,20 @@ folder names are exact-match by design. Use it for `rename` / `move` / `delete` 
 | Permanently delete (bypasses Deleted Items) | `do_action` | `/me/messages/{id}/permanentDelete` |
 | List folders | `fetch` | `/me/mailFolders` |
 | Find a folder by name | `fetch` | `/me/mailFolders?$filter=displayName eq 'Specs'` |
-| Mail delta (no folder) | `call_function` | `/me/messages/delta` |
-| Mail delta (folder-scoped) | `call_function` | `/me/mailFolders/inbox/messages/delta` |
+| Mail delta (default / no folder named) | `call_function` | `/me/mailFolders/inbox/messages/delta` |
+| Mail delta (specific folder) | `call_function` | `/me/mailFolders/{folderId}/messages/delta` |
 
 ## "Draft" vs "send" — pick the right verb
 
-When the user says **"draft an email"**, **"compose a reply"**, **"prepare a response"**, or any
-variant asking the draft to **exist** (not just suggest wording), call `create_entity` to POST:
+When the user asks for suggested wording without asking to save it in Outlook, use `ask`.
+When the user explicitly asks to create, save, or persist an Outlook draft, call
+`create_entity` to POST:
 
 - Fresh draft → `/me/messages`
 - Reply / reply-all / forward → `/me/messages/{id}/createReply`, `/createReplyAll`, `/createForward`
 
-These create persisted drafts the user can open in Outlook. **Generating draft text inline
-does NOT satisfy the request** — the user can't open it in Outlook.
+These create persisted drafts the user can open in Outlook. For a persisted-draft request,
+**generating draft text inline does NOT satisfy the request** — the user can't open it in Outlook.
 
 `do_action` `/reply`, `/replyAll`, `/forward`, `/sendMail` all send **immediately** — never use
 those when the user asked for a draft.
@@ -79,7 +84,7 @@ those when the user asked for a draft.
 
 1. Resolve the message with **one** `fetch` (filter by `$search` for subject, or by `id`).
 2. If the first fetch misses, try **one** `ask` to locate it semantically.
-3. If still not found, **stop and report "not found"** — do not fire 10+ more
-   `fetch`/`search_paths`/`ask` calls.
+3. If the fetch returns no matches, **stop and report "not found"** — do not fire repeated
+   `fetch` or `search_paths` calls.
 4. Once you have the id, call the mutation directly. Finding the message is not the goal;
    performing the requested action is.

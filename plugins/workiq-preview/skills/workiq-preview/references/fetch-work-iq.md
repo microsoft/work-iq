@@ -1,6 +1,8 @@
 # fetch
 
-Fetch one or more WorkIQ entities by path using HTTP GET. Use this for precise, structured retrieval of M365 data when `ask` isn't specific enough — for example, to get a list of items with specific fields, apply filters, or read a single entity by ID.
+Read authoritative Microsoft 365 resources using a known path, ID, or deterministic collection/filter. Use `fetch` when exact records, counts, ordering, IDs, or fields matter, including one bounded mutation-target lookup. Do not use it for semantic relevance ranking, indexed grounding, reasoning, or answer synthesis.
+
+The primary test is whether the agent can express the requested result as a resource path plus deterministic query semantics. A natural-language request can still use `fetch` when it maps cleanly to a deterministic query such as an OData filter, ordering clause, or exact keyword `$search`.
 
 ## Parameters
 
@@ -10,20 +12,33 @@ Fetch one or more WorkIQ entities by path using HTTP GET. Use this for precise, 
 
 ## When to Use
 
-- When you need a structured list of entities (messages, events, files, etc.)
-- When you need to apply specific OData filters or select specific fields
-- When you already have an entity ID and want its full details
+- Read an entity whose ID or exact entity URL is already known
+- Read a known collection path with explicit fields or deterministic OData filters
+- Run an exact keyword search when the resource collection and search expression are known
+- Resolve the exact target of a requested mutation with one bounded collection/filter read
 - For multi-fetch: pass multiple URLs to retrieve several entities in one call
 
-Prefer `ask` for open-ended questions. Use `fetch` when you need precise, filtered, or structured data.
+Do not use `fetch` for semantic discovery, relevance ranking, indexed grounding, or answer synthesis.
 
-Use `fetch` (not `ask`) to resolve exact targets before mutations — find an event ID before deleting/updating, a draft before adding recipients or sending, a Teams chat/channel/message before editing/reacting/posting, a mail thread before reply/forward/move/mark-read.
+- Ranked M365 indexed evidence, citations, and grounding for another agent/RAG workflow → `retrieve`
+- Summaries, explanations, comparisons, recommendations, and conversational answers → `ask`
 
-For exact reads ("show/list/get latest messages", "list members", "show my chats", "retrieve the event titled…"), prefer filtered `fetch` or a known function path. Do not answer from general knowledge, local SQL, or `ask` unless the prompt asks for synthesis.
+Use `fetch` for exact recent/latest/last-N requests when count and chronological ordering are requirements. For example, "get my last five emails" is a deterministic collection read; "find the most relevant recent emails about launch risk for another agent" is indexed grounding and belongs to `retrieve`.
+
+`fetch` and `retrieve` may be combined only for distinct purposes. A semantic `retrieve` can identify a relevant hit before `fetch` reads exact authoritative fields from that selected resource. Do not add either tool merely to verify or broaden a sufficient result.
+
+Use `fetch` to resolve exact targets before mutations — find an event ID before deleting/updating, a draft before adding recipients or sending, a Teams chat/channel/message before editing/reacting/posting, or a mail thread before reply/forward/move/mark-read. Keep the lookup bounded; ask the user to choose when multiple entities match, and stop when none match.
+
+For literal structured reads such as "list members," "show my chats," or "get event AAMk...," use filtered `fetch` or a known function path. Do not answer from general knowledge or local SQL.
 
 > **⚠️ Not for delta queries.** Calling `/.../delta` or `/.../delta()` through `fetch`
 > fails — delta is an OData **function** and must go through `call_function`. See
 > `references/call-function-work-iq.md`.
+
+> **Named OneDrive search is also a function.** For a file identified by exact
+> name, call `/me/drive/root/search(q='...')` through `call_function` once and
+> answer from that result. Do not follow it with `/me/drive/items/{id}` merely
+> to retrieve the same metadata again.
 
 ## Multi-fetch caveats
 
@@ -47,8 +62,8 @@ Collection responses are **pages**, not the full result set. When a response con
   support it and the call fails.
 - If you stop before exhausting pages, **tell the user the list is partial** ("first 25 of
   more") — never present one page as the complete answer.
-- **Cap your paging.** For "latest/recent" questions one page is usually enough; otherwise stop
-  after 2–3 pages unless the user explicitly asked for the complete set. Do not follow
+- **Cap your paging.** For bounded structured collection reads, one page is usually enough;
+  otherwise stop after 2–3 pages unless the user explicitly asked for the complete set. Do not follow
   `@odata.nextLink` for dozens of pages to enumerate an entire mailbox or message history.
 
 ## URL Format
@@ -103,10 +118,32 @@ Never fabricate base64 content, `@odata.mediaContentType`, or an `@microsoft.gra
 
 ## Examples
 
+These are literal structured reads against known paths or deterministic filters. For semantic
+search, relevance ranking, citations, or downstream-agent grounding, use `retrieve` instead.
+
 ### Get the signed-in user's profile
 ```json
 { "entityUrls": ["/me"] }
 ```
+
+### Get the signed-in user's profile photo metadata
+
+Resolve the signed-in user's id, then read the photo through the exposed
+user-id path. Do not call the policy-denied `/me/photo` alias, and do not call
+`/$value`, which is binary content.
+
+```json
+{ "entityUrls": ["/me?$select=id"] }
+```
+
+```json
+{ "entityUrls": ["/users/{id}/photo?$select=id,width,height"] }
+```
+
+Do not put `@odata.mediaContentType` or `@odata.type` in `$select`; Graph rejects
+those annotations in a select expression. Read the media content type annotation
+from the metadata response when a profile photo exists. A `404 ImageNotFound`
+means the selected user currently has no profile photo.
 
 ### Get unread emails (top 10)
 ```json
@@ -131,6 +168,39 @@ Never fabricate base64 content, `@odata.mediaContentType`, or an `@microsoft.gra
 ### Get files from OneDrive
 ```json
 { "entityUrls": ["/me/drive/root/children?$select=name,size,lastModifiedDateTime"] }
+```
+
+### Get the first accessible SharePoint site's default drive or lists
+
+For prompts that say "the first SharePoint site I can access," use the first
+item returned by the exact site search below. Microsoft Graph's site collection
+uses the `search` parameter without a `$` prefix. Do not try `$search=*`, an
+empty search, guessed terms, or `ask`.
+
+```json
+{
+  "entityUrls": [
+    "/sites?search=*&$select=id,displayName,name,webUrl&$top=1"
+  ]
+}
+```
+
+Then use the returned site `id` in exactly one of these reads:
+
+```json
+{
+  "entityUrls": [
+    "/sites/{siteId}/drive?$select=id,name,driveType,owner,quota,webUrl,createdDateTime,lastModifiedDateTime,description,system"
+  ]
+}
+```
+
+```json
+{
+  "entityUrls": [
+    "/sites/{siteId}/lists?$select=id,displayName,name,webUrl&$top=200"
+  ]
+}
 ```
 
 ### Get Teams channels for a group
