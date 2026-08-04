@@ -59,8 +59,8 @@ Planner task body fields: `planId`, `title`, `bucketId`, `assignments`, `dueDate
 ## Resolve-then-act (do not loop)
 
 1. Resolve the target with `fetch` (Planner task) — match by `title`. (Planner plan) - first using `/me/planner/plans` else using `/groups/{group-id}/planner/plans`
-2. If the fetch does not find it, try **one** `ask` to locate it semantically.
-3. If still not found, **stop and report "not found"** — do not fire 10+ more `fetch`/`search_paths`/`ask` calls.
+2. If the fetch does not find it, try **one** `retrieve` to locate it semantically.
+3. If still not found, **stop and report "not found"** — do not fire 10+ more `fetch`/`search_paths`/`ask` / `retrieve` calls.
 4. Once you have the id, call the mutation (`create_entity` / `update_entity` / `delete_entity`).
 
 ## Examples

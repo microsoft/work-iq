@@ -1,10 +1,26 @@
 # retrieve
 
-Search across the user's M365 data (emails, files, meetings, Teams messages, people) and return structured results with a model-friendly grounding summary. `retrieve` accepts the same natural-language queries as `ask`, but instead of a synthesized conversational answer it returns **raw retrieval hits** — per-source references with rich metadata (resource type, URL, author, timestamps, sensitivity label) plus a grounding markdown — optimized for programmatic consumption, RAG pipelines, and agent-to-agent grounding.
+Semantically search Microsoft 365 and connected tools for grounding data (emails, files, meetings, Teams messages, people) for the current user when the desired content cannot be expressed as a deterministic resource query. Returns ranked evidence, snippets, citations, source metadata, structured hits, and model-friendly grounding markdown. `retrieve` supports user-facing semantic discovery as well as grounding another agent, model, or RAG workflow; it does not synthesize a final conversational answer or guarantee authoritative count, ordering, or completeness.
 
-> **When to reach for `retrieve` instead of `ask`:** pick based on **who is consuming the answer**, not on how the question is phrased. If the caller is another agent, LLM, MCP client, external tool, or a RAG/grounding pipeline, conversational synthesis is not useful — return structured hits with `retrieve`. If a human explicitly asks for structured output (JSON, table, CSV, list of records) or hands you a structured prompt (JSON/YAML/schema), also use `retrieve`. Reserve `ask` for the case where a human needs a synthesized prose answer that `retrieve`'s hits + grounding markdown cannot express on their own.
+> **When to reach for `retrieve`:** use it when the requested deliverable is relevant grounding evidence selected by meaning or conceptual relevance rather than a resource path plus deterministic query. This includes finding emails, files, meetings, messages, people, or passages about a topic and searching within a known document or container by meaning.
 >
-> **⏱️ Latency:** Typically 15–60 seconds depending on strategy. Lower than `ask` because it skips conversational synthesis. Prefer entity tools when you already know the exact resource path.
+> **Strategy default:** Use `copilot` by default. Omit `strategy` for the normal `copilot` path. Use `grounding` only when the user explicitly asks for faster, optimized-for-latency, or low-latency retrieval, or explicitly names the grounding strategy. Ambiguous requests to "optimize" stay on `copilot` unless the user ties optimization to speed or latency. If connected or external sources may be required, keep `copilot` and explain that `grounding` would narrow coverage even when speed is requested.
+>
+> **Output boundary:** route to `ask`, not `retrieve`, when the requested deliverable is a synthesized conclusion or narrative — for example, comparing sources or versions, identifying which sources cover a topic, summarizing the top semantic matches, identifying ownership, a point of contact, expertise, dependencies, blockers, implications, priorities, a career timeline, or whether something needs the user's attention. Citations do not change this boundary: supporting sources can accompany an `ask` answer without turning the request into a ranked-evidence deliverable. The fact that evidence must be found across multiple sources does not make the final-answer request a retrieval task. Use `fetch` / `call_function` when the result can be expressed as authoritative deterministic records, fields, counts, ordering, or filters.
+>
+> **Precision and recall:** Semantic results are ranked and truncated, so recall and precision are not guaranteed. Relevant items may be omitted, and weakly related items may be returned. Do not present retrieval hits as exhaustive or as a deterministic filter result.
+>
+> **Not a prerequisite:** Do not call `retrieve` before `ask`, an exact entity read, or a mutation. Natural-language phrasing alone does not make a request a retrieval task.
+>
+> **Mutually exclusive with `ask`:** Choose one of these tools for the current user turn. Once `retrieve` is called, do not call `ask` afterward for synthesis, fallback, verification, broadening, or retry. If synthesis is requested, produce it directly from the cited retrieval evidence. Never alternate the two tools in a loop.
+>
+> **Distinct-purpose chaining:** `retrieve` may precede `fetch` when semantic discovery identifies a hit whose exact fields are then required. It may follow `fetch` when a deterministic read identifies a document or container whose content must then be searched semantically. Do not chain the tools merely to verify, broaden, or retry a sufficient result.
+>
+> **Stop at the requested deliverable:** For a grounding request, return sufficient cited retrieval evidence and stop unless a distinct exact read is also required. For a synthesized answer, choose `ask` instead of `retrieve`, even when citations or source names are requested. Use `retrieve` and synthesize directly from its evidence only when the caller explicitly requests a separate ranked package of hits, snippets, citations, or grounding for downstream consumption; do not call `ask` afterward.
+>
+> **Mutation target resolution:** Do not use `retrieve` to identify a mutation target. Use one bounded `fetch` against the relevant entity collection or filter, ask the user to choose if multiple entities match, and perform the write only with the confirmed ID.
+>
+> **⏱️ Latency:** Typically 15–60 seconds depending on strategy. Lower than `ask` because it skips conversational synthesis. Prefer `fetch` when you already know the exact resource ID or entity URL.
 >
 > **Grounding:** Base your answer only on what the response actually contains. If `retrieve` reports no accessible results or weak evidence, say so — do not pad the answer with information the response does not support.
 
@@ -23,7 +39,7 @@ The strategy controls **where data comes from**, not how results are ranked or h
 
 ### `copilot` (default)
 
-M365 indexed content **plus** federated connectors, external connected data sources, plugins, MCP tools, and other supported enterprise systems. Omitting `strategy` selects `copilot`.
+Semantically discover relevant enterprise content and return structured evidence, snippets, citations, and metadata. It can use M365 indexed content plus federated connectors, external connected data sources, plugins, MCP tools, and other supported enterprise systems. Another agent should reason over the returned evidence; `retrieve` does not produce the final conversational answer. Omitting `strategy` selects `copilot`.
 
 Use `copilot` when:
 - The request may need data beyond the M365 index (e.g., a Salesforce connector, ServiceNow, a connected enterprise system, or an MCP tool)
@@ -32,13 +48,14 @@ Use `copilot` when:
 
 ### `grounding`
 
-M365 indexed content **only** — SharePoint, OneDrive, Teams chats and messages, Outlook mail, and other content in the Microsoft 365 semantic index. No connected connectors, external sources, plugins, or tools are invoked.
+Return ranked grounding snippets and citations for a focused query over M365 indexed content only — SharePoint, OneDrive, Teams chats and messages, Outlook mail, and other content in the Microsoft 365 semantic index. Use it for low-latency RAG context assembly. It does not synthesize an answer or perform full agent reasoning. No connected connectors, external sources, plugins, or tools are invoked.
 
 Use `grounding` when:
-- The request can be satisfied entirely from M365 indexed data
-- No federated connector, external data source, plugin, or MCP tool is required
+- The user explicitly asks for faster, optimized-for-latency, or low-latency retrieval
+- The user explicitly requests `grounding`
+- The request does not require connected or external sources
 
-> **Decision rule: choose based on data location, not latency or complexity.** If all the required information is in the M365 index, use `grounding`. If the request needs anything beyond the M365 index — or you are unsure — use `copilot`.
+> **Decision rule: default to `copilot`; opt into `grounding` only for an explicit speed/latency preference.** M365-only data location is not enough by itself to choose `grounding`. If connected or external sources are needed or possible, use `copilot`.
 
 ## Response structure
 
@@ -47,7 +64,7 @@ The tool returns two content forms:
 1. **Text block** (`content[0].text`) — the `markdown` field verbatim. Contains the grounding summary with inline citation markers like `[^h1]`. This is suitable for direct inclusion in a response without further processing.
 2. **Structured content** (`structuredContent["application/vnd.ms-workiq.retrieval"]`) — the full typed payload for programmatic consumers.
 
-> **✅ Preferred consumption path: `markdown`.** The `markdown` field is the intended, first-class output of `retrieve`. It is already model-friendly, carries inline `[^id]` citations that map to `retrievalHits[*].id`, and is what downstream agents, prompts, and human readers should consume by default. **Use `markdown` verbatim whenever possible** — do not reformat, re-summarize, or paraphrase it, and do not rebuild a summary from the structured payload. Only reach into `retrievalHits` / `structuredContent` when you need a specific field the markdown doesn't already expose (e.g., a raw `webUrl`, a `sensitivityLabel`, or a `relevanceScore` for a particular hit).
+> **Choose the response form for the consumer.** Model and prompt consumers should usually receive the citation-bearing `markdown`. Programmatic clients that need fields, IDs, URLs, scores, or facets should consume `structuredContent` / `retrievalHits` directly. Do not force a programmatic caller to re-parse prose.
 
 ### Envelope shape (`application/vnd.ms-workiq.retrieval`)
 
@@ -99,6 +116,7 @@ Only the facet(s) matching the resource type are present on a given hit. Multipl
 
 Some MCP hosts (including the GitHub Copilot CLI) surface an MCP tool result as a **single concatenated blob** — the `markdown` text block followed by the JSON `structuredContent`. When the combined payload exceeds the host's inline output cap (typically ~20 KB), the entire blob is spilled to a temporary file and the agent only sees a short preview. In that case:
 
+- **Read the spilled payload once.** Do not repeatedly inspect the same payload with `view`, `rg`, or shell commands.
 - **Do not** reparse the structured JSON to rebuild a summary — the `snippet` / discussion fields are long and noisy, and doing so drops the built-in `[^h1]` citations.
 - **Do** slice the spilled file to isolate the leading `markdown` segment and use it verbatim. The markdown ends immediately before the JSON tail, which starts with a line like:
 
@@ -111,33 +129,34 @@ Some MCP hosts (including the GitHub Copilot CLI) surface an MCP tool result as 
 
 The markdown-first path is the intended contract; the structured payload is a supplementary machine-readable view, not a replacement for the markdown summary.
 
-## When to use `retrieve` vs `ask`
+## When to use `retrieve`, `ask`, or `fetch`
 
-> **Both tools accept natural-language queries.** They are not distinguished by how you phrase the question — they are distinguished by **who consumes the answer** and **whether conversational synthesis is needed**. `ask` returns synthesized prose; `retrieve` returns structured hits with a grounding markdown.
+> `retrieve` searches by meaning, `ask` returns synthesis, and `fetch` executes an expressible deterministic resource query.
 
-**Rule of thumb:** if the caller is not a human reading prose, use `retrieve`.
+**Rule of thumb:** use `retrieve` when intent depends on semantic meaning; use `fetch` / `call_function` when the agent can express the desired result as a known resource path and deterministic query.
 
 | Caller / scenario | Tool | Why |
 |---|---|---|
-| Another agent, LLM, MCP client, or external tool consuming the answer | `retrieve` | Structured hits are directly consumable; prose has to be re-parsed and loses citations |
+| Another agent or LLM needs enterprise grounding | `retrieve` (`copilot`, omit `strategy`) | Broadest evidence coverage is the default |
 | RAG pipeline, grounding step, or agent-to-agent handoff | `retrieve` | Per-source metadata + IDs are the native input format |
-| Human explicitly asks for structured output (JSON, table, CSV, list of records) | `retrieve` | Hits map cleanly onto the requested shape |
-| Prompt itself is structured (JSON / YAML / schema) | `retrieve` | Signal that the caller is programmatic or expects programmatic output |
+| Programmatic client needs semantic M365 evidence | `retrieve` | Consume `structuredContent` / `retrievalHits` directly |
 | Need inline per-result metadata (subject, author, dates, URL, sensitivity label) | `retrieve` | Facets are surfaced on each hit |
 | Need access to connected data sources beyond M365 | `retrieve` (`strategy: copilot`) | Federated connectors + MCP tools included |
-| Request satisfied entirely from M365 indexed content | `retrieve` (`strategy: grounding`) | M365 index only, no external calls |
-| Human end-user wants a synthesized, conversational answer that hits + grounding markdown alone can't express | `ask` | Only case where prose synthesis is worth the extra latency |
+| User explicitly asks for faster / low-latency M365-only retrieval | `retrieve` (`strategy: grounding`) | Narrows retrieval to the M365 index for latency |
+| Find semantically relevant recent indexed items for grounding | `retrieve` (`copilot`, omit `strategy`) | Relevance-ranked evidence with broad coverage |
+| Search within a known document or container by meaning | `retrieve` (`copilot`, omit `strategy`) | Semantic content matching cannot be expressed as an entity metadata filter |
+| Summarize, explain, compare, draft, answer, decide, or recommend | `ask` | Produces the synthesized conversational result |
+| Read exact records, ordered last-N items, exact keyword searches, complete filtered collections, IDs, or fields | `fetch` / `call_function` | Performs an authoritative deterministic query |
 
-`ask` and `retrieve` are complementary, not substitutes — `retrieve` surfaces the raw hits that `ask` would turn into prose. Whenever conversational synthesis is not needed, prefer `retrieve` even if the question sounds like natural language (e.g., "what did Rob say about auth?", "summarize the deployment thread", "who owns billing?"). Fall back to `ask` only when a human end-user needs the synthesis itself.
+`ask` and `retrieve` serve different outputs and are mutually exclusive within one user turn. Never chain or alternate them. When both evidence and synthesis are requested, use `retrieve` and synthesize directly from its cited evidence. `retrieve` and `fetch` may be chained only when semantic discovery/content search and an exact resource read are both independently required.
 
 ## Examples
 
-### Documents and files (M365 only → `grounding`)
+### Documents and files (default → `copilot`)
 
 ```json
 {
-  "query": ["authentication design spec", "auth architecture for Project X"],
-  "strategy": "grounding"
+  "query": ["authentication design spec", "auth architecture for Project X"]
 }
 ```
 
@@ -145,8 +164,15 @@ The markdown-first path is the intended contract; the structured payload is a su
 
 ```json
 {
-  "query": ["emails about the Q3 release deadline"],
-  "strategy": "grounding"
+  "query": ["emails about the Q3 release deadline"]
+}
+```
+
+### Relevant recent emails for agent grounding
+
+```json
+{
+  "query": ["recent emails with James Doe that provide grounding about launch risk"]
 }
 ```
 
@@ -154,8 +180,7 @@ The markdown-first path is the intended contract; the structured payload is a su
 
 ```json
 {
-  "query": ["decisions from the architecture review meeting last week"],
-  "strategy": "grounding"
+  "query": ["decisions from the architecture review meeting last week"]
 }
 ```
 
@@ -163,16 +188,23 @@ The markdown-first path is the intended contract; the structured payload is a su
 
 ```json
 {
-  "query": ["Teams discussion about the deployment rollback"],
-  "strategy": "grounding"
+  "query": ["Teams discussion about the deployment rollback"]
 }
 ```
 
-### People and expertise
+### People-related evidence
 
 ```json
 {
-  "query": ["who owns the billing service", "authentication expert on the team"],
+  "query": ["messages and documents mentioning billing service ownership", "project content about authentication work"]
+}
+```
+
+### Explicit low-latency request (→ `grounding`)
+
+```json
+{
+  "query": ["Use grounding strategy for the following query: documents about the authentication redesign"],
   "strategy": "grounding"
 }
 ```
@@ -219,10 +251,13 @@ The markdown-first path is the intended contract; the structured payload is a su
 ## Interpreting the response
 
 1. **Check `stoppedReason` first.** If `error`, the response is a tool error — the `markdown` field may contain a diagnostic message but should not be treated as grounding content.
-2. **`markdown` is the preferred consumption path — use it verbatim.** It is already a model-friendly grounding summary with inline `[^h1]` citations that map to `retrievalHits[*].id`. Emit it directly to the caller (agent, tool, or user) without paraphrasing, re-summarizing, or rebuilding it from `retrievalHits`. If the caller needs raw structured hits, forward `structuredContent` alongside — but the answer itself should still be `markdown`.
+2. **Select the response form for the downstream consumer.** Forward citation-bearing `markdown` to a model or prompt. Return `structuredContent` / `retrievalHits` to a programmatic client that needs fields, IDs, URLs, scores, or facets.
 3. **Only descend into `retrievalHits` for targeted lookups** the markdown doesn't already expose — e.g., a specific `webUrl`, `sensitivityLabel`, `relevanceScore`, or `resourceMetadata` facet for one hit. Cross-reference by `id` (`[^h1]` → `retrievalHits[*].id === "h1"`).
 4. **Honor `sensitivityLabel`.** When a hit carries a sensitivity label (especially `isEncrypted: true`), respect the classification and do not include the content verbatim in contexts that would violate the label.
-5. **An empty `retrievalHits` with `stoppedReason: completed` is a valid "no results" response.** Report it as "nothing found" — do not retry in a loop or fall back to `ask`.
+5. **Any response with `stoppedReason: completed` is terminal for that semantic retrieval attempt.** Consume the result even when it is large, empty, weak, or imperfect. Do not add another `retrieve`, `ask`, `fetch`, or `search_paths` call merely to improve or verify it. A focused `fetch` is allowed only when the original request separately requires exact fields from a selected hit.
+6. **An empty `retrievalHits` with `stoppedReason: completed` is a valid "no results" response.** Report it as "nothing found"; it is not a failed retrieval.
+7. **Only a failed `grounding` call permits one retry with `copilot`.** Keep the same user intent; a clearer query is fine, but do not branch into entity-path discovery or synthesis.
+8. **A `copilot` result is always terminal as a retrieval attempt.** If `copilot` was the first strategy, do not retry. If it followed a failed `grounding` call, it is the final retrieval attempt. Report the observed result without fallback calls; use `fetch` afterward only for a distinct exact read independently required by the original request.
 
 ## Error states
 
@@ -231,5 +266,5 @@ The markdown-first path is the intended contract; the structured payload is a su
 | `query` is null, empty, or all-whitespace | Tool error (no Sydney call). Fix: provide at least one non-empty query string. |
 | `agentId` is set to anything other than `bizchat-as-gpt-scenario` | Tool error (no Sydney call). Fix: omit `agentId` or pass the supported value. |
 | `strategy` is set to anything other than `copilot` or `grounding` | Tool error (no Sydney call). Fix: omit `strategy` or use a supported value. |
-| Sydney returns `stoppedReason: "error"` | `isError: true`, but `markdown` is still populated for diagnostics. Do not use `markdown` as grounding content. |
+| Sydney returns `stoppedReason: "error"` | `isError: true`, but `markdown` is still populated for diagnostics. Do not use `markdown` as grounding content. Retry only when the failed strategy was `grounding`, and then exactly once with `copilot`; a failed `copilot` call is terminal. |
 | Network/auth failure | Tool error with classified message. Check connectivity and authentication. |

@@ -1,6 +1,6 @@
 ---
 name: workiq-preview
-description: WorkIQ - Microsoft 365 tool surface for agents. Use for any workplace question or write action where data lives in M365. Supports `retrieve` for structured search (natural-language queries, structured hits), semantic `ask`, plus entity tools (`fetch`, create/update/delete, actions, functions, path/schema discovery) for mail, meetings, files, Teams, OneDrive/SharePoint, people. Read triggers, "what did [person] say", top of mind, meeting decisions/action items, summarize thread, find emails/docs, list meetings/messages/files/channels, project status, "what changed since". Write triggers, send/reply/forward email, create/update/accept meetings, mark read, delete items, post/react in Teams, set presence. Discovery triggers, endpoints/paths, fields, request body, schema. Prefer `retrieve` as default for M365 search/find/lookup — always when caller is an agent/LLM/MCP/tool or a human wants structured/JSON output; use `ask` only when a human needs synthesized prose; use entity tools for exact reads/writes.
+description: workiq-preview - Microsoft 365 tools for workplace questions and actions. Use `retrieve` for explicit semantic content search and ranked indexed evidence, including requests to summarize the matches, when intent cannot be expressed as a known resource path plus deterministic query. Use `fetch` / `call_function` for authoritative results when the resource and query can be expressed deterministically, including exact counts, ordering, filters, IDs, and fields. Use `ask` for synthesis or reasoning when the user did not explicitly request an evidence search. `ask` and `retrieve` are mutually exclusive within one user turn; never call both or alternate between them. Writes use a bounded deterministic lookup followed by the mutation tool. Retrieve and fetch may be chained only when each serves its distinct semantic-discovery or exact-read purpose.
 compatibility: >
   Uses the hosted WorkIQ MCP endpoint. No local package is required for MCP
   tool calls.
@@ -8,17 +8,16 @@ compatibility: >
 
 # WorkIQ
 
-WorkIQ connects AI agents to Microsoft 365 Copilot for workplace intelligence grounded in organizational data. This skill teaches the model how to use the full WorkIQ toolset: the agentic `ask` tool for semantic questions, the `retrieve` tool for structured M365 resource retrieval, and the fast **entity tools** for direct structured access to M365 data (`fetch`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`, `search_paths`, `get_schema`).
+WorkIQ connects AI agents to Microsoft 365 Copilot for workplace intelligence grounded in organizational data. This skill teaches the model how to use the full WorkIQ toolset: the `retrieve` tool for structured M365 resource retrieval (natural-language queries → per-source hits + grounding markdown), the agentic `ask` tool for synthesized semantic answers, and the fast **entity tools** for direct structured access to M365 data (`fetch`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`, `search_paths`, `get_schema`).
 
 ## 🛑 STOP — Read This Before Your First Tool Call
 
-The tools in this skill are documented by their **logical names** (`retrieve`,`ask`, `fetch`, etc.), but your MCP host almost certainly exposes them under a **prefixed** name.
+The tools in this skill are documented by their **logical names** (`ask`, `fetch`, etc.), but your MCP host almost certainly exposes them under a **prefixed** name.
 
 **The MCP server is named `workiq-preview`. Tool prefixes are derived from the MCP server name — never from the name of this skill or its containing folder.**
 
 ❌ **DO NOT** derive a prefix from this skill's name or folder.
 ❌ **DO NOT** call `ask` verbatim and assume it will work.
-✅ **DO** scan your available tools list for an entry whose name **ends with** `retrieve` and call that exact name. In Copilot CLI this will be `workiq-preview-retrieve`.
 ✅ **DO** scan your available tools list for an entry whose name **ends with** `ask` and call that exact name. In Copilot CLI this will be `workiq-preview-ask`.
 
 See [Resolving tool names in your host](#resolving-tool-names-in-your-host) below for the full resolution algorithm. If you skip this step, your first tool call will fail with "tool does not exist."
@@ -29,15 +28,26 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 
 **USE WorkIQ for ANY workplace-related question.** If the answer might exist in Microsoft 365 data, try WorkIQ first.
 
-**Choosing the right tool — decide by *who is consuming the answer*, not by how the question is phrased.**
+**Choosing the right tool — decide by query semantics, requested output, and data plane.**
 
-Both `retrieve` and `ask` accept natural-language queries. The real question is whether the caller needs **conversational synthesis** (prose) or **structured hits** (data). Use that to pick.
+First ask: **Can the requested result be expressed as a known resource path plus deterministic query semantics?** If yes, use `fetch` / `call_function`; if the request instead depends on meaning or conceptual relevance, use `retrieve`.
 
-1. **`retrieve` is the default for any search, find, lookup, or "what/who/where" question against M365 data** (emails, files, meetings, Teams messages, people). It accepts the same natural-language queries as `ask`, but returns structured per-source hits plus a grounding markdown summary instead of a synthesized narrative. It is faster than `ask` because it skips conversational synthesis.
-   - **Prefer `retrieve` when conversational synthesis is not needed and a structured response is more useful.** This is almost always true when the caller is an **agent, LLM, MCP client, downstream tool, RAG pipeline, or any programmatic consumer** — they want raw hits + citations to process themselves, not prose. It is also true when a human explicitly asks for structured output (JSON, table, CSV, list of records, "return as JSON", schema-shaped output) or hands you a structured prompt (JSON/YAML/schema).
-   - Use `retrieve` even for "what did X say", "summarize the thread", "find docs about Y", "status of Z" — the grounding markdown is usually enough to answer directly, and the structured hits are ready to hand off to another agent or tool.
-2. **Use `ask` only when the *end consumer is a human* who wants a synthesized, conversational answer** and `retrieve`'s hits + grounding markdown are not enough on their own — e.g., multi-step reasoning across many sources, or an agentic narrative the caller cannot compose themselves. If `retrieve` returns useful hits, prefer citing them over escalating to `ask`. Do **not** use `ask` when the caller is another agent/tool or wants JSON/structured output — use `retrieve`.
-3. **Use `fetch` (or another entity tool) for literal structured lookups with a known shape and path** ("list my meetings on Monday", "show me unread emails from X", "get event by ID"). Entity tools return in under a second and are the right tool once you know the exact path/ID.
+1. **Final human-facing answer or reasoning without an explicit evidence search → `ask`.** Route directly to `ask` for summaries, explanations, comparisons, decisions, recommendations, expertise/ownership, or conversational answers when the user is asking for the conclusion rather than asking you to find semantically relevant source material.
+2. **Explicit semantic content search or ranked M365 indexed evidence → `retrieve`.** Use it when the user asks to find, search, identify, or return items or passages selected by meaning, including search within a named document or container by topic. An explicit semantic evidence request takes precedence when the user also asks for a summary or interpretation: call `retrieve`, then synthesize directly from its cited evidence without calling `ask`. Results are ranked and may not be exhaustive or perfectly precise.
+3. **Authoritative deterministic query → `fetch` / `call_function`.** Use entity reads when the agent can express the resource path and exact query, such as the chronological last five messages, a complete filtered collection, exact keyword search, IDs, or current entity fields.
+4. **Writes → bounded deterministic lookup, then the mutation tool.** Resolve the target once with `fetch` or the appropriate function, confirm ambiguity, then call the write tool.
+
+`retrieve` is not a prerequisite for `ask`, `fetch`, `call_function`, or mutations. The fact that a prompt is written in natural language does not by itself make it a retrieval request.
+
+**Hard mutual-exclusion rule:** Choose `ask` or `retrieve` once per user turn. After calling either tool, the other is off-limits for that turn. Do not switch between them as fallback, verification, broadening, or retry, and never alternate them in a loop. If the chosen tool returns empty, weak, or failed results, report that outcome instead of calling the other tool. The only retry exception is one failed `retrieve` call with `strategy: grounding` retried once with `strategy: copilot`.
+
+**Distinct-purpose chaining:** Use both only when each call serves a distinct purpose. For example, `retrieve` discovers relevant hits, then `fetch` reads exact fields from a selected hit; or `fetch` identifies a document or container, then `retrieve` searches its content semantically. Do not chain them merely to verify, broaden, or retry a sufficient result.
+
+**Grounding/synthesis stop rule:** If the user explicitly asks to find, search, identify, or return semantically relevant source material, use `retrieve`. Return its cited evidence directly or synthesize the requested summary from that evidence; do not call `ask` afterward. Use `ask` only when the user requests a synthesized answer without explicitly requesting an evidence search. A distinct exact read may follow `retrieve` when concrete fields are independently required.
+
+When the caller says the result will be consumed by another agent, prefer `retrieve` for grounding unless it also requires authoritative count, ordering, completeness, IDs, or fields. Exactness requirements override the downstream-agent preference.
+
+Suggested draft text belongs to `ask`; a persisted Outlook draft belongs to `create_entity`.
 
 Latency: entity tools < 1 s; `retrieve` typically 10–60 s; `ask` 10–60 s and broad questions can run several minutes.
 
@@ -45,18 +55,23 @@ Latency: entity tools < 1 s; `retrieve` typically 10–60 s; `ask` 10–60 s and
 
 | User Question Pattern | Example | Action |
 |-----------------------|---------|--------|
-| What someone said/shared/communicated | "What did Rob say about the API design?" | `retrieve`  |
-| Someone's priorities/concerns/focus | "What's top of mind for Sarah?" | `retrieve`  |
-| Meeting content/decisions/action items | "What was decided in yesterday's standup?" | `retrieve`  |
-| Summarizing email threads or conversations | "Summarize the deadline thread with John" | `retrieve`  |
-| Synthesizing Teams chat activity | "What's the team's take on the release?" | `retrieve`  |
+| What someone said/shared/communicated | "What did Rob say about the API design?" | `ask` |
+| Someone's priorities/concerns/focus | "What's top of mind for Sarah?" | `ask` |
+| Meeting content/decisions/action items | "What was decided in yesterday's standup?" | `ask` |
+| Summarizing email threads or conversations | "Summarize the deadline thread with John" | `ask` |
+| Synthesizing Teams chat activity | "What's the team's take on the release?" | `ask` |
 | Finding documents by topic | "Where is the design doc for Project X?" | `retrieve` |
-| Colleague expertise or ownership | "Who owns the billing system?" | `retrieve`  |
-| Organizational context / goals | "What are the team's Q1 goals?" | `retrieve`  |
-| Project status or updates | "What's the status of Project X?" | `retrieve`  |
-| Open-ended "any updates" / catch-up questions | "Any updates I should know about?" | `retrieve`  |
+| Curating which sources cover a topic | "Which documents cover Project X?" | `retrieve` |
+| Colleague expertise or ownership | "Who owns the billing system?" | `ask` |
+| Organizational context / goals | "What are the team's Q1 goals?" | `ask` |
+| Project status or updates | "What's the status of Project X?" | `ask` |
+| Open-ended "any updates" / catch-up questions | "Any updates I should know about?" | `ask` |
+| Grounding another agent with indexed evidence | "Find relevant emails with James about launch risk for another agent" | `retrieve` (`copilot`; omit `strategy`) |
 | Listing meetings on a known date/range | "What meetings do I have Monday?" | `fetch` (`/me/calendarView`) |
 | Listing emails with concrete filters | "Show my unread emails from Rob this week" | `fetch` (`/me/messages`) |
+| Semantically relevant indexed evidence | "Return ranked email snippets from Rob that suggest launch risk" | `retrieve` (`copilot`; omit `strategy`) |
+| Semantic search plus human-facing synthesis | "Find semantically relevant emails about launch risk and summarize the top matches" | `retrieve`, then synthesize from its cited evidence |
+| Search inside a document or container by meaning | "Find where this folder's documents discuss launch risk" | `retrieve` (`copilot`; omit `strategy`) |
 | Listing Teams chats / channels / members | "List the channels in the DevX team" | `fetch` |
 | Sending/replying/reacting in Teams, setting presence | "Send a chat to Alex", "Post in the Daily channel", "React with 👍", "Set me to Busy" | entity tools on `/chats/...` or `/teams/...` — see `references/teams-work-iq.md` |
 | Fetching a known entity by ID | "Get event `AAMk...` details" | `fetch` |
@@ -66,8 +81,18 @@ Latency: entity tools < 1 s; `retrieve` typically 10–60 s; `ask` 10–60 s and
 | Get a personal contact by name | "Get the contact card for Morgan Avery" | `fetch` (`/me/contacts?$filter=...`) — subject to server policy |
 | List or manage Outlook categories | "What Outlook categories do I have?" | `fetch` (`/me/outlook/masterCategories`); writes subject to server policy |
 | Org chart / direct reports / manager lookup | "Who are Rob's direct reports?" | `fetch` (`/users/{id}/directReports`) |
+| Signed-in user's profile photo metadata | "Show my profile photo dimensions and content type" | `fetch` `/me?$select=id`, then `fetch` `/users/{id}/photo?$select=id,width,height`. Do not use the policy-denied `/me/photo` alias, request `/$value`, or put `@odata.mediaContentType` in `$select`; read the media content type annotation returned with the metadata. |
+| Finding a 30-minute slot for the whole team | "Find a 30-min slot when the whole team is free this week" | Do not use `ask`. Resolve `/me`, `/me/manager`, and the manager's `/users/{managerId}/directReports` with at most two `fetch` calls, then call `do_action` `/me/calendar/getSchedule` exactly once with all schedulable addresses and `AvailabilityViewInterval: 30`. Compute the earliest common working-hours slot from that response; skip `search_paths`, `get_schema`, `findMeetingTimes`, and a second verification action. |
 | What's new/changed/removed since a point in time | "What's new in my Inbox since this morning?", "What's changed on my calendar since yesterday?", "What's been added to my contacts recently?" | `call_function` (delta — `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta`). **Never call delta via `fetch`** — see `references/call-function-work-iq.md` |
 | Sending mail, accepting/declining meetings | "Send this draft", "Accept the 2pm meeting" | `do_action` |
+| Tentatively accepting a meeting by title | "Mark the Office hours sync as tentative" | `fetch` the exact event ID, then `do_action` `/me/events/{id}/tentativelyAccept` with `{"sendResponse":false}`. Do not include an empty `comment`; do not call `get_schema` for this known contract. |
+| Declining a meeting by title without a response message | "Decline the upcoming Daily standup invite" | `fetch` the exact event ID, then `do_action` `/me/events/{id}/decline` with `{"sendResponse":false}`. Omit `comment`; do not call `get_schema` or retry alternate payloads. |
+| Cancelling an organizer-owned meeting by title | "Cancel the Friday staff meeting I organized" | `fetch` the exact event ID, then `do_action` `/me/events/{id}/cancel` with `{"Comment":""}`. This is a known contract: do not call `search_paths` or `get_schema`. A `202` response confirms acceptance; do not fetch again solely to verify. |
+| Creating an upload session for an existing OneDrive file | "Create an upload session to replace my file; do not upload content" | `call_function` once with `/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,parentReference,file&$top=10` to resolve the exact driveItem and retain `parentReference.driveId` plus item `id`, then `do_action` `/drives/{driveId}/items/{itemId}/createUploadSession` with `{}`. This is a validated deployed contract: skip `search_paths` and `get_schema`, do not add an `item` wrapper, and do not upload file content. |
+| Copying a named OneDrive file to a named folder | "Copy Q3 plan.txt to Shared" | Use two `call_function` calls to `/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,parentReference,file,folder&$top=10`, retain the source `parentReference.driveId`, then `do_action` `/drives/{driveId}/items/{sourceId}/copy` with `{"parentReference":{"driveId":"{driveId}","id":"{folderId}"}}`. Skip `search_paths`, `get_schema`, and verification fetches. |
+| Renaming a OneDrive file | "Rename Draft.txt to Final.txt" | `call_function` once with `/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,parentReference,file&$top=10` to resolve the exact driveItem and retain `parentReference.driveId` plus item `id`, then `update_entity` `/drives/{driveId}/items/{itemId}` with `{"name":"Final.txt"}`. Skip `search_paths` and `get_schema`; do not PATCH `/me/drive/items/{id}`. |
+| Reading the first accessible SharePoint site's default drive or lists | "Show the first site's drive metadata", "List the first site's lists" | `fetch` `/sites?search=*&$select=id,displayName,name,webUrl&$top=1`, treat the first returned item as "first accessible", then `fetch` `/sites/{siteId}/drive` or `/sites/{siteId}/lists`. The parameter is `search=*`, **not** `$search=*`; do not use `ask`, guessed search terms, or an empty search. |
+| Searching documents across SharePoint team sites | "List documents from SharePoint team sites" | `do_action` `/search/query` for `driveItem` documents, discard personal `-my.sharepoint.com` hits, then one batched `fetch` with `/sites?search={siteSlug}` to resolve site display names. Return exact file name, site display name, and `webUrl`; see `references/do-action-work-iq.md`. |
 | Creating a calendar event, draft, or task | "Create a calendar event Friday at 3pm" | `create_entity` |
 
 **DO NOT say "I don't have access to emails/meetings/messages"** - use WorkIQ instead!
@@ -87,8 +112,9 @@ Follow the user's request through to completion. A discovery or read call **alon
 
 1. **Path discovery** ("endpoint", "available operations", "what can I do with X") → `search_paths` first. Continue to the read/write tool if the prompt also asks to act.
 2. **Schema inspection** ("schema", "data model", "fields", "what does X take") → `get_schema` first. Continue to the write/action tool if the prompt also asks to act.
-3. **Exact entity read or mutation by title/name/channel/thread** → `fetch` to resolve the target's ID, then `update_entity` / `delete_entity` / `do_action`. Do not use `ask` to resolve exact titled events, messages, drafts, folders, Teams chats/channels, or threads.
-4. **Semantic summary/status/decisions** → `ask`. If the prompt then asks to draft, send, create, update, delete, forward, or react, continue with the mutation tool — the `ask` answer alone is incomplete.
+3. **Exact entity read by known ID or entity URL** → `fetch`. For a mutation whose target is not yet identified, use one bounded mutation-target lookup with `fetch` against the relevant collection or filter, ask the user to choose if multiple entities match, then call `update_entity` / `delete_entity` / `do_action` with the confirmed ID.
+4. **Summarize/explain/compare/draft/answer/decide/recommend without an explicit semantic evidence search** → route directly to `ask`, then do not call `retrieve` in the same turn. If the prompt then asks to send, create, update, delete, forward, or react, continue with the mutation tool — the `ask` answer alone is incomplete.
+5. **Find/search/identify semantically relevant M365 evidence** → `retrieve` with the default `copilot` strategy (omit `strategy`), including when the caller also requests a summary of the matches. If the caller explicitly prioritizes speed or low latency, use `strategy: grounding`. Synthesize directly from the retrieved evidence; do not call `ask`, and never use `retrieve` to resolve a mutation target.
 
 ### Resolve-then-act — concrete examples
 
@@ -99,7 +125,11 @@ When the user asks to delete, update, send, forward, copy, move, or react to som
 | "Mark email as read" | `fetch` to find the message | `update_entity` `/me/messages/{id}` with `{"isRead": true}` |
 | "Forward email to X" | `fetch` to find the message | `do_action` `/me/messages/{id}/forward` |
 | "Send email to X" | — | `do_action` `/me/sendMail` |
-| "Copy file to folder" | `fetch` to find file and target folder | `do_action` `/me/drive/items/{id}/copy` |
+| "Cancel the X meeting I organized" | `fetch` to find the event and verify `isOrganizer` | `do_action` `/me/events/{id}/cancel` with `{"Comment":""}`; accept `202` as success without a verification fetch |
+| "Create an upload session to replace existing file X" | `call_function` once with `/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,parentReference,file&$top=10` to resolve the exact driveItem and retain `parentReference.driveId` plus item `id` | `do_action` `/drives/{driveId}/items/{itemId}/createUploadSession` with `{}`; do not add `item`, inspect schema, or upload bytes |
+| "Copy file to folder" | Two `call_function` calls to `/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,parentReference,file,folder&$top=10`, one for the exact source and one for the exact folder | `do_action` `/drives/{driveId}/items/{sourceId}/copy` with `{"parentReference":{"driveId":"{driveId}","id":"{folderId}"}}`; skip `search_paths`, `get_schema`, and verification fetches |
+| "Move file to folder" | Two `call_function` calls to `/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,parentReference,file,folder&$top=10`, one for the exact source and one for the exact folder | `update_entity` `/drives/{driveId}/items/{sourceId}` with `{"parentReference":{"id":"{folderId}"}}`. This is an update, not a `/move` action; skip `search_paths`, `get_schema`, verification fetches, and `/move`. |
+| "Rename file X to Y" | `call_function` once with `/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,parentReference,file&$top=10` to resolve the exact driveItem and retain `parentReference.driveId` plus item `id` | `update_entity` `/drives/{driveId}/items/{itemId}` with `{"name":"Y"}`; skip `search_paths` and `get_schema`, and do not use `/me/drive/items/{id}` |
 | "Set presence to busy" | — | `do_action` `/me/presence/setUserPreferredPresence` — see `references/teams-work-iq.md` |
 | "React to Teams message" | `fetch` to find the message | `do_action` `/teams/{teamId}/channels/{channelId}/messages/{messageId}/setReaction` |
 | "Delete" any entity | `fetch` to find it | `delete_entity` on the entity URL |
@@ -174,7 +204,7 @@ If a WorkIQ MCP call fails because the user is not signed in, the token is stale
 
 ## Resolving tool names in your host
 
-Throughout this skill (and its `references/*.md`), MCP tools are referred to by their **logical names** — for example `retrieve` `ask`, `fetch`, `search_paths`, etc.
+Throughout this skill (and its `references/*.md`), MCP tools are referred to by their **logical names** — for example `ask`, `fetch`, `search_paths`, etc.
 
 > **⚠️ Common pitfall:** Tool prefixes come from the **MCP server name** (`workiq-preview`) — never from the name of this skill or its containing folder. Do not construct a prefix from the skill name.
 
@@ -196,11 +226,13 @@ If you call the logical name verbatim and get a "tool does not exist" error, thi
 
 ## MCP Tools
 
-### `ask` — Agentic natural language M365 queries
+### `ask` — Synthesized M365 reasoning and answers
 
-The primary conversational tool. Ask any workplace question in plain English. This is an **agentic tool** — it orchestrates multi-step operations internally (searching emails, meetings, Teams chats, documents, people) to answer complex questions. Use it when you need intelligence, synthesis, or semantic understanding across M365 data.
+Ask Microsoft 365 Copilot to summarize, explain, compare, draft, answer, decide, or recommend using workplace data when the user has not explicitly requested a semantic evidence search. This is an **agentic tool** — it orchestrates multi-step operations internally (searching emails, meetings, Teams chats, documents, people) and produces a synthesized conversational answer. Use `retrieve` when the prompt explicitly asks to find, search, identify, or return semantically relevant items or passages, even when it also asks for a summary.
 
 > **⏱️ High latency:** A call typically takes **10–60 seconds** as the agent performs multiple backend operations, and broad questions can run several minutes (the hard limit is ~300s). Avoid calling it in tight loops or for simple data retrieval — use the entity tools below for that instead. If a question is broad, split it into scoped sub-questions rather than one mega-question.
+>
+> **Terminal choice:** Once you call `ask`, do not call `retrieve` later in the same turn, including after an empty or failed response. Report the observed outcome instead. Use at most one `ask` call per user turn.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -217,18 +249,24 @@ For detailed usage and examples, read `references/ask-work-iq.md`.
 
 ---
 
-### `retrieve` — Structured M365 resource retrieval
+### `retrieve` — M365 indexed grounding evidence
 
-The primary tool for search and retrieval. Search across the user's M365 data (emails, files, meetings, Teams messages, people) and return structured results with a model-friendly grounding summary. `retrieve` accepts the same natural-language queries as `ask`, but instead of a synthesized conversational answer it returns **raw retrieval hits** — per-source references with rich metadata (resource type, URL, author, timestamps, sensitivity label) plus a grounding markdown — optimized for programmatic consumption, RAG pipelines, and agent-to-agent grounding. **Prefer `retrieve` over `ask` whenever conversational synthesis is not needed and a structured response is more useful** — which is almost always true when the caller is another agent, LLM, MCP client, or external tool, and also true when a human explicitly asks for structured (JSON/table/CSV) output or provides a structured (JSON/YAML/schema) prompt.
+Retrieve ranked evidence from the M365 index for user-facing semantic discovery or grounding another agent, model, or RAG workflow. It returns snippets, citations, source metadata, grounding markdown, and structured hits. It does not provide authoritative database-style completeness or ordering. When the user also requests a summary, synthesize it directly from the retrieved evidence.
 
-> **⏱️ Latency:** Typically 10–60 seconds — lower than `ask` because it skips conversational synthesis. Prefer `retrieve` over `ask` for programmatic/structured consumers; reserve `ask` for humans who need a synthesized narrative.
+> **Strategy default:** Use `copilot` by default and normally omit `strategy`. Use `grounding` only when the user explicitly asks for faster, optimized-for-latency, or low-latency retrieval, or explicitly requests the grounding strategy. If "optimize" could mean quality or coverage rather than speed, stay on `copilot`. If connected or external sources may be required, keep `copilot` and explain that `grounding` would narrow coverage.
+>
+> **⏱️ Latency:** Typically 10–60 seconds. `grounding` can be faster because it limits retrieval to the M365 index, but do not choose it merely because the query looks M365-only; the user must explicitly prioritize speed or request grounding. Use `fetch` / `call_function` when the consumer needs exact records, ordering, counts, IDs, or fields.
 >
 > **📄 Consuming the response:** The `markdown` field is the **preferred** output — a model-friendly grounding summary with inline `[^id]` citations that map to `retrievalHits[*].id`. Emit it verbatim to the caller; do not paraphrase it or rebuild a summary from `retrievalHits`. Reach into the structured `retrievalHits` payload only for specific fields the markdown doesn't already expose (e.g., a raw `webUrl` or `sensitivityLabel` for one hit).
+>
+> **Retry policy:** If a `grounding` call fails, retry the same intent exactly once with `strategy: copilot`, then stop. If the first call uses `copilot`, do not retry it. After the final retrieval result, report the observed outcome and never fall back to `ask`. Use `fetch` or `search_paths` afterward only when the original request independently requires a concrete known-resource read or path discovery.
+>
+> **Terminal choice:** Once you call `retrieve`, do not call `ask` later in the same turn. If synthesis is requested, produce it directly from the retrieval response. Do not alternate `retrieve` and `ask`.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `query` | string[] | Yes | One or more natural-language search queries. At least one non-empty entry required. |
-| `strategy` | string | No | `copilot` (default — M365 indexed content plus connected data sources, federated connectors, MCP tools) or `orchestratedSearch` (M365 indexed content only). Any other value is rejected. |
+| `strategy` | string | No | `copilot` (default — M365 indexed content plus connected data sources, federated connectors, MCP tools) or `grounding` (M365 indexed content only). Any other value is rejected. |
 | `includeDeveloperCard` | boolean | No | When `true`, includes orchestration diagnostics in the response. Defaults to `false`. |
 | `agentId` | string | No | Only `bizchat-as-gpt-scenario` is accepted; any other value is rejected. |
 
@@ -242,19 +280,23 @@ For detailed usage, response structure, strategy guidance, and faceted metadata,
 
 ## Entity Tools
 
-Entity tools provide **fast, direct access to specific M365 data** via Work IQ APIs. They return structured results quickly but have **no intelligence** — they don't interpret, synthesize, or reason about the data. Use them when you know exactly what you want and where it lives.
+Entity tools provide **fast, direct access to specific M365 data** via Work IQ APIs. They return structured results quickly but have **no intelligence** — they don't interpret, synthesize, or reason about the data. Use them for writes, path/schema operations, or literal reads after a concrete resource ID or entity URL is supplied.
 
 **When to use each:**
 
 | Scenario | Use |
 |----------|-----|
-| Search / find / lookup M365 references (default for reads) | "Find emails about WorkIQ", "who talked about deployment rollback?" | `retrieve` (structured hits + grounding markdown) |
-| Open-ended question requiring synthesis beyond `retrieve`'s markdown | Multi-source narrative, agentic reasoning | `ask` (slow but smart — only when `retrieve` is insufficient) |
-| Fetch a known list, apply a filter, get structured data | entity tools (fast but literal) |
+| Ground an agent with ranked enterprise references — "Find relevant emails about WorkIQ for another agent" | `retrieve` (`copilot`, omit `strategy`) |
+| User explicitly prioritizes faster / low-latency M365-only retrieval | `retrieve` (`strategy: grounding`) |
+| Human-facing summarize/explain/compare/draft/answer/decide/recommend without an explicit evidence search | `ask` (route directly; do not call `retrieve` first) |
+| Explicit semantic search plus a summary of the matches | `retrieve`, then synthesize directly from its cited evidence |
+| Read exact structured records, counts, ordered items, filtered collections, IDs, or fields | `fetch` / `call_function` |
 
-**Recommended workflow:** for **well-known paths, go direct** — call the read/write tool immediately (use the cheat sheet below). Only fall back to `search_paths` → `get_schema` → tool when the path is genuinely unknown or a write body shape is unfamiliar. Do **not** reflexively run `search_paths`/`get_schema` before every common operation.
+**Recommended workflow:** use `retrieve` with its default `copilot` strategy whenever the user explicitly asks to find or search by meaning, including requests to summarize the resulting matches. Use `ask` for synthesis without an explicit evidence search. Use `grounding` only for an explicit speed/low-latency optimization request. Use `fetch` / `call_function` for authoritative exactness even when the request is phrased naturally. Use `search_paths` → `get_schema` → an entity tool only when the user asks about paths/schema or a requested write needs an unknown path or body shape.
 
-### 🗺️ Known paths — go direct, skip discovery
+### 🗺️ Known entity paths — skip discovery after entity-tool routing is established
+
+This catalog helps execute exact entity reads and operations. Requests such as "get my next meeting" or "last five emails" require deterministic ordering and therefore use entity tools, while "find relevant recent meetings about launch risk for another agent" uses `retrieve`.
 
 | Resource | Path root | Common ops |
 |----------|-----------|-----------|
@@ -319,6 +361,7 @@ above) and call the MCP tool.
 - ❌ Calling `get_schema` on paths you already know (contacts, messages, events, drive items).
 - ❌ Using `fetch` to "explore" when the path is already implied by context.
 - ❌ Falling back to dozens of `fetch` calls when `ask` fails — report the failure instead.
+- ❌ Calling both `ask` and `retrieve` in one turn, or alternating them to broaden, verify, or retry results.
 
 **Do:** use the path patterns in this document to route directly to the correct tool in 1–2
 calls. If you need the entity ID first, one `fetch` to resolve, then one write tool call.
@@ -337,10 +380,10 @@ no subject named, an empty title, or a generic "the meeting"):
 
 To act on a named entity ("the X email", "my Y task", "the Z draft"):
 
-1. Resolve it with **one** `fetch` (filter by subject/title/displayName).
-2. If the first fetch misses, try **one** `ask` to locate it semantically.
+1. Resolve it with **one bounded** `fetch` against the relevant collection, filtering by subject/title/displayName when supported.
+2. If the first fetch misses, try **one** `retrieve` to locate it semantically.
 3. If still not found, **stop and report "not found"** — do **not** fire 10+ more
-   `fetch`/`search_paths`/`ask` calls hunting for it.
+   `fetch`/`search_paths`/`ask`/ `retrieve` calls hunting for it.
 4. Once you have the id, call the mutation (`update_entity` / `delete_entity` / `do_action`)
    **directly** — finding the target is not the goal; performing the requested action is.
 5. If a mutation fails, fix the request (URL shape, `jsonBody` encoding, ID) and retry **at most
@@ -380,16 +423,18 @@ Reference examples use `{id}`, `{listId}`, `{teamId}`, `{taskId}`, `{driveId}`, 
 
 `do_action` (especially `/me/sendMail`, `/forward`, `/accept`, `/decline`, `/permanentDelete`) and write-side `create_entity` / `update_entity` / `delete_entity` calls take effect immediately and are visible to other people (recipients, meeting organizers) or unrecoverable. **Before invoking any write tool, summarize what you're about to do and get the user's confirmation.** This is especially important for sendMail, forward, decline, and permanentDelete.
 
-### "Draft", "compose", "prepare reply" requires a persisted draft
+### Suggested draft text versus a persisted Outlook draft
 
-When the user says "draft an email", "compose a reply", "prepare a response", or any variant
-asking the draft to *exist* (not just suggest wording), call `create_entity` to POST:
+When the user asks for suggested wording, a draft response, or help composing text without
+asking to save it in Outlook, use `ask`. When the user explicitly asks to create, save, or
+persist an Outlook draft, call `create_entity` to POST:
 
 - `/me/messages` for a fresh draft
 - `/me/messages/{id}/createReply`, `/createReplyAll`, or `/createForward` for replies/forwards
   (these are `create_entity` POSTs, **not** `do_action`)
 
-Generating draft text inline does NOT satisfy the request — the user can't open it in Outlook.
+For a persisted-draft request, generating text inline does NOT satisfy the request — the user
+can't open it in Outlook.
 A common failure: call `ask` for the summary half of a "summarize then draft" chain and stop;
 the `create_entity` step is required.
 
@@ -418,6 +463,7 @@ Read the relevant reference file for full parameter details and examples:
 
 - `references/search-paths-work-iq.md` — if you need to discover what paths are available
 - `references/get-schema-work-iq.md` — if you need to understand an entity's fields before reading or writing
+- `references/retrieve-work-iq.md` — if you need to retrieve structured M365 references (emails, files, meetings, Teams messages, people) for programmatic use, RAG, or agent-to-agent grounding
 - `references/fetch-work-iq.md` — if you need to fetch structured or filtered M365 data
 - `references/call-function-work-iq.md` — if the path uses OData function call syntax (e.g., `reminderView(...)`, `delta`)
 - `references/create-entity-work-iq.md` — if you need to create a new calendar event, email draft, task, etc.
@@ -427,5 +473,4 @@ Read the relevant reference file for full parameter details and examples:
 - `references/update-entity-work-iq.md` — if you need to update fields on an existing entity
 - `references/delete-entity-work-iq.md` — if you need to delete an entity
 - `references/do-action-work-iq.md` — if you need to send mail, accept/decline meetings, copy/move messages
-- `references/retrieve-work-iq.md` — if you need to retrieve structured M365 references (emails, files, meetings, Teams messages, people) for programmatic use, RAG, or agent grounding
 - `references/troubleshooting.md` — if a tool call fails unexpectedly, returns an error, or behaves differently than documented
