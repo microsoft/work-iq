@@ -35,7 +35,7 @@ This guide covers two distinct patterns. Pick the one that matches your goal —
 
 Use this pattern when you want the agent to authenticate the **signed-in M365 user** and pass their verified identity (claims like `name`, `oid`, `tid`) to your plugin's backend — no separate login screen. This is **single sign-on against your own Entra tenant**, not a connection to a third-party OAuth service.
 
-> **⚡ Automate this end-to-end.** For an agent built with the `ui-widget-developer` skill (OAI Apps path — `mcpPlugin.json` + a raw-http MCP server), the **`setup-sso`** skill (in this same `microsoft-365-agents-toolkit` plugin) performs every step below automatically — Entra app registration, ATK OAuth, manifest wiring, JWKS token guard, and sideload. Its [`sso-explained.md`](../../setup-sso/references/sso-explained.md) has the runtime token-flow deep dive.
+> **⚡ Automate this end-to-end.** The **`setup-sso`** skill (this skill) performs every step below automatically — Entra app registration, ATK OAuth, manifest wiring, JWKS token guard, and sideload — for **MCP servers, API plugins, and UI-widget agents** (MCP Apps / OAI Apps). Its [`sso-explained.md`](sso-explained.md) has the runtime token-flow deep dive.
 
 > **Same config for API plugins and MCP servers.** The Entra app registration, the `oauth/register` step, and the `OAuthPluginVault` manifest reference are identical for both. Only the location of the `auth` block in the manifest differs.
 

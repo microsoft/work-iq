@@ -24,7 +24,7 @@ $mcp | ConvertTo-Json -Depth 30 | Set-Content $mcpPluginPath -Encoding UTF8
 Write-Host "$manifestName : runtime auth -> OAuthPluginVault ($AuthId) OK"
 
 # Conversation starters: surface the widget's OWN starters in declarativeAgent.json when the DA
-# defines none. The widget already declares tool-driven starters under mcpPlugin.json
+# defines none. The widget already declares tool-driven starters under the plugin manifest's
 # capabilities.conversation_starters; those trigger the MCP tool, which performs the SSO token
 # exchange — so they double as the SSO proof. We do NOT inject synthetic identity starters.
 # NOTE: @($null).Count is 1 in PowerShell, so guard the absent case explicitly.
@@ -38,7 +38,7 @@ if (Test-Path $daJsonPath) {
     if ($daCount -gt 0) {
         Write-Host "declarativeAgent.json already defines $daCount conversation_starter(s) — leaving them intact."
     } else {
-        # Pull the widget's own starters from mcpPlugin.json capabilities.conversation_starters.
+        # Pull the widget's own starters from the plugin manifest's capabilities.conversation_starters.
         $widgetStarters = $mcp.capabilities.conversation_starters
         $wsCount = if ($null -eq $widgetStarters) { 0 } else { @($widgetStarters).Count }
 
@@ -48,9 +48,9 @@ if (Test-Path $daJsonPath) {
             })
             $daJson | Add-Member -NotePropertyName conversation_starters -NotePropertyValue $copied -Force
             $daJson | ConvertTo-Json -Depth 10 | Set-Content $daJsonPath -Encoding UTF8
-            Write-Host "Copied $wsCount widget conversation_starter(s) from mcpPlugin.json into declarativeAgent.json."
+            Write-Host "Copied $wsCount widget conversation_starter(s) from $manifestName into declarativeAgent.json."
         } else {
-            Write-Host "No conversation_starters found in mcpPlugin.json either — leaving declarativeAgent.json unchanged."
+            Write-Host "No conversation_starters found in $manifestName either — leaving declarativeAgent.json unchanged."
         }
     }
 } else {
