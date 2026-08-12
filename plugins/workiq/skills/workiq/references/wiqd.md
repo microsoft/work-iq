@@ -12,7 +12,8 @@ rather than *querying or acting on* M365 data.
 > Tell the user this before installing so they know what they're opting into.
 
 > 🛑 **Never install without explicit human confirmation.** Installing `wiqd` puts software on the
-> user's machine. You must ask and receive an affirmative answer first — see step 3.
+> user's machine. Ask first and wait for an affirmative answer — then **run the installer yourself**
+> rather than asking the user to run it by hand. See step 3.
 
 ## 1. Detect the intent
 
@@ -71,7 +72,7 @@ Only if step 2 found nothing.
 
 ### 🛑 Ask for confirmation first — this is a hard gate
 
-**Stop and ask the user before running anything.** Do not run the installer on your own initiative,
+**You run the installer — but only after the user says yes.** Do not run it on your own initiative,
 and do not treat the original build request ("create an agent") as consent to install software.
 
 Your confirmation prompt must state, in the user's language:
@@ -82,7 +83,7 @@ Your confirmation prompt must state, in the user's language:
 3. **What the installer does:** installs the `wiqd` CLI from npm (with the Microsoft 365 Agents
    Toolkit as a dependency), the Work IQ VS Code extension, and the plugin providing the `wiqd`
    skill.
-4. The exact command you intend to run.
+4. The exact command you will run on their behalf.
 
 Then wait for an explicit affirmative reply. Rules:
 
@@ -93,7 +94,13 @@ Then wait for an explicit affirmative reply. Rules:
 - If the user declines, **respect it**: explain that the build/publish request can't proceed without
   `wiqd`, and stop. Do not attempt the work with other tools as a workaround.
 
-### Install commands
+### Install commands — you execute these
+
+Once the user has confirmed, **run the command yourself** with your shell tool. Don't paste it and
+ask the user to run it manually, and don't end your turn waiting for them to do it — installing is
+your job from here.
+
+Pick the command for the user's platform:
 
 **Windows (PowerShell):**
 
@@ -113,6 +120,7 @@ Work IQ VS Code extension, and the plugin that provides the **`wiqd` skill**.
 Rules:
 
 - ✅ Use **only** the two commands above — they are the official, supported installers.
+- ✅ **You** execute the confirmed command; the user shouldn't have to run anything by hand.
 - ❌ Never use a repo-local `scripts/install.ps1`, a cloned build script, or a hand-rolled
   `npm install -g` variant. Those are developer-only paths.
 - **Node.js is a prerequisite.** The installer stops and points to the download if a supported

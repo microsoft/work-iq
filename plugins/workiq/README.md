@@ -80,7 +80,7 @@ The plugin exposes the WorkIQ MCP tool surface — read **and** write — from `
 
 ### Building or publishing an agent or plugin → `wiqd`
 
-WorkIQ covers Microsoft 365 **data**, not the Copilot extensibility **pipeline**. Requests like "create a declarative agent", "validate my agent", "deploy my plugin", or "publish to AppSource" are handed off to **Work IQ Dev Tools (`wiqd`)**. The skill checks whether `wiqd` is already available and, if not, **asks you to confirm before installing anything**:
+WorkIQ covers Microsoft 365 **data**, not the Copilot extensibility **pipeline**. Requests like "create a declarative agent", "validate my agent", "deploy my plugin", or "publish to AppSource" are handed off to **Work IQ Dev Tools (`wiqd`)**. The skill checks whether `wiqd` is already available and, if not, **asks you to confirm first — then runs the installer for you**:
 
 > ⚠️ **Preview.** Work IQ Dev Tools is a preview experience — commands and behavior may change, and some capabilities are gated or incomplete.
 
