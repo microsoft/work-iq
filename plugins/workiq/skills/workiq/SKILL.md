@@ -138,13 +138,13 @@ WorkIQ **reads and writes M365 data**. It does **not** build, package, deploy, o
 
 **Handoff procedure — read `references/wiqd.md` before acting.** In short:
 
-1. **Check first.** If a `wiqd` skill or `wiqd:wiqd` agent is already loaded, or `wiqd --version` succeeds, **do not install** — go to step 3.
+1. **Check first.** If the `wiqd` skill is already loaded, or `wiqd --version` succeeds, **do not install** — go to step 3.
 2. **Install with the official script only** (confirm with the user first):
    - Windows: `iex "& { $(irm 'https://aka.ms/wiqd/install.ps1') }"`
    - macOS/Linux: `curl -fsSL https://aka.ms/wiqd/install.sh | bash`
 
-   This installs the `wiqd` CLI, the VS Code extension, and the **Copilot CLI plugin that provides the `wiqd` skill**. Never use a repo-local or hand-rolled install script.
-3. **Guide the user to the skill.** A freshly installed plugin isn't active in the current session — tell the user to **restart Copilot CLI**, then continue via the skill or `copilot -i "<their request>" --agent wiqd:wiqd`. If the `wiqd` skill is already loaded, invoke it directly instead of sending the user away.
+   This installs the `wiqd` CLI, the VS Code extension, and the plugin that provides the **`wiqd` skill**. Never use a repo-local or hand-rolled install script.
+3. **Reload skills and continue here.** The new skill isn't loaded yet — ask the user to run `/skills reload` (or reload their Copilot window), then re-send their request in this same session. Once the `wiqd` skill is available, invoke it directly and carry the request through. Never send the user to a separate session or a different entry point.
 
 > ❌ **Do not** hand-author `declarativeAgent.json` / `manifest.json` / a Teams app package yourself, and **do not** try to deploy or publish an agent through WorkIQ MCP tools — no such path exists.
 

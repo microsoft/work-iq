@@ -16,7 +16,7 @@ Use this reference when a WorkIQ tool call fails or behaves unexpectedly.
 
 **Cause:** WorkIQ covers M365 *data*, not the extensibility *pipeline*. That lifecycle belongs to Work IQ Dev Tools (`wiqd`).
 
-**Fix:** Read `references/wiqd.md` and follow the handoff: check whether `wiqd` is already available, install it with the official script (`https://aka.ms/wiqd/install.ps1` on Windows, `https://aka.ms/wiqd/install.sh` on macOS/Linux) only if missing, then guide the user to restart Copilot CLI and continue through the `wiqd` skill. Do not hand-author agent manifests or attempt deployment via WorkIQ entity tools.
+**Fix:** Read `references/wiqd.md` and follow the handoff: check whether `wiqd` is already available, install it with the official script (`https://aka.ms/wiqd/install.ps1` on Windows, `https://aka.ms/wiqd/install.sh` on macOS/Linux) only if missing, then have the user reload skills (`/skills reload` or reload the Copilot window) and continue in the same session. Do not hand-author agent manifests or attempt deployment via WorkIQ entity tools.
 
 ## Entity tool returns a 400 / "bad request" on a Graph URL
 

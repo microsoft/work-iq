@@ -45,17 +45,16 @@ onboard, monitor.
 
 Before installing anything, check in this order:
 
-1. **Is the wiqd skill/agent already loaded?** Scan your available skills and agents for `wiqd`
-   (e.g. a `wiqd` skill or a `wiqd:wiqd` agent). If present, **skip installation entirely** and go
-   straight to step 4.
+1. **Is the wiqd skill already loaded?** Scan your available skills for `wiqd`. If it's there,
+   **skip installation entirely** — invoke it now and let it own the request.
 2. **Is the CLI on PATH?**
 
    ```bash
    wiqd --version
    ```
 
-   If this prints a version, the CLI is installed. The Copilot plugin may still be missing — if no
-   `wiqd` skill is loaded, tell the user to restart Copilot CLI (step 4).
+   If this prints a version, the CLI is installed. The skill may still not be loaded in this
+   session — go to step 4 and have the user reload skills.
 
 Never re-run the installer when `wiqd` is already present and working.
 
@@ -77,7 +76,7 @@ curl -fsSL https://aka.ms/wiqd/install.sh | bash
 ```
 
 This installs the `wiqd` CLI from npm (with the Microsoft 365 Agents Toolkit as a dependency), the
-Work IQ VS Code extension, and the **Copilot CLI plugin** that provides the `wiqd` skill.
+Work IQ VS Code extension, and the plugin that provides the **`wiqd` skill**.
 
 Rules:
 
@@ -97,26 +96,19 @@ wiqd --version
 wiqd doctor
 ```
 
-## 4. Hand off to the wiqd skill
+## 4. Reload skills, then continue in this session
 
-The `wiqd` skill is delivered by the Copilot CLI plugin, so **a freshly installed plugin is not
-active in the current session**. Tell the user:
+The `wiqd` skill ships with the plugin the installer just added, so it isn't loaded yet. **The user
+does not need to leave this session** — they only need to pick up the new skill:
 
-1. **Restart Copilot CLI** so the newly installed `wiqd` plugin and its skill are loaded.
-2. Then continue the request through wiqd — either conversationally in a session where the skill is
-   loaded, or by routing explicitly to the orchestrator agent:
+- Run `/skills reload` (or reload the Copilot window) to load the newly installed skills.
 
-   ```bash
-   copilot -i "create a new declarative agent" --agent wiqd:wiqd
-   copilot -i "validate my agent" --agent wiqd:wiqd
-   copilot -i "publish my agent" --agent wiqd:wiqd
-   ```
+Then tell the user to **re-send their original request right here**. Once the skill is loaded,
+invoke it directly and carry the request through — do not send them to a separate session or a
+different entry point.
 
-3. Restate the user's original request in wiqd terms so they can paste it straight in
-   (e.g. "create an agent that answers HR policy questions").
-
-If the `wiqd` skill **is** already loaded in the current session, don't send the user away — invoke
-it directly and let it own the request from there.
+Restate their request in wiqd terms so they can reuse it verbatim (e.g. "create an agent that
+answers HR policy questions").
 
 Useful first commands once wiqd is available:
 

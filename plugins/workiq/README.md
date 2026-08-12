@@ -92,7 +92,7 @@ iex "& { $(irm 'https://aka.ms/wiqd/install.ps1') }"
 curl -fsSL https://aka.ms/wiqd/install.sh | bash
 ```
 
-Restart Copilot CLI after installing so the `wiqd` plugin and its skill load, then continue with `copilot -i "create a new declarative agent" --agent wiqd:wiqd`. See [`references/wiqd.md`](./skills/workiq/references/wiqd.md).
+Reload skills afterwards (`/skills reload`, or reload your Copilot window) and re-send your request in the same session — the `wiqd` skill takes it from there. See [`references/wiqd.md`](./skills/workiq/references/wiqd.md).
 
 ## Skills
 
