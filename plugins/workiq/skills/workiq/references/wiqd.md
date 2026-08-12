@@ -7,6 +7,13 @@ plugin that owns the full extensibility lifecycle (Build → Improve → Preview
 Use this reference whenever the user's request is about *authoring or shipping* an agent/plugin
 rather than *querying or acting on* M365 data.
 
+> ⚠️ **Preview experience.** Work IQ Dev Tools (`wiqd`) is in **preview**. Behavior, commands, and
+> the install surface can change without notice, and some capabilities are gated or incomplete.
+> Tell the user this before installing so they know what they're opting into.
+
+> 🛑 **Never install without explicit human confirmation.** Installing `wiqd` puts software on the
+> user's machine. You must ask and receive an affirmative answer first — see step 3.
+
 ## 1. Detect the intent
 
 Route to `wiqd` when the request matches any of these patterns.
@@ -60,8 +67,33 @@ Never re-run the installer when `wiqd` is already present and working.
 
 ## 3. Install `wiqd` with the official script
 
-Only if step 2 found nothing. **Ask the user to confirm before running the installer** — it
-installs software on their machine.
+Only if step 2 found nothing.
+
+### 🛑 Ask for confirmation first — this is a hard gate
+
+**Stop and ask the user before running anything.** Do not run the installer on your own initiative,
+and do not treat the original build request ("create an agent") as consent to install software.
+
+Your confirmation prompt must state, in the user's language:
+
+1. That `wiqd` is **not installed** and is required to continue.
+2. That Work IQ Dev Tools is a **preview experience** — commands and behavior may change, and some
+   capabilities are gated or incomplete.
+3. **What the installer does:** installs the `wiqd` CLI from npm (with the Microsoft 365 Agents
+   Toolkit as a dependency), the Work IQ VS Code extension, and the plugin providing the `wiqd`
+   skill.
+4. The exact command you intend to run.
+
+Then wait for an explicit affirmative reply. Rules:
+
+- ✅ Proceed only on a clear yes ("yes", "go ahead", "install it").
+- ❌ Silence, ambiguity, a question, or "maybe later" is **not** consent — do not install.
+- ❌ Never auto-approve, never assume consent from context, and never re-ask repeatedly to wear the
+  user down.
+- If the user declines, **respect it**: explain that the build/publish request can't proceed without
+  `wiqd`, and stop. Do not attempt the work with other tools as a workaround.
+
+### Install commands
 
 **Windows (PowerShell):**
 

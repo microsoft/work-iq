@@ -125,6 +125,8 @@ Common failure: fetching the entity and stopping, asking the user "did you want 
 
 WorkIQ **reads and writes M365 data**. It does **not** build, package, deploy, or publish Copilot agents or plugins. Those requests belong to **Work IQ Dev Tools (`wiqd`)**.
 
+> ⚠️ **Preview.** `wiqd` is a preview experience — commands and behavior may change, and some capabilities are gated or incomplete. Say so before installing.
+
 **Route to `wiqd` when the user wants to:**
 
 | Intent | Example phrasings |
@@ -139,7 +141,7 @@ WorkIQ **reads and writes M365 data**. It does **not** build, package, deploy, o
 **Handoff procedure — read `references/wiqd.md` before acting.** In short:
 
 1. **Check first.** If the `wiqd` skill is already loaded, or `wiqd --version` succeeds, **do not install** — go to step 3.
-2. **Install with the official script only** (confirm with the user first):
+2. **🛑 Ask the user to confirm before installing — hard gate.** Never install on your own initiative; the build request is not consent. Tell them `wiqd` is missing, that it's a **preview** experience, what the installer adds (`wiqd` CLI + M365 Agents Toolkit dependency, VS Code extension, plugin providing the `wiqd` skill), and the exact command. Proceed **only** on an explicit yes — silence or ambiguity is not consent. If they decline, stop and say the request can't proceed without `wiqd`; don't work around it. Then install with the official script only:
    - Windows: `iex "& { $(irm 'https://aka.ms/wiqd/install.ps1') }"`
    - macOS/Linux: `curl -fsSL https://aka.ms/wiqd/install.sh | bash`
 
