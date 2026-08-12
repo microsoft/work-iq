@@ -1,6 +1,6 @@
 ---
 name: workiq
-description: WorkIQ - Microsoft 365 tool surface for agents. Use for any workplace question or write action where data lives in M365. Supports semantic `ask` plus tools (`fetch`, create/update/delete, actions, functions, fetch_blob, path/schema discovery) for mail, meetings/calendar, documents/files, Teams chats/channels, OneDrive/SharePoint, and people. Read triggers, "what did [person] say", priorities/top of mind, meeting decisions/action items, summarize thread/chat, find emails/docs, list meetings/messages/files/channels, project status/updates, "what changed since", download file content. Write triggers, send/reply/forward email, create/update/accept/decline meetings, mark read, delete drafts/items, send/post/reply/react in Teams, set presence. Discovery triggers, available endpoints/paths, fields, request body, schema/data model. Prefer `ask` for synthesis; use entity tools for exact reads/writes.
+description: WorkIQ - Microsoft 365 tool surface for agents. Use for any workplace question or write action where data lives in M365. Supports semantic `ask` plus tools (`fetch`, create/update/delete, actions, functions, fetch_blob, path/schema discovery) for mail, meetings/calendar, documents/files, Teams chats/channels, OneDrive/SharePoint, and people. Read triggers, "what did [person] say", priorities/top of mind, meeting decisions/action items, summarize thread/chat, find emails/docs, list meetings/messages/files/channels, project status/updates, "what changed since", download file content. Write triggers, send/reply/forward email, create/update/accept/decline meetings, mark read, delete drafts/items, send/post/reply/react in Teams, set presence. Discovery triggers, available endpoints/paths, fields, request body, schema/data model. Prefer `ask` for synthesis; use entity tools for exact reads/writes. Build/deploy/publish an agent or plugin, hand off to wiqd per references/wiqd.md.
 compatibility: >
   Uses the hosted WorkIQ MCP endpoint. No local package is required for MCP
   tool calls.
@@ -58,6 +58,7 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 | What's new/changed/removed since a point in time | "What's new in my Inbox since this morning?", "What's changed on my calendar since yesterday?", "What's been added to my contacts recently?" | `call_function` (delta — `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta`). **Never call delta via `fetch`** — see `references/call-function-work-iq.md` |
 | Sending mail, accepting/declining meetings | "Send this draft", "Accept the 2pm meeting" | `do_action` |
 | Creating a calendar event, draft, or task | "Create a calendar event Friday at 3pm" | `create_entity` |
+| **Building/deploying/publishing a Copilot agent or plugin** | "Create a declarative agent", "publish my agent", "deploy my plugin" | **Not WorkIQ** — hand off to `wiqd`, see `references/wiqd.md` |
 
 **DO NOT say "I don't have access to emails/meetings/messages"** - use WorkIQ instead!
 
@@ -119,6 +120,35 @@ Common failure: fetching the entity and stopping, asking the user "did you want 
 - **Be precise about tool outcomes.** Do not claim success, failure, existence, or a specific error unless the exact outcome is in the tool result. On null/empty/ambiguous results, say so.
 - **Call at least one WorkIQ tool before answering any M365 question.** Exceptions: non-workplace questions, or questions about this skill's docs.
 - **Honor paging.** If a response includes `@odata.nextLink`, do not present the first page as complete. Continue fetching when the user asks for all/every/complete, or say the answer is partial.
+
+## 🚧 Building, deploying, or publishing an agent or plugin → hand off to `wiqd`
+
+WorkIQ **reads and writes M365 data**. It does **not** build, package, deploy, or publish Copilot agents or plugins. Those requests belong to **Work IQ Dev Tools (`wiqd`)**.
+
+**Route to `wiqd` when the user wants to:**
+
+| Intent | Example phrasings |
+|---|---|
+| Create / scaffold an agent or plugin | "create an agent", "new declarative agent", "scaffold a Copilot agent", "create a plugin", "new plugin project" |
+| Build / edit agent artifacts | "build my agent", "edit my agent", "add a capability", "add a knowledge source", "add an API plugin", "update the manifest" |
+| Validate / test / evaluate | "validate my agent", "run my evals", "test my agent", "debug my agent", "open devui" |
+| Provision / deploy / install / share | "provision my agent", "deploy my agent", "install my agent", "sideload my agent", "share my agent with my team" |
+| Package / publish / onboard | "package my agent", "publish my agent", "submit to AppSource", "publish to Partner Center", "onboard my agent", "start compliance review" |
+| Monitor a deployed agent | "monitor my agent", "check agent health", "talk to my deployed agent" |
+
+**Handoff procedure — read `references/wiqd.md` before acting.** In short:
+
+1. **Check first.** If a `wiqd` skill or `wiqd:wiqd` agent is already loaded, or `wiqd --version` succeeds, **do not install** — go to step 3.
+2. **Install with the official script only** (confirm with the user first):
+   - Windows: `iex "& { $(irm 'https://aka.ms/wiqd/install.ps1') }"`
+   - macOS/Linux: `curl -fsSL https://aka.ms/wiqd/install.sh | bash`
+
+   This installs the `wiqd` CLI, the VS Code extension, and the **Copilot CLI plugin that provides the `wiqd` skill**. Never use a repo-local or hand-rolled install script.
+3. **Guide the user to the skill.** A freshly installed plugin isn't active in the current session — tell the user to **restart Copilot CLI**, then continue via the skill or `copilot -i "<their request>" --agent wiqd:wiqd`. If the `wiqd` skill is already loaded, invoke it directly instead of sending the user away.
+
+> ❌ **Do not** hand-author `declarativeAgent.json` / `manifest.json` / a Teams app package yourself, and **do not** try to deploy or publish an agent through WorkIQ MCP tools — no such path exists.
+
+**Stay in WorkIQ (do NOT route to `wiqd`) when** the request is about M365 data (mail, calendar, Teams, files, people, Planner), when "agent" means this assistant with no build/ship verb, or when installing a Copilot CLI plugin from this marketplace. For mixed requests ("summarize the feedback on my agent, then publish it"), answer the WorkIQ half first, then hand off the build/publish half.
 
 ### Don't substitute web search or CLI introspection
 
@@ -403,3 +433,4 @@ Read the relevant reference file for full parameter details and examples:
 - `references/delete-entity-work-iq.md` — if you need to delete an entity
 - `references/do-action-work-iq.md` — if you need to send mail, accept/decline meetings, copy/move messages
 - `references/troubleshooting.md` — if a tool call fails unexpectedly, returns an error, or behaves differently than documented
+- `references/wiqd.md` — if the user wants to build, scaffold, validate, deploy, package, or publish a Copilot agent or plugin (hand off to Work IQ Dev Tools)
