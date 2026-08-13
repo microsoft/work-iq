@@ -121,12 +121,6 @@ Common failure: fetching the entity and stopping, asking the user "did you want 
 - **Call at least one WorkIQ tool before answering any M365 question.** Exceptions: non-workplace questions, or questions about this skill's docs.
 - **Honor paging.** If a response includes `@odata.nextLink`, do not present the first page as complete. Continue fetching when the user asks for all/every/complete, or say the answer is partial.
 
-### Building, deploying, or publishing an agent or plugin → `wiqd`
-
-WorkIQ reads and writes M365 **data**; it does not build, package, deploy, or publish Copilot agents or plugins. When the user wants to create/scaffold, edit, validate/evaluate, provision/deploy/share, package/publish/onboard, or monitor an **agent or plugin**, that belongs to Work IQ Dev Tools (`wiqd`) — **read `references/wiqd.md` and follow it** (intent detection, the install confirmation gate, and the handoff). Do not hand-author agent manifests or attempt deployment through WorkIQ tools.
-
-This does **not** apply to M365 data requests, to "agent" meaning this assistant, or to installing a plugin from this marketplace — those stay in WorkIQ.
-
 ### Don't substitute web search or CLI introspection
 
 - ❌ `web_fetch` / web search **as the first move** for Graph or M365. WorkIQ is the source of truth — call `get_schema` (for fields) or `search_paths` (for endpoints) first. `web_fetch` is a fallback **only after** WorkIQ returns no useful result.
