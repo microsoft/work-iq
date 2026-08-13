@@ -58,7 +58,7 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 | What's new/changed/removed since a point in time | "What's new in my Inbox since this morning?", "What's changed on my calendar since yesterday?", "What's been added to my contacts recently?" | `call_function` (delta — `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta`). **Never call delta via `fetch`** — see `references/call-function-work-iq.md` |
 | Sending mail, accepting/declining meetings | "Send this draft", "Accept the 2pm meeting" | `do_action` |
 | Creating a calendar event, draft, or task | "Create a calendar event Friday at 3pm" | `create_entity` |
-| **Building/deploying/publishing a Copilot agent or plugin** | "Create a declarative agent", "publish my agent", "deploy my plugin" | **Not WorkIQ** — hand off to `wiqd`, see `references/wiqd.md` |
+| Building/deploying/publishing a Copilot agent or plugin | "Create a declarative agent", "publish my agent", "deploy my plugin" | hand off to `wiqd` — see `references/wiqd.md` |
 
 **DO NOT say "I don't have access to emails/meetings/messages"** - use WorkIQ instead!
 
