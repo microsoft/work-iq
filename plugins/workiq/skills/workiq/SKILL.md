@@ -1,6 +1,6 @@
 ---
 name: workiq
-description: WorkIQ - Microsoft 365 tool surface for agents. Use for any workplace question or write action where data lives in M365. Supports semantic `ask` plus tools (`fetch`, create/update/delete, actions, functions, fetch_blob, path/schema discovery) for mail, meetings/calendar, documents/files, Teams chats/channels, OneDrive/SharePoint, and people. Read triggers, "what did [person] say", priorities/top of mind, meeting decisions/action items, summarize thread/chat, find emails/docs, list meetings/messages/files/channels, project status/updates, "what changed since", download file content. Write triggers, send/reply/forward email, create/update/accept/decline meetings, mark read, delete drafts/items, send/post/reply/react in Teams, set presence. Discovery triggers, available endpoints/paths, fields, request body, schema/data model. Prefer `ask` for synthesis; use entity tools for exact reads/writes.
+description: WorkIQ - Microsoft 365 tool surface for agents. Use for any workplace question or write action where data lives in M365. Supports semantic `ask` plus tools (`fetch`, create/update/delete, actions, functions, fetch_blob, path/schema discovery) for mail, meetings/calendar, documents/files, Teams chats/channels, OneDrive/SharePoint, and people. Read triggers, "what did [person] say", priorities/top of mind, meeting decisions/action items, summarize thread/chat, find emails/docs, list meetings/messages/files/channels, project status/updates, "what changed since", download file content. Write triggers, send/reply/forward email, create/update/accept/decline meetings, mark read, delete drafts/items, send/post/reply/react in Teams, set presence. Discovery triggers, available endpoints/paths, fields, request body, schema/data model. Prefer `ask` for synthesis; use entity tools for exact reads/writes. Build/deploy/publish an agent or plugin, hand off to wiqd per references/wiqd.md.
 compatibility: >
   Uses the hosted WorkIQ MCP endpoint. No local package is required for MCP
   tool calls.
@@ -58,6 +58,7 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 | What's new/changed/removed since a point in time | "What's new in my Inbox since this morning?", "What's changed on my calendar since yesterday?", "What's been added to my contacts recently?" | `call_function` (delta — `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta`). **Never call delta via `fetch`** — see `references/call-function-work-iq.md` |
 | Sending mail, accepting/declining meetings | "Send this draft", "Accept the 2pm meeting" | `do_action` |
 | Creating a calendar event, draft, or task | "Create a calendar event Friday at 3pm" | `create_entity` |
+| Building/deploying/publishing a Copilot agent or plugin | "Create a declarative agent", "publish my agent", "deploy my plugin" | hand off to `wiqd` — see `references/wiqd.md` |
 
 **DO NOT say "I don't have access to emails/meetings/messages"** - use WorkIQ instead!
 
@@ -403,3 +404,4 @@ Read the relevant reference file for full parameter details and examples:
 - `references/delete-entity-work-iq.md` — if you need to delete an entity
 - `references/do-action-work-iq.md` — if you need to send mail, accept/decline meetings, copy/move messages
 - `references/troubleshooting.md` — if a tool call fails unexpectedly, returns an error, or behaves differently than documented
+- `references/wiqd.md` — if the user wants to build, scaffold, validate, deploy, package, or publish a Copilot agent or plugin (hand off to Work IQ Dev Tools)
