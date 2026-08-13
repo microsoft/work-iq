@@ -121,36 +121,11 @@ Common failure: fetching the entity and stopping, asking the user "did you want 
 - **Call at least one WorkIQ tool before answering any M365 question.** Exceptions: non-workplace questions, or questions about this skill's docs.
 - **Honor paging.** If a response includes `@odata.nextLink`, do not present the first page as complete. Continue fetching when the user asks for all/every/complete, or say the answer is partial.
 
-## 🚧 Building, deploying, or publishing an agent or plugin → hand off to `wiqd`
+### Building, deploying, or publishing an agent or plugin → `wiqd`
 
-WorkIQ **reads and writes M365 data**. It does **not** build, package, deploy, or publish Copilot agents or plugins. Those requests belong to **Work IQ Dev Tools (`wiqd`)**.
+WorkIQ reads and writes M365 **data**; it does not build, package, deploy, or publish Copilot agents or plugins. When the user wants to create/scaffold, edit, validate/evaluate, provision/deploy/share, package/publish/onboard, or monitor an **agent or plugin**, that belongs to Work IQ Dev Tools (`wiqd`) — **read `references/wiqd.md` and follow it** (intent detection, the install confirmation gate, and the handoff). Do not hand-author agent manifests or attempt deployment through WorkIQ tools.
 
-> ⚠️ **Preview.** `wiqd` is a preview experience — commands and behavior may change, and some capabilities are gated or incomplete. Say so before installing.
-
-**Route to `wiqd` when the user wants to:**
-
-| Intent | Example phrasings |
-|---|---|
-| Create / scaffold an agent or plugin | "create an agent", "new declarative agent", "scaffold a Copilot agent", "create a plugin", "new plugin project" |
-| Build / edit agent artifacts | "build my agent", "edit my agent", "add a capability", "add a knowledge source", "add an API plugin", "update the manifest" |
-| Validate / test / evaluate | "validate my agent", "run my evals", "test my agent", "debug my agent", "open devui" |
-| Provision / deploy / install / share | "provision my agent", "deploy my agent", "install my agent", "sideload my agent", "share my agent with my team" |
-| Package / publish / onboard | "package my agent", "publish my agent", "submit to AppSource", "publish to Partner Center", "onboard my agent", "start compliance review" |
-| Monitor a deployed agent | "monitor my agent", "check agent health", "talk to my deployed agent" |
-
-**Handoff procedure — read `references/wiqd.md` before acting.** In short:
-
-1. **Check first.** If the `wiqd` skill is already loaded, or `wiqd --version` succeeds, **do not install** — go to step 3.
-2. **🛑 Ask the user to confirm, then run the install yourself — hard gate.** Never install on your own initiative; the build request is not consent. Tell them `wiqd` is missing, that it's a **preview** experience, what the installer adds (`wiqd` CLI + M365 Agents Toolkit dependency, VS Code extension, plugin providing the `wiqd` skill), and the exact command you'll run. Proceed **only** on an explicit yes — silence or ambiguity is not consent. If they decline, stop and say the request can't proceed without `wiqd`; don't work around it. Once confirmed, **execute the command yourself** (don't make the user run it) using the official script only:
-   - Windows: `iex "& { $(irm 'https://aka.ms/wiqd/install.ps1') }"`
-   - macOS/Linux: `curl -fsSL https://aka.ms/wiqd/install.sh | bash`
-
-   This installs the `wiqd` CLI, the VS Code extension, and the plugin that provides the **`wiqd` skill**. Never use a repo-local or hand-rolled install script.
-3. **Reload skills and continue here.** The new skill isn't loaded yet — ask the user to run `/skills reload` (or reload their Copilot window), then re-send their request in this same session. Once the `wiqd` skill is available, invoke it directly and carry the request through. Never send the user to a separate session or a different entry point.
-
-> ❌ **Do not** hand-author `declarativeAgent.json` / `manifest.json` / a Teams app package yourself, and **do not** try to deploy or publish an agent through WorkIQ MCP tools — no such path exists.
-
-**Stay in WorkIQ (do NOT route to `wiqd`) when** the request is about M365 data (mail, calendar, Teams, files, people, Planner), when "agent" means this assistant with no build/ship verb, or when installing a Copilot CLI plugin from this marketplace. For mixed requests ("summarize the feedback on my agent, then publish it"), answer the WorkIQ half first, then hand off the build/publish half.
+This does **not** apply to M365 data requests, to "agent" meaning this assistant, or to installing a plugin from this marketplace — those stay in WorkIQ.
 
 ### Don't substitute web search or CLI introspection
 
