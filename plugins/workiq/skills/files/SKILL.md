@@ -172,13 +172,13 @@ Fetch `/me/drive/root/children`, pick a returned file (not folder), then call `w
 
 > "Rename my IDEAs dashboard OneDrive file to Final IDEAs dashboard.xlsx."
 
-Resolve the exact file with `workiq-call_function` drive search, ask for confirmation naming the resolved file and new name, then call `workiq-update_entity` on `/me/drive/items/{id}` with `{"name":"Final IDEAs dashboard.xlsx"}`. Report success only if the response confirms the new name.
+Resolve the exact file with `workiq-call_function` drive search, ask for confirmation naming the resolved file and new name, then call `workiq-update_entity` on `/drives/{driveId}/items/{id}` (take `driveId` from the search result's `parentReference.driveId`; the `/me/drive/items` alias is proxy-denied) with `{"name":"Final IDEAs dashboard.xlsx"}`. Report success only if the response confirms the new name.
 
 ### Create an upload session, not an upload
 
 > "Create an upload session to replace my Capacity Planning.xlsx OneDrive file. Do not upload content."
 
-Resolve the exact file with `workiq-call_function`, confirm, then call `workiq-do_action` on `/me/drive/items/{id}/createUploadSession`. Return fields from the response. State clearly that no bytes were uploaded and WorkIQ cannot upload raw file content.
+Resolve the exact file with `workiq-call_function`, confirm, then call `workiq-do_action` on `/drives/{driveId}/items/{id}/createUploadSession`. Return fields from the response. State clearly that no bytes were uploaded and WorkIQ cannot upload raw file content.
 
 ## Error Handling
 

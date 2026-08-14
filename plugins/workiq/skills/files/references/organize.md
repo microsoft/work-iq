@@ -2,6 +2,26 @@
 
 Use this reference for persistent OneDrive/SharePoint file actions: create folder, copy, move, rename, delete, and create upload session. Every write must be confirmed with the user before calling the mutation tool.
 
+
+## 🛑 `/me/drive/items/{id}` is denied for entity operations
+
+**Verified live:** `workiq-fetch` on `/me/drive/items/{id}` returns `Access denied for GET path`. Only the drive-scoped form is exposed for `fetch` / `update_entity` / `delete_entity` / `do_action` / `create_entity`:
+
+| Operation | Path |
+|---|---|
+| Entity read/update/delete/action on an item | ✅ `/drives/{driveId}/items/{itemId}` |
+| Same via the `/me` alias | ❌ `/me/drive/items/{itemId}` — proxy-denied |
+| Listing the root, root search | ✅ `/me/drive/root/children`, `/me/drive/root/search(q='...')` |
+| Binary content via `workiq-fetch_blob` | ✅ `/me/drive/items/{itemId}/content` — **`fetch_blob` uses a different allowlist and does reach Graph** |
+
+**Getting `driveId` costs nothing** — every listing already returns it:
+
+- `parentReference.driveId` on any item from `/me/drive/root/children` or a drive search, or
+- `workiq-fetch` `/me/drive?$select=id` for the user's own OneDrive.
+
+Include `parentReference` in `$select` when listing so the id is in hand before any write. If a write fails with `Access denied for path`, check you used the drive-scoped form before reporting the path as denied.
+
+
 ## Universal write procedure
 
 1. Resolve the exact item(s) and drive context from WorkIQ evidence.
@@ -35,7 +55,7 @@ For a known parent folder:
 
 ```text
 workiq-create_entity (
-  parentUrl: "/me/drive/items/{parentFolderId}/children",
+  parentUrl: "/drives/{driveId}/items/{parentFolderId}/children",
   jsonBody: { "name": "<folder name>", "folder": {}, "@microsoft.graph.conflictBehavior": "rename" }
 )
 ```
@@ -68,7 +88,7 @@ Score-5 MCP route: `workiq-call_function` → `workiq-call_function` → `workiq
 
 ```text
 workiq-do_action (
-  actionUrl: "/me/drive/items/{sourceFileId}/copy",
+  actionUrl: "/drives/{driveId}/items/{sourceFileId}/copy",
   jsonBody: {
     "parentReference": {
       "driveId": "{targetDriveId}",
@@ -88,7 +108,7 @@ Score-5 MCP route: `workiq-call_function` → `workiq-call_function` → `workiq
 
 ```text
 workiq-update_entity (
-  entityUrl: "/me/drive/items/{sourceFileId}",
+  entityUrl: "/drives/{driveId}/items/{sourceFileId}",
   jsonBody: {
     "parentReference": {
       "driveId": "{targetDriveId}",
@@ -106,7 +126,7 @@ Score-5 MCP route: `workiq-call_function` → `workiq-update_entity`. Get confir
 
 ```text
 workiq-update_entity (
-  entityUrl: "/me/drive/items/{fileId}",
+  entityUrl: "/drives/{driveId}/items/{fileId}",
   jsonBody: { "name": "<new exact name>" }
 )
 ```
@@ -119,7 +139,7 @@ Score-5 MCP route: `workiq-call_function` → `workiq-delete_entity` (or `workiq
 
 ```text
 workiq-delete_entity (
-  entityUrl: "/me/drive/items/{fileId}"
+  entityUrl: "/drives/{driveId}/items/{fileId}"
 )
 ```
 
@@ -144,7 +164,7 @@ Score-5 MCP route for `create-onedrive-upload-session`: `workiq-call_function` �
 3. Create the session:
    ```text
    workiq-do_action (
-     actionUrl: "/me/drive/items/{fileId}/createUploadSession",
+     actionUrl: "/drives/{driveId}/items/{fileId}/createUploadSession",
      jsonBody: {
        "item": {
          "@microsoft.graph.conflictBehavior": "replace"
@@ -160,7 +180,7 @@ For `schema-upload-session`, use `workiq-get_schema` and do not use web document
 
 ```text
 workiq-get_schema (
-  path: "/me/drive/items/{id}/createUploadSession",
+  path: "/drives/{driveId}/items/{id}/createUploadSession",
   operationType: "action"
 )
 ```

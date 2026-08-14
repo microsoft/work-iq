@@ -30,7 +30,7 @@ If the folder item ID is known:
 
 ```text
 workiq-fetch (
-  entityUrls: ["/me/drive/items/{folderItemId}/children?$top=50&$select=id,name,webUrl,size,file,folder,createdDateTime,lastModifiedDateTime,createdBy,lastModifiedBy,parentReference&$orderby=name"]
+  entityUrls: ["/drives/{driveId}/items/{folderItemId}/children?$top=50&$select=id,name,webUrl,size,file,folder,createdDateTime,lastModifiedDateTime,createdBy,lastModifiedBy,parentReference&$orderby=name"]
 )
 ```
 
@@ -48,7 +48,7 @@ For exact file metadata by name, prefer drive search via [`search.md`](search.md
 
 ```text
 workiq-fetch (
-  entityUrls: ["/me/drive/items/{itemId}?$select=id,name,webUrl,size,file,folder,createdDateTime,lastModifiedDateTime,createdBy,lastModifiedBy,parentReference"]
+  entityUrls: ["/drives/{driveId}/items/{itemId}?$select=id,name,webUrl,size,file,folder,createdDateTime,lastModifiedDateTime,createdBy,lastModifiedBy,parentReference"]
 )
 ```
 
