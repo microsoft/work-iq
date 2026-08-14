@@ -25,7 +25,7 @@ Personal contacts and directory users are different stores:
 | Delete contact | `workiq-delete_entity` entityUrl `/me/contacts/{id}` |
 | Contacts delta | `workiq-call_function` `/me/contacts/delta` |
 
-`/me/contacts` is commonly tenant-policy denied. If WorkIQ returns `Access denied for path: /me/contacts...`, report it and stop.
+`/me/contacts` availability varies by tenant and over time — it has been observed both denied and working on the same tenant. Attempt the call; do not pre-emptively tell the user it is unavailable. If WorkIQ returns `Access denied for path: /me/contacts...`, report it and stop.
 
 ## Resolve a personal contact
 

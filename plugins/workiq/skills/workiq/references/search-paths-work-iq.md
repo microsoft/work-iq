@@ -1,11 +1,18 @@
 # search_paths
 
-> **⚠️ The catalog is not the tenant allowlist.** A path can appear in `search_paths` output and
-> still return `Access denied for GET path` when you call it. Verified listed-but-denied:
-> `/me/mailboxSettings`, `/me/settings`, `/me/memberOf`, `/me/transitiveMemberOf`,
-> `/me/inferenceClassification`, `/places`, `/me/outlook/masterCategories`. **Never tell the user a capability exists because a path
-> appeared here** — only a successful call proves availability. On denial, report it and stop; do not
-> hunt for a substitute path or fall back to `ask`.
+> **⚠️ The catalog is not the tenant allowlist.** A path can appear in
+> `search_paths` output and still return `Access denied for GET path`, and **the allowlist changes over
+> time** — paths observed denied one hour have been observed working the next. Treat any denial list as
+> a dated observation, never a permanent fact.
+>
+> Observed denied at time of writing: `/me/mailboxSettings`, `/me/settings`, `/me/memberOf`,
+> `/me/inferenceClassification`, `/places`, `/me/todo/*`, `/me/presence`.
+> Observed **working** despite earlier denials: `/me/outlook/masterCategories`, `/me/contacts`,
+> `/me/transitiveMemberOf`.
+>
+> **The only proof a path works is a successful call.** Never tell the user a capability is unavailable
+> because it appears on a list — attempt it once, then report exactly what happened. On denial, stop:
+> do not retry, do not substitute a sibling path, do not fall back to `ask`/`retrieve`.
 
 
 Discover available WorkIQ API paths by regex. Use as the first step before entity tools when the path is unknown.

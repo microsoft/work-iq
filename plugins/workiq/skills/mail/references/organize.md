@@ -164,16 +164,21 @@ For create/rename/delete, preview and confirm. For schema questions, use `workiq
 
 ## Outlook categories
 
-> **⚠️ Outlook categories are commonly denied entirely — reads included.** Verified live:
-> `workiq-fetch /me/outlook/masterCategories` returns `Access denied for GET path`. Treat the whole
-> family as unavailable unless a call proves otherwise: attempt the read **once**, and if it is denied,
-> tell the user Outlook categories are blocked by tenant policy and stop. Do not retry, do not try the
-> write paths, and do not fall back to `ask`/`retrieve` to infer category names.
->
-> When available, the paths are `/me/outlook/masterCategories` (list/create) and
-> `/me/outlook/masterCategories/{id}` (update/delete). Categories **on a message** are a different
-> thing — the `categories` string array on `/me/messages/{id}` is writable via `workiq-update_entity`
-> independently of whether the master list is readable.
+| Intent | Tool/path |
+|---|---|
+| List master categories | `workiq-fetch` `/me/outlook/masterCategories?$select=id,displayName,color` |
+| Create category | `workiq-create_entity` `/me/outlook/masterCategories` (`displayName`, `color` such as `preset0`) |
+| Rename/update category | resolve ID, then `workiq-update_entity` `/me/outlook/masterCategories/{id}` |
+| Delete category | resolve ID, confirm, then `workiq-delete_entity` `/me/outlook/masterCategories/{id}` |
+
+Categories **on a message** are a separate thing: the `categories` string array on `/me/messages/{id}`
+is set with `workiq-update_entity` and does not depend on the master list.
+
+> **⚠️ Availability varies by tenant and changes over time.** This family has been observed both
+> working and returning `Access denied for GET path` on the same tenant within hours. Attempt the
+> call **once**; if it is denied, tell the user Outlook categories are unavailable in their tenant
+> and stop — do not retry, do not probe sibling paths, and do not fall back to `ask`/`retrieve` to
+> guess category names.
 
 ## Automatic replies (out of office) — NOT SUPPORTED
 

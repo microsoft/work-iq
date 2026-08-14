@@ -90,7 +90,7 @@ Default to `retrieve` for open-ended *finding*; `fetch` when you know the shape;
 | Listing tasks/plans/buckets in Planner | "List my Planner tasks due this week" | `fetch` — see `references/tasks-work-iq.md` avoid `ask` |
 | Listing / creating / completing Planner tasks | "Add a task to follow up with finance", "Mark my task done", "List my Planner tasks" | entity tools on `/planner/...` — see `references/tasks-work-iq.md` |
 | Get a personal contact by name | "Get the contact card for Morgan Avery" | `fetch` (`/me/contacts?$filter=...`) — subject to server policy |
-| List or manage Outlook categories | "What Outlook categories do I have?" | `fetch` (`/me/outlook/masterCategories`) — **often denied outright, reads included**; report the denial and stop |
+| List or manage Outlook categories | "What Outlook categories do I have?" | `fetch` (`/me/outlook/masterCategories`) — availability varies by tenant; attempt once and report a denial honestly |
 | Org chart / direct reports / manager lookup | "Who are Rob's direct reports?" | `fetch` (`/users/{id}/directReports`) |
 | What's new/changed/removed since a point in time | "What's new in my Inbox since this morning?", "What's changed on my calendar since yesterday?", "What's been added to my contacts recently?" | `call_function` (delta — `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta`). **Never call delta via `fetch`** — see `references/call-function-work-iq.md` |
 | Sending mail, accepting/declining meetings | "Send this draft", "Accept the 2pm meeting" | `do_action` |
@@ -448,7 +448,7 @@ Entity tools provide **fast, direct access to specific M365 data** via Work IQ A
 | Planner | `/me/planner/plans`, `/planner/tasks` | list/create/update/complete/delete — see `references/tasks-work-iq.md` |
 | Teams | `/me/chats`, `/chats/{chatId}/messages`, `/me/joinedTeams`, `/teams/{teamId}/channels/{channelId}/messages`, `/me/presence` | chats vs channels are different surfaces — see `references/teams-work-iq.md` |
 | People | `/me`, `/users/{id}`, `/users/{id}/directReports`, `/me/manager`, `/me/people`, `/me/contacts`, `/me/contactFolders` | profile, org, contacts — see directory-vs-contacts warning below. `/me/people` returns relevance-ranked colleagues and is the right first call for "who do I work with" / "who is X" fuzzy lookups |
-| Outlook categories | `/me/outlook/masterCategories` | list/get/create/update/delete — **the whole family is commonly denied, reads included** (verified: `Access denied for GET path`). The `categories` array on `/me/messages/{id}` is separate and usually writable |
+| Outlook categories | `/me/outlook/masterCategories` | list/get/create/update/delete — availability varies by tenant and over time; probe once. The `categories` array on `/me/messages/{id}` is separate and usually writable |
 | Files | `/me/drive`, `/me/drive/root/children`, `/drives/{driveId}/items/{itemId}`, `/sites/{id}` | list/get JSON metadata with `fetch`; download binary content with `fetch_blob` - see `references/fetch-blob-work-iq.md`; uploads are not released yet. **`/me/drive/items/{id}` is denied for entity ops** — use `/drives/{driveId}/items/{itemId}`; `fetch_blob` on `/me/drive/items/{id}/content` still works |
 | Change tracking | `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta` | "what's new/changed since" — via `call_function` only, never `fetch` |
 | Memory | `/memory/users/me/profile` | What WorkIQ has stored about the user — profile, preferences, remembered items. **Read-only (`fetch`)**; there is no write path. Confirm with `search_paths` filter `memory` if unsure. |
@@ -457,15 +457,22 @@ Entity tools provide **fast, direct access to specific M365 data** via Work IQ A
 > server-side. If a call returns `Access denied for path: <X>`, the path isn't in the
 > tenant's allowlist — **do not retry, do not fall back to a different path, do not call `ask`
 > as a workaround.** Tell the user the path is policy-denied. Currently,
-> `/me/todo/*`, `/me/contacts`, and `/me/outlook/masterCategories` (reads **and** writes) are commonly
-> affected — `search_paths` confirms what's exposed for the connected tenant.
+> `/me/todo/*` and `/me/presence` are currently affected; `/me/contacts` and
+> `/me/outlook/masterCategories` have been seen both denied and working, so probe rather than assume — `search_paths` confirms what's exposed for the connected tenant.
 
-> **⚠️ `search_paths` lists the API surface, not your tenant's allowlist.** A path can appear in
-> `search_paths` output and still return `Access denied for GET path` when you call it. Verified
-> denied despite being listed: `/me/mailboxSettings`, `/me/settings`, `/me/memberOf`,
-> `/me/transitiveMemberOf`, `/me/inferenceClassification`, `/places`, `/me/outlook/masterCategories`. Treat `search_paths` as a
-> discovery hint, not a guarantee, and report a denial honestly rather than hunting for a
-> substitute path.
+> **⚠️ `search_paths` lists the API surface, not your tenant's live allowlist.** A path can appear in
+> `search_paths` output and still return `Access denied for GET path`, and **the allowlist changes over
+> time** — paths observed denied one hour have been observed working the next. Treat any denial list as
+> a dated observation, never a permanent fact.
+>
+> Observed denied at time of writing: `/me/mailboxSettings`, `/me/settings`, `/me/memberOf`,
+> `/me/inferenceClassification`, `/places`, `/me/todo/*`, `/me/presence`.
+> Observed **working** despite earlier denials: `/me/outlook/masterCategories`, `/me/contacts`,
+> `/me/transitiveMemberOf`.
+>
+> **The only proof a path works is a successful call.** Never tell the user a capability is unavailable
+> because it appears on a list — attempt it once, then report exactly what happened. On denial, stop:
+> do not retry, do not substitute a sibling path, do not fall back to `ask`/`retrieve`.
 
 > **🕐 There is no timezone path.** `/me/mailboxSettings` is **not exposed**. Derive the user's
 > IANA timezone from the current date/time the runtime supplies with your prompt (its UTC offset
