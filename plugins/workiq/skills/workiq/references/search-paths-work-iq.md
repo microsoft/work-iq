@@ -3,7 +3,7 @@
 > **⚠️ The catalog is not the tenant allowlist.** A path can appear in `search_paths` output and
 > still return `Access denied for GET path` when you call it. Verified listed-but-denied:
 > `/me/mailboxSettings`, `/me/settings`, `/me/memberOf`, `/me/transitiveMemberOf`,
-> `/me/inferenceClassification`, `/places`. **Never tell the user a capability exists because a path
+> `/me/inferenceClassification`, `/places`, `/me/outlook/masterCategories`. **Never tell the user a capability exists because a path
 > appeared here** — only a successful call proves availability. On denial, report it and stop; do not
 > hunt for a substitute path or fall back to `ask`.
 

@@ -46,6 +46,7 @@ Hard limits that change how you plan. Read these **before** your first call so y
 - **Delta ("what changed since") is `call_function` only** — never `fetch`.
 - **`fetch_blob` caps at 4 MB** and reports errors in-band; always check `statusCode` and Content Safety before using `base64Content`.
 - **`upload_blob` is not released.** Calling it returns `tool does not exist`. WorkIQ cannot accept raw byte payloads — point the user at the OneDrive/SharePoint web UI.
+- **`$filter` + `$orderby` on mail often fails** with `InefficientFilter` unless an index backs the pair (`isRead` and `receivedDateTime` are safe; `importance`, `flag/flagStatus`, `from/...`, `hasAttachments` are not). Recover by keeping `$orderby=receivedDateTime desc`, **dropping the `$filter`**, and filtering locally — a filter with no `$orderby` returns *oldest-first*, so the reverse silently yields stale results.
 - **Relative dates are not queryable.** "This week" must become explicit dates before it reaches a `$filter` or an `ask` question.
 
 ## CRITICAL: When to Use This Skill
@@ -89,7 +90,7 @@ Default to `retrieve` for open-ended *finding*; `fetch` when you know the shape;
 | Listing tasks/plans/buckets in Planner | "List my Planner tasks due this week" | `fetch` — see `references/tasks-work-iq.md` avoid `ask` |
 | Listing / creating / completing Planner tasks | "Add a task to follow up with finance", "Mark my task done", "List my Planner tasks" | entity tools on `/planner/...` — see `references/tasks-work-iq.md` |
 | Get a personal contact by name | "Get the contact card for Morgan Avery" | `fetch` (`/me/contacts?$filter=...`) — subject to server policy |
-| List or manage Outlook categories | "What Outlook categories do I have?" | `fetch` (`/me/outlook/masterCategories`); writes subject to server policy |
+| List or manage Outlook categories | "What Outlook categories do I have?" | `fetch` (`/me/outlook/masterCategories`) — **often denied outright, reads included**; report the denial and stop |
 | Org chart / direct reports / manager lookup | "Who are Rob's direct reports?" | `fetch` (`/users/{id}/directReports`) |
 | What's new/changed/removed since a point in time | "What's new in my Inbox since this morning?", "What's changed on my calendar since yesterday?", "What's been added to my contacts recently?" | `call_function` (delta — `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta`). **Never call delta via `fetch`** — see `references/call-function-work-iq.md` |
 | Sending mail, accepting/declining meetings | "Send this draft", "Accept the 2pm meeting" | `do_action` |
@@ -447,7 +448,7 @@ Entity tools provide **fast, direct access to specific M365 data** via Work IQ A
 | Planner | `/me/planner/plans`, `/planner/tasks` | list/create/update/complete/delete — see `references/tasks-work-iq.md` |
 | Teams | `/me/chats`, `/chats/{chatId}/messages`, `/me/joinedTeams`, `/teams/{teamId}/channels/{channelId}/messages`, `/me/presence` | chats vs channels are different surfaces — see `references/teams-work-iq.md` |
 | People | `/me`, `/users/{id}`, `/users/{id}/directReports`, `/me/manager`, `/me/people`, `/me/contacts`, `/me/contactFolders` | profile, org, contacts — see directory-vs-contacts warning below. `/me/people` returns relevance-ranked colleagues and is the right first call for "who do I work with" / "who is X" fuzzy lookups |
-| Outlook categories | `/me/outlook/masterCategories` | list/get/create/update/delete — writes commonly policy-denied |
+| Outlook categories | `/me/outlook/masterCategories` | list/get/create/update/delete — **the whole family is commonly denied, reads included** (verified: `Access denied for GET path`). The `categories` array on `/me/messages/{id}` is separate and usually writable |
 | Files | `/me/drive`, `/drives/{id}`, `/sites/{id}` | list/get JSON metadata with `fetch`; download binary content with `fetch_blob` - see `references/fetch-blob-work-iq.md`; uploads are not released yet |
 | Change tracking | `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta` | "what's new/changed since" — via `call_function` only, never `fetch` |
 | Memory | `/memory/users/me/profile` | What WorkIQ has stored about the user — profile, preferences, remembered items. **Read-only (`fetch`)**; there is no write path. Confirm with `search_paths` filter `memory` if unsure. |
@@ -456,13 +457,13 @@ Entity tools provide **fast, direct access to specific M365 data** via Work IQ A
 > server-side. If a call returns `Access denied for path: <X>`, the path isn't in the
 > tenant's allowlist — **do not retry, do not fall back to a different path, do not call `ask`
 > as a workaround.** Tell the user the path is policy-denied. Currently,
-> `/me/todo/*`, `/me/contacts`, and writes on `/me/outlook/masterCategories` are commonly
+> `/me/todo/*`, `/me/contacts`, and `/me/outlook/masterCategories` (reads **and** writes) are commonly
 > affected — `search_paths` confirms what's exposed for the connected tenant.
 
 > **⚠️ `search_paths` lists the API surface, not your tenant's allowlist.** A path can appear in
 > `search_paths` output and still return `Access denied for GET path` when you call it. Verified
 > denied despite being listed: `/me/mailboxSettings`, `/me/settings`, `/me/memberOf`,
-> `/me/transitiveMemberOf`, `/me/inferenceClassification`, `/places`. Treat `search_paths` as a
+> `/me/transitiveMemberOf`, `/me/inferenceClassification`, `/places`, `/me/outlook/masterCategories`. Treat `search_paths` as a
 > discovery hint, not a guarantee, and report a denial honestly rather than hunting for a
 > substitute path.
 

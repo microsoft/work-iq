@@ -40,14 +40,44 @@ Use these direct `workiq-fetch` patterns when the user gives an exact structured
 | Latest messages | `/me/messages?$top=10&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,isRead,importance,webLink,bodyPreview` |
 | Latest Inbox messages | `/me/mailFolders/inbox/messages?$top=10&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,isRead,importance,webLink,bodyPreview` |
 | Unread mail | `/me/messages?$top=25&$filter=isRead%20eq%20false&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,isRead,importance,webLink,bodyPreview` |
-| Unread from a person | `/me/messages?$top=25&$filter=isRead%20eq%20false%20and%20from/emailAddress/address%20eq%20%27{email}%27&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,isRead,webLink,bodyPreview` |
-| Important from a person in Inbox | `/me/mailFolders/inbox/messages?$top=25&$filter=importance%20eq%20%27high%27%20and%20from/emailAddress/address%20eq%20%27{email}%27&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,importance,isRead,webLink` |
-| Flagged mail | `/me/messages?$top=25&$filter=flag/flagStatus%20eq%20%27flagged%27&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,flag,isRead,webLink` |
-| Flagged Inbox mail | `/me/mailFolders/inbox/messages?$top=25&$filter=flag/flagStatus%20eq%20%27flagged%27&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,flag,isRead,webLink` |
+| Unread from a person | `/me/messages?$top=25&$filter=isRead%20eq%20false%20and%20from/emailAddress/address%20eq%20%27{email}%27&$select=id,subject,from,receivedDateTime,isRead,webLink,bodyPreview` |
+| Important from a person in Inbox | `/me/mailFolders/inbox/messages?$top=100&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,importance,isRead,webLink` then filter on importance + sender locally. (`$filter=importance eq 'high'&$orderby=importance,receivedDateTime%20desc` also works if you prefer server-side.) |
+| Flagged mail (recent) | `/me/messages?$top=100&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,flag,isRead,webLink` then keep `flag.flagStatus == 'flagged'` locally |
+| Flagged Inbox mail (recent) | `/me/mailFolders/inbox/messages?$top=100&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,flag,isRead,webLink` then filter locally |
 | Today's Inbox | `/me/mailFolders/inbox/messages?$top=50&$filter=receivedDateTime%20ge%20{startUtc}%20and%20receivedDateTime%20lt%20{endUtc}&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,isRead,importance,webLink,bodyPreview` |
 | Messages sent/received on a date in Inbox | Use the same date range against `/me/mailFolders/inbox/messages`; include `sentDateTime,receivedDateTime` in `$select` if the user says "sent on". |
-| Last email from a person | `/me/messages?$top=1&$filter=from/emailAddress/address%20eq%20%27{email}%27&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,bodyPreview,webLink` |
+| Last email from a person | `/me/messages?$top=100&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,bodyPreview,webLink` then take the first match on sender locally; or `workiq-retrieve` for a semantic "last email from X" |
 | Topic with exact required terms | `/me/messages?$top=25&$search=%22{phrase}%22&$select=id,subject,from,receivedDateTime,bodyPreview,webLink` plus local filtering for required terms. |
+
+> **⚠️ `$filter` + `$orderby` often fails with `InefficientFilter`** — *"The restriction or sort order is too complex for this operation."* Exchange only allows the pair when an index backs it. Verified live against a ~96k-item mailbox:
+>
+> | Combination | Result |
+> |---|---|
+> | `$orderby=receivedDateTime desc` alone (no filter) | ✅ works, genuinely newest-first |
+> | `$filter=isRead eq false` + `$orderby=receivedDateTime desc` | ✅ works |
+> | `$filter=receivedDateTime ge/lt ...` + `$orderby=receivedDateTime desc` | ✅ works (same property) |
+> | `$filter=importance eq 'high'` + `$orderby=receivedDateTime desc` | ❌ `InefficientFilter` |
+> | `$filter=flag/flagStatus eq 'flagged'` + `$orderby=receivedDateTime desc` | ❌ `InefficientFilter` |
+> | `$filter=from/emailAddress/address eq ...` + `$orderby=receivedDateTime desc` | ❌ `InefficientFilter` |
+> | `$filter=hasAttachments eq true` + `$orderby=receivedDateTime desc` | ❌ `InefficientFilter` |
+> | adding a `receivedDateTime ge ...` clause to rescue the sort | ❌ still `InefficientFilter` |
+> | `$orderby=flag/flagStatus,receivedDateTime desc` (nested prop first) | ❌ 504 timeout |
+>
+> ### 🛑 Recovery: sort server-side, filter locally — NOT the reverse
+>
+> On `InefficientFilter`, re-issue **without the `$filter`**, keeping `$orderby=receivedDateTime desc` and adding the filter field to `$select`, then apply the predicate locally:
+>
+> ```text
+> workiq-fetch(
+>   entityUrls: ["/me/mailFolders/inbox/messages?$top=100&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,isRead,importance,flag,hasAttachments,webLink"]
+> )
+> ```
+>
+> **Do NOT "just drop the `$orderby`" and sort the results locally.** A filter with no `$orderby` returns the collection's *default* order, which is **oldest-first** — on this mailbox `$filter=hasAttachments eq true` returned mail from **2018**. Sorting that page locally yields the oldest matches, so "my recent flagged mail" comes back years stale while looking authoritative. That is a wrong answer, which is worse than the original error.
+>
+> If the first page yields too few matches, page forward with `@odata.nextLink` within the documented bounds and say how far back you scanned. If recency is not required (for example "every email about X"), filter-only is fine — just don't present it as "most recent".
+>
+> `$search` is also available, but it returns **relevance** order, not date order — don't use it when the user asked for the latest.
 
 URL-encode values, not property-path slashes. For named people, if the prompt gives an email address use it directly; otherwise resolve the person with the people skill or a bounded mail search.
 
@@ -102,7 +132,7 @@ For "first email in my inbox with a file attachment, download the first file att
 
 ```text
 workiq-fetch(
-  entityUrls: ["/me/mailFolders/inbox/messages?$top=1&$filter=hasAttachments%20eq%20true&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,webLink,hasAttachments&$expand=attachments"]
+  entityUrls: ["/me/mailFolders/inbox/messages?$top=100&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,webLink,hasAttachments&$expand=attachments"]
 )
 ```
 
