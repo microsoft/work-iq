@@ -27,6 +27,14 @@ POST a WorkIQ action — a named operation that performs a task (send mail, copy
 
 Vs. `create_entity`: use `do_action` for verbs (send, copy, move, accept, reply, getSchedule); use `create_entity` to create a new stored resource. Function-shaped names that still take a JSON body (`getSchedule`, `findMeetingTimes`) are actions — POST them here.
 
+## Workflow
+
+1. Resolve any required target IDs with `fetch` (message, event, chat/channel message, drive item, etc.) and prepare the action body.
+2. (Optional) `get_schema` with `operationType: "action"` when the action body shape is unfamiliar.
+3. Preview the exact effect — target, path, recipients/attendees, body/comment, destination, reaction, presence state, or irreversible outcome — and wait for explicit user confirmation.
+4. After confirmation, call `do_action` with the confirmed `actionUrl` and `jsonBody`.
+5. Verify the action from the tool response before reporting success.
+
 ## Examples
 
 ### Send an email immediately

@@ -1,5 +1,13 @@
 # search_paths
 
+> **⚠️ The catalog is not the tenant allowlist.** A path can appear in `search_paths` output and
+> still return `Access denied for GET path` when you call it. Verified listed-but-denied:
+> `/me/mailboxSettings`, `/me/settings`, `/me/memberOf`, `/me/transitiveMemberOf`,
+> `/me/inferenceClassification`, `/places`. **Never tell the user a capability exists because a path
+> appeared here** — only a successful call proves availability. On denial, report it and stop; do not
+> hunt for a substitute path or fall back to `ask`.
+
+
 Discover available WorkIQ API paths by regex. Use as the first step before entity tools when the path is unknown.
 
 ## Parameters
@@ -14,9 +22,9 @@ Discover available WorkIQ API paths by regex. Use as the first step before entit
 
 1. `search_paths` with a broad filter to find candidate paths
 2. `get_schema` on the chosen path
-3. `fetch` or the appropriate write tool (`create_entity` / `update_entity` / `delete_entity` / `do_action` / `call_function`)
+3. `fetch` / `call_function` for reads, or for writes preview the exact effect, wait for explicit user confirmation, then call the appropriate write tool (`create_entity` / `update_entity` / `delete_entity` / `do_action`) and verify the response
 
-If the user asks to discover paths AND read or mutate, continue to the mutation tool after picking the path — discovery alone is incomplete.
+If the user asks to discover paths AND read or mutate, continue to the read or confirmed mutation tool after picking the path — discovery alone is incomplete.
 
 Never answer API/path questions from general Graph knowledge, local SQL, filesystem search, or built-in tools. Summarize paths from `search_paths`; if none matched, say WorkIQ did not confirm one.
 

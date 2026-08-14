@@ -1,6 +1,27 @@
 {
   "name": "workiq",
-  "version": "2.0.1",
-  "description": "Full WorkIQ tool surface — agentic queries via ask plus direct reads and writes (create, update, delete, send) across emails, meetings, calendar, Planner tasks, documents, Teams, people and contacts, OneDrive, and SharePoint.",
+  "version": "4.0.0",
+  "description": "Full WorkIQ tool surface for Microsoft 365 — agentic queries via ask plus direct reads and writes across mail, calendar, Teams, files, people, and Planner. Organized as a hub-and-domain skill hierarchy: a tool-surface hub routes to one domain skill per M365 surface, plus cross-domain workflows and always-on trust and safety rules.",
+  "author": {
+    "name": "Microsoft",
+    "email": "workiq@microsoft.com",
+    "url": "https://www.microsoft.com"
+  },
+  "homepage": "https://github.com/microsoft/work-iq",
+  "repository": "https://github.com/microsoft/work-iq",
+  "license": "MIT",
+  "category": "Productivity",
+  "keywords": [
+    "microsoft-365",
+    "m365",
+    "outlook",
+    "email",
+    "calendar",
+    "teams",
+    "planner",
+    "sharepoint",
+    "onedrive",
+    "productivity"
+  ],
   "skills": "./skills/"
 }

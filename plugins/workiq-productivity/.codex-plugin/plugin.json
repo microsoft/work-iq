@@ -1,6 +1,0 @@
-{
-  "name": "workiq-productivity",
-  "version": "1.0.0",
-  "description": "WorkIQ productivity skills powered by the local WorkIQ CLI \u2014 read-only insights across email, meetings, calendar, Teams, SharePoint, projects, and people.",
-  "skills": "./skills/"
-}

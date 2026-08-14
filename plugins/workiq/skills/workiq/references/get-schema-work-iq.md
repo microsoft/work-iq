@@ -76,5 +76,4 @@ Do **not**:
 - Calling `update_entity` on `/me/presence` returns **404 NotFound** — presence state is mutated via the `setPresence` / `setUserPreferredPresence` **action verbs**, not via PATCH on the entity.
 - The same pattern applies to other state-driven entities surfaced primarily through action verbs.
 
-**Rule:** when `search_paths` reports an action verb (`/me/presence/setPresence`, `/me/messages/{id}/send`, `/me/events/{id}/accept`) for a state change, route to `do_action` against that verb. Do NOT use the schema for the parent entity as license to `update_entity` — schema availability for `update` is a Graph metadata artifact, not a permission grant.
-
+**Rule:** when `search_paths` reports an action verb (`/me/presence/setPresence`, `/me/messages/{id}/send`, `/me/events/{id}/accept`) for a state change, preview the exact effect, wait for explicit user confirmation, then route to `do_action` against that verb. Do NOT use the schema for the parent entity as license to `update_entity` — schema availability for `update` is a Graph metadata artifact, not a permission grant.

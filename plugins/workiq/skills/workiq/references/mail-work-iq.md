@@ -9,11 +9,13 @@ listing, or mutating individual messages.
 
 For "sync my mail", "fetch the mail delta", or "give me mail changes" with **no folder named**,
 route `call_function` to `/me/messages/delta` — full mailbox in one cursor.
-`/me/mailFolders/{folderId}/delta` (e.g. `/me/mailFolders/inbox/delta`) is folder-scoped; use it
+`/me/mailFolders/{folderId}/messages/delta` (e.g. `/me/mailFolders/inbox/messages/delta`) is folder-scoped; use it
 only when the user names a folder.
 
-Paginate `@odata.nextLink` until you reach `@odata.deltaLink` (resume token for the next sync) —
-stopping at the first page is wrong.
+For a delta sync, follow at most 5 `@odata.nextLink` pages or 500 changed items by default while
+trying to reach `@odata.deltaLink` (resume token for the next sync). Stopping at the first page is
+wrong, but so is an unbounded mailbox scan: if the default bound is hit before `@odata.deltaLink`,
+report the sync as partial in `*Notes*` and ask before continuing exhaustively.
 
 > **Always `call_function`, never `fetch`.** `delta` is an OData function. Calling
 > `/me/messages/delta` through `fetch` returns an `InvalidRequest` or wrong shape; route through
@@ -78,8 +80,11 @@ those when the user asked for a draft.
 ## Resolve-then-act (do not loop)
 
 1. Resolve the message with **one** `fetch` (filter by `$search` for subject, or by `id`).
-2. If the first fetch misses, try **one** `ask` to locate it semantically.
+2. If the first fetch misses without an access/policy denial, try **one** `ask` to locate it semantically.
 3. If still not found, **stop and report "not found"** — do not fire 10+ more
    `fetch`/`search_paths`/`ask` calls.
-4. Once you have the id, call the mutation directly. Finding the message is not the goal;
-   performing the requested action is.
+4. Once you have the id, preview the exact effect (target message, recipient(s), body/comment,
+   folder, read state, or deletion effect as applicable) and wait for explicit user confirmation.
+5. After confirmation, execute the confirmed mutation directly. Finding the message is not the goal;
+   completing the confirmed action is.
+6. Verify the mutation from the tool response before reporting success.

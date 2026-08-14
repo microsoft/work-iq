@@ -20,12 +20,14 @@ DELETE a WorkIQ entity. Permanent — use with care, especially for emails and c
 
 - **Email delete moves to Deleted Items** — that's the right default for any "delete / remove / get rid of this email" request. Reach for `do_action` with `/me/messages/{id}/permanentDelete` only when the user explicitly asks for permanent, unrecoverable removal, and only against the **single resolved message ID** — never loop `permanentDelete` across a list of messages.
 - **Event delete** sends cancellation notices if it was an organized meeting.
-- Confirm the entity ID with `fetch` before deleting.
+- Resolve the entity ID with `fetch`, preview the exact deletion effect, and get explicit user confirmation before deleting.
 
 ## Workflow
 
 1. `fetch` to confirm the correct entity and ID
-2. `delete_entity` with the entity's full path including ID
+2. Preview the exact entity, path, and deletion effect; wait for explicit user confirmation
+3. `delete_entity` with the confirmed entity's full path including ID
+4. Verify the delete from the tool response before reporting success
 
 ## Examples
 
