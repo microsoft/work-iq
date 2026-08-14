@@ -1,6 +1,6 @@
 ---
 name: workiq
-description: WorkIQ - Microsoft 365 tool surface for agents. Use for any workplace question or write action where data lives in M365. Supports semantic `ask` plus tools (`fetch`, create/update/delete, actions, functions, fetch_blob, path/schema discovery) for mail, meetings/calendar, documents/files, Teams chats/channels, OneDrive/SharePoint, and people. Read triggers, "what did [person] say", priorities/top of mind, meeting decisions/action items, summarize thread/chat, find emails/docs, list meetings/messages/files/channels, project status/updates, "what changed since", download file content. Write triggers, send/reply/forward email, create/update/accept/decline meetings, mark read, delete drafts/items, send/post/reply/react in Teams, set presence. Discovery triggers, available endpoints/paths, fields, request body, schema/data model. Prefer `ask` for synthesis; use entity tools for exact reads/writes.
+description: WorkIQ - Microsoft 365 tool surface for agents. Use for any workplace question or write action where data lives in M365. Supports semantic `ask` plus tools (`fetch`, create/update/delete, actions, functions, fetch_blob, path/schema discovery) for mail, meetings/calendar, documents/files, Teams chats/channels, OneDrive/SharePoint, and people, plus `execute` for running WIQR recipes (declarative multi-step/batch orchestration). Read triggers, "what did [person] say", priorities/top of mind, meeting decisions/action items, summarize thread/chat, find emails/docs, list meetings/messages/files/channels, project status/updates, "what changed since", download file content. Write triggers, send/reply/forward email, create/update/accept/decline meetings, mark read, delete drafts/items, send/post/reply/react in Teams, set presence. Recipe triggers, WIQR, Work IQ Recipe, "author/run a recipe", batch or multi-step automation, loop over items with conditional writes. Discovery triggers, available endpoints/paths, fields, request body, schema/data model. Prefer `ask` for synthesis; use entity tools for exact reads/writes; use `execute` for multi-step recipes.
 compatibility: >
   Uses the hosted WorkIQ MCP endpoint. No local package is required for MCP
   tool calls.
@@ -216,6 +216,7 @@ Entity tools provide **fast, direct access to specific M365 data** via Work IQ A
 |----------|-----|
 | Open-ended question, semantic search, synthesis | `ask` (slow but smart) |
 | Fetch a known list, apply a filter, get structured data | entity tools (fast but literal) |
+| Multi-step or batch orchestration (fetch-then-act, loop over a collection, conditional writes) run as one unit | `execute` (a WIQR recipe) — see `references/execute-work-iq.md` |
 
 **Recommended workflow:** for **well-known paths, go direct** — call the read/write tool immediately (use the cheat sheet below). Only fall back to `search_paths` → `get_schema` → tool when the path is genuinely unknown or a write body shape is unfamiliar. Do **not** reflexively run `search_paths`/`get_schema` before every common operation.
 
@@ -387,6 +388,7 @@ Action verbs (camelCase verb at end of path: `/me/sendMail`, `/me/messages/{id}/
 | `update_entity` | Update fields on an existing entity (PATCH) | `entityUrl` with ID, `jsonBody` |
 | `delete_entity` | Delete an entity (DELETE) | `entityUrl` with ID |
 | `do_action` | Execute an action — send, copy, move, accept (POST) | `actionUrl`, `jsonBody` (optional) |
+| `execute` | Run a **WIQR recipe** — a declarative multi-step/batch orchestration of the verbs above, as one server-side run | `wiqr`, `values` (optional), `dryRun` (optional) |
 
 Read the relevant reference file for full parameter details and examples:
 
@@ -402,4 +404,6 @@ Read the relevant reference file for full parameter details and examples:
 - `references/update-entity-work-iq.md` — if you need to update fields on an existing entity
 - `references/delete-entity-work-iq.md` — if you need to delete an entity
 - `references/do-action-work-iq.md` — if you need to send mail, accept/decline meetings, copy/move messages
+- `references/execute-work-iq.md` — if the task is a multi-step or batch orchestration (fetch-then-act, loop over a collection, conditional writes) best run as one WIQR recipe
+- `references/wiqr-language-work-iq.md` — the WIQR recipe language contract (verbs, parameters, fetch clauses, control flow, output, and known constraints)
 - `references/troubleshooting.md` — if a tool call fails unexpectedly, returns an error, or behaves differently than documented

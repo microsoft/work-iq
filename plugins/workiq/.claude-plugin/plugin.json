@@ -1,6 +1,6 @@
 {
   "name": "workiq",
-  "version": "2.0.1",
-  "description": "Full WorkIQ tool surface — agentic queries via ask plus direct reads and writes (create, update, delete, send) across emails, meetings, calendar, Planner tasks, documents, Teams, people and contacts, OneDrive, and SharePoint.",
+  "version": "2.1.0",
+  "description": "Full WorkIQ tool surface — agentic queries via ask plus direct reads and writes (create, update, delete, send) across emails, meetings, calendar, Planner tasks, documents, Teams, people and contacts, OneDrive, and SharePoint, plus execute for running WIQR recipes (declarative multi-step and batch orchestration).",
   "skills": "./skills/"
 }
