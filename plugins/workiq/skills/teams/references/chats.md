@@ -129,9 +129,18 @@ workiq-create_entity (
 > **Body shape.** `get_schema` returns the *abstract* `microsoft.graph.conversationMember`
 > (`@odata.type` required; `displayName`, `roles`, `visibleHistoryStartDateTime` optional). It does
 > **not** list `user@odata.bind`, so you cannot derive this body from the schema alone — use the
-> concrete form below. `roles` is `[]` for a member and `["owner"]` for an owner.
-> The `user@odata.bind` value is an OData bind reference and **is** a full URL — the
-> "server-relative paths only" rule applies to `parentUrl`/`entityUrl`, not to this body field.
+> concrete form above. `roles` is `[]` for a member and `["owner"]` for an owner.
+> **⚠️ Deliberate exception to the server-relative rule — and NOT yet live-verified.**
+> `user@odata.bind` is an OData *bind reference*, not a request path. Graph's documented
+> convention is the absolute form shown above, and the "never use `https://graph.microsoft.com`
+> or `/v1.0`" rule elsewhere in these skills applies to `parentUrl`/`entityUrl`, **not** to this
+> body field — so do **not** "correct" it to a relative path on sight.
+> 
+> Whether WorkIQ's proxy accepts the absolute form was not confirmed against the live service
+> (doing so requires actually adding a member, a real mutation). If the write is rejected with a
+> bind/reference or malformed-body error, retry **once** with the server-relative form
+> `"user@odata.bind": "/users('<resolved-user-id>')"`, and report which form succeeded so this
+> note can be settled. Do not loop past that second attempt.
 
 
 If the user cannot be resolved to an exact directory user, stop and say so.

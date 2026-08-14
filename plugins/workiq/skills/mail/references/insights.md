@@ -129,7 +129,7 @@ Mail triage fetch pattern:
 workiq-fetch(
   entityUrls: [
     "/me/messages?$top=30&$orderby=receivedDateTime%20desc&$filter=receivedDateTime%20ge%20{lookbackStartUtc}&$select=id,subject,from,receivedDateTime,importance,hasAttachments,isRead,flag,webLink,bodyPreview",
-    "/me/messages?$top=30&$filter=isRead%20eq%20false&$select=id,subject,from,receivedDateTime,importance,hasAttachments,isRead,flag,webLink,bodyPreview"
+    "/me/messages?$top=30&$orderby=receivedDateTime%20desc&$filter=isRead%20eq%20false&$select=id,subject,from,receivedDateTime,importance,hasAttachments,isRead,flag,webLink,bodyPreview"
   ]
 )
 ```

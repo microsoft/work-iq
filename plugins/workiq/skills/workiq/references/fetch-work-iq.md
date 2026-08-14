@@ -125,7 +125,7 @@ Never fabricate binary content or download URLs.
 
 ### Get unread emails (top 10)
 ```json
-{ "entityUrls": ["/me/messages?$top=10&$filter=isRead%20eq%20false&$select=subject,from,receivedDateTime"] }
+{ "entityUrls": ["/me/messages?$top=10&$orderby=receivedDateTime%20desc&$filter=isRead%20eq%20false&$select=subject,from,receivedDateTime"] }
 ```
 
 ### Get upcoming calendar events

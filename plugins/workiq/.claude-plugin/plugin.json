@@ -1,6 +1,6 @@
 {
   "name": "workiq",
-  "version": "4.0.0",
+  "version": "3.0.0",
   "description": "Full WorkIQ tool surface for Microsoft 365 — agentic queries via ask plus direct reads and writes across mail, calendar, Teams, files, people, and Planner. Organized as a hub-and-domain skill hierarchy: a tool-surface hub routes to one domain skill per M365 surface, plus cross-domain workflows and always-on trust and safety rules.",
   "author": {
     "name": "Microsoft",

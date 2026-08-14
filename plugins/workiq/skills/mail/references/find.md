@@ -40,8 +40,8 @@ Use these direct `workiq-fetch` patterns when the user gives an exact structured
 | Latest messages | `/me/messages?$top=10&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,isRead,importance,webLink,bodyPreview` |
 | Latest Inbox messages | `/me/mailFolders/inbox/messages?$top=10&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,isRead,importance,webLink,bodyPreview` |
 | Unread mail | `/me/messages?$top=25&$filter=isRead%20eq%20false&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,isRead,importance,webLink,bodyPreview` |
-| Unread from a person | `/me/messages?$top=25&$filter=isRead%20eq%20false%20and%20from/emailAddress/address%20eq%20%27{email}%27&$select=id,subject,from,receivedDateTime,isRead,webLink,bodyPreview` |
-| Important from a person in Inbox | `/me/mailFolders/inbox/messages?$top=100&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,importance,isRead,webLink` then filter on importance + sender locally. (`$filter=importance eq 'high'&$orderby=importance,receivedDateTime%20desc` also works if you prefer server-side.) |
+| Unread from a person | `/me/messages?$top=100&$filter=isRead%20eq%20false&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,isRead,webLink,bodyPreview` then match the sender locally. Adding `from/emailAddress/address` to `$filter` breaks the sort (`InefficientFilter`), and dropping `$orderby` returns oldest-first. |
+| Important from a person in Inbox | `/me/mailFolders/inbox/messages?$top=100&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,importance,isRead,webLink` then filter on importance + sender locally. (Server-side alternative, live-verified: `$filter=importance%20eq%20%27high%27&$orderby=importance,receivedDateTime%20desc` — see the leading-property rule below. The sender clause must still be applied locally.) |
 | Flagged mail (recent) | `/me/messages?$top=100&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,flag,isRead,webLink` then keep `flag.flagStatus == 'flagged'` locally |
 | Flagged Inbox mail (recent) | `/me/mailFolders/inbox/messages?$top=100&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,flag,isRead,webLink` then filter locally |
 | Today's Inbox | `/me/mailFolders/inbox/messages?$top=50&$filter=receivedDateTime%20ge%20{startUtc}%20and%20receivedDateTime%20lt%20{endUtc}&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,isRead,importance,webLink,bodyPreview` |
@@ -62,6 +62,15 @@ Use these direct `workiq-fetch` patterns when the user gives an exact structured
 > | `$filter=hasAttachments eq true` + `$orderby=receivedDateTime desc` | ❌ `InefficientFilter` |
 > | adding a `receivedDateTime ge ...` clause to rescue the sort | ❌ still `InefficientFilter` |
 > | `$orderby=flag/flagStatus,receivedDateTime desc` (nested prop first) | ❌ 504 timeout |
+>
+> ### The discriminating rule
+>
+> The ❌ rows above all sort by `receivedDateTime` while filtering on a **different** property. Exchange also accepts the pair when `$orderby` **leads with the filtered property** — so `$filter=importance eq 'high'` fails with `$orderby=receivedDateTime desc` but succeeds with `$orderby=importance,receivedDateTime desc` (both live-verified). Two limits on that escape hatch:
+>
+> - It only works for **scalar** properties. `$orderby=flag/flagStatus,receivedDateTime desc` returns a 504 timeout.
+> - The result is grouped by the filtered property first, so it is **not** a pure newest-first list. Use it when you want "all high-importance, newest within that", not "the newest messages that happen to be high-importance".
+>
+> When in doubt, prefer the recovery below — it always yields true recency.
 >
 > ### 🛑 Recovery: sort server-side, filter locally — NOT the reverse
 >
