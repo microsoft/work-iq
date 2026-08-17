@@ -174,7 +174,7 @@ Subject: <subject>
 
 **Forward** — find the source message with `$search`, preview recipient/comment, confirm, then `workiq-do_action` `/me/messages/{id}/forward`.
 
-**Persisted draft** — create a new draft with `workiq-create_entity` on `/me/messages`, or create a reply draft with `/me/messages/{id}/createReply`, then set body with `workiq-update_entity` if needed.
+**Persisted draft** — create a new draft with `workiq-create_entity` on the `/me/messages` collection, or create a reply draft with `workiq-do_action` on `/me/messages/{id}/createReply` (an action, not a create), then set body with `workiq-update_entity` if needed.
 
 **Inbox delta** — "Start a mail delta sync for my Inbox" → `workiq-call_function` `/me/mailFolders/inbox/messages/delta`; report items and any next/delta link.
 
@@ -294,4 +294,4 @@ This skill covers **87 of 88** listed mail eval IDs with a score-5 path. The `No
 | Case(s) | Conflict |
 |---|---|
 | `compose-an-email-to-person-requesting-assistance-with-topic`, `create-a-friendly-and-inviting-introductory-email-for-person-as-they`, `draft-an-email-*`, `use-my-recent-emails-for-context-and-draft-an-email`, `write-a-follow-up-email-*`, `write-an-email-*` | The eval brief gives score 5 to `retrieve`/read-only paths for several compose/write prompts, while the hub says "Draft"/"compose" normally requires a persisted Outlook draft. This skill teaches the hub path as primary (`create_entity`, plus `update_entity` when needed, after confirmation) and records `retrieve` as an also-accepted text-only eval alternative when the user explicitly wants inline copy or says not to create/save/send. |
-| `chain-summarize-then-draft-reply` | The brief gives score 5 to `ask -> do_action` / `fetch -> do_action`, while the hub/mail reference says persisted reply drafts are `create_entity` (`/createReply`, `/createReplyAll`, `/createForward`) and immediate replies use `do_action` (`/reply`, `/replyAll`, `/forward`). This skill teaches the hub-compliant persisted-draft path as primary (`ask`/`fetch` for context, then `create_entity` + `update_entity`) and notes the `do_action` sequence only as an also-accepted/eval-harness alternative when that host exposes draft creation through an action. |
+| `chain-summarize-then-draft-reply` | `ask` -> `do_action` `/me/messages/{id}/createReply` -> `update_entity` to set the body. **The eval brief was right and earlier guidance here was wrong:** `createReply` is action-only (`get_schema` `operationType: "create"` returns `Schema not found`), so `do_action` is correct. |

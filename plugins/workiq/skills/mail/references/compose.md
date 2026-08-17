@@ -128,16 +128,23 @@ Use `/replyAll` only when the user says reply all or the participant-preserving 
 
 ## Reply drafts and replies
 
-For persisted reply drafts, use the hub/mail-reference path:
+`createReply`, `createReplyAll`, and `createForward` are registered **actions**, so they go through
+`workiq-do_action` — not `workiq-create_entity`.
+
+**Verified:** `get_schema` with `operationType: "action"` on `/me/messages/{id}/createReply` returns
+`createReply_request`; the same path with `operationType: "create"` returns
+`Schema not found: /me/messages/{message-id}/createReply`. The action form is the only one that exists.
 
 ```text
-workiq-create_entity(parentUrl: "/me/messages/{id}/createReply", jsonBody: {})
+workiq-do_action(actionUrl: "/me/messages/{id}/createReply", jsonBody: {})
 workiq-update_entity(entityUrl: "/me/messages/{draftId}", jsonBody: {"body": {"contentType": "HTML", "content": "<p>...</p>"}})
 ```
 
-Use `/createReplyAll` or `/createForward` for persisted reply-all/forward drafts. These create editable drafts; they do not send.
+Use `/createReplyAll` or `/createForward` the same way for reply-all and forward drafts.
 
-**Eval conflict:** `chain-summarize-then-draft-reply` lists `ask -> do_action` or `fetch -> do_action` as score-5, even though the hub says createReply draft creation is `create_entity` and immediate replies use `do_action`. If the eval harness exposes `/createReply` only as an action, use the eval's `do_action` path after summarizing; otherwise prefer the hub-compliant persisted draft path above and disclose the conflict in coverage.
+**These create an editable draft; they do not send.** Sending is a separate, explicitly confirmed
+`workiq-do_action` on `/me/messages/{draftId}/send`. Only `create_entity` on the `/me/messages`
+*collection* creates a brand-new draft from scratch — that one is genuinely a create.
 
 ## Forwarding mail
 

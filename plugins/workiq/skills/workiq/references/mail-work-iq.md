@@ -53,7 +53,7 @@ folder names are exact-match by design. Use it for `rename` / `move` / `delete` 
 | Send a draft you created | `do_action` | `/me/messages/{id}/send` |
 | Send a brand-new message in one shot | `do_action` | `/me/sendMail` |
 | Create a draft | `create_entity` | parentUrl `/me/messages` |
-| Create a reply / reply-all / forward draft | `create_entity` | `/me/messages/{id}/createReply`, `/createReplyAll`, `/createForward` |
+| Create a reply / reply-all / forward draft | `do_action` | `/me/messages/{id}/createReply`, `/createReplyAll`, `/createForward` — these are **actions**, not collection creates (`get_schema` `operationType: "create"` returns `Schema not found`). They produce an editable draft and do **not** send. |
 | Reply / forward immediately (no editable draft) | `do_action` | `/me/messages/{id}/reply`, `/replyAll`, `/forward` |
 | Copy / move to folder | `do_action` | `/me/messages/{id}/copy`, `/move` |
 | Delete (move to Deleted Items) | `delete_entity` | `/me/messages/{id}` |

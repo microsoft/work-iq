@@ -115,6 +115,24 @@ workiq-do_action (
 After the response:
 
 - Require `moreResultsAvailable=false` for complete enumeration.
+
+### Paging past 500 — verified
+
+`size` caps at **500** per request (`501` is rejected with `Max page size should be <= 501`, despite
+the off-by-one in that message). But **`from` paging works**: a second request with `"from": 500`
+returns the next page. Verified live on a tenant reporting `total: 22,710,019` with
+`moreResultsAvailable: true`.
+
+So a single `size=500` call is a **bounded sample, never a complete enumeration** on a real tenant.
+
+- Always read `hitsContainers[].total` and `moreResultsAvailable` from the response.
+- If `moreResultsAvailable` is `true`, either page with `from` within the documented bounds, or state
+  in `*Notes*` exactly how many you retrieved out of `total`.
+- **Never present a capped result set as "every" / "all" / "complete".** De-duplicating by driveItem
+  identity reduces the list further, so report raw-hit and unique-document counts separately.
+- Do not probe `size` above 500 — that fails and wastes a call. Paging is the supported route.
+
+
 - Exclude folders and personal OneDrive items.
 - De-duplicate by driveItem identity or `webUrl`.
 - Report raw-hit count and unique-document count separately.

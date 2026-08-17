@@ -527,6 +527,36 @@ answer with `get_schema` / `search_paths`. **Do not** answer from the builtin
 MCP evidence and are treated as not answering the question. Resolve the WorkIQ tool name (see
 above) and call the MCP tool.
 
+## Call budgets — go direct, but never at the cost of correctness
+
+Evaluation runs show the most common scoring loss is **over-calling**: reaching the right answer via
+unnecessary `search_paths` / `get_schema` / verification detours. Typical budgets for common tasks:
+
+| Task | Typical calls |
+|---|---|
+| List my Teams chats | 1 — `fetch` `/me/chats?$expand=members`, answer from `topic`/`chatType`/`members` |
+| Members of a named channel | ≤3 — resolve team, resolve channel, fetch members |
+| Named OneDrive file → rename/move/delete | 1 resolve (`call_function` drive search) + 1 write |
+| Group-backed SharePoint site → list documents | 3 — group, `drive?$expand=root`, children |
+| Semantic find across surfaces | 1 — `retrieve` |
+
+**These are defaults, not hard caps.** Three rules override any budget:
+
+1. **Uniqueness before a write.** If a resolution step returns more than one plausible match, do not
+   pick one to stay inside the budget. Show the candidates — with `parentReference.path` or `webUrl`
+   for files, organizer and start time for events — and ask. Spending an extra call is always cheaper
+   than deleting, moving, cancelling, or emailing the wrong thing.
+2. **Confirmation is never part of the budget.** Every write still previews the resolved target and
+   waits for explicit user confirmation before executing.
+3. **Completeness beats brevity.** If a bounded read leaves `@odata.nextLink` or
+   `moreResultsAvailable` outstanding and the user asked for "all" / "every" / a count, either page on
+   or disclose the bound in `*Notes*`. Never let a budget turn a partial answer into a confident
+   complete-sounding one.
+
+What the budgets *do* forbid: reflexive `search_paths` before a known path, `get_schema` for a body
+shape already documented here, and re-fetching an entity purely to confirm a write the response
+already confirmed.
+
 ### Efficiency rules — minimize tool calls
 
 **Do not loop through `search_paths` / `get_schema` / `fetch` repeatedly.** Common anti-patterns:
@@ -606,7 +636,7 @@ When the user says "draft an email", "compose a reply", "prepare a response", or
 asking the draft to *exist* (not just suggest wording), call `create_entity` to POST:
 
 - `/me/messages` for a fresh draft
-- `/me/messages/{id}/createReply`, `/createReplyAll`, or `/createForward` for replies/forwards
+- `/me/messages/{id}/createReply`, `/createReplyAll`, or `/createForward` for replies/forwards — these are **`do_action` actions**, not `create_entity` creates (verified: `get_schema` `operationType: "create"` returns `Schema not found`)
   (these are `create_entity` POSTs, **not** `do_action`)
 
 Generating draft text inline does NOT satisfy the request — the user can't open it in Outlook.
