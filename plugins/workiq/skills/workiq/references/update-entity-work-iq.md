@@ -20,16 +20,18 @@ PATCH an existing WorkIQ entity. Only fields in the body are changed; other fiel
 
 ## Gotchas
 
-- **`entityUrl` must address exactly one entity by ID.** A collection or query URL (`/me/planner/tasks?$filter=startswith(title,'...')`) is rejected with "Write requests are only supported on contained entities" — resolve the ID with `fetch` first, then PATCH `/.../{id}`.
+- **`entityUrl` must address exactly one entity by ID.** A collection or query URL (`/me/planner/tasks?$filter=startswith(title,'...')`) is rejected with "Write requests are only supported on contained entities" — resolve the ID with `fetch` first, preview the exact field changes, get explicit user confirmation, then PATCH `/.../{id}`.
 - The ID must come from a real tool response for the **same entity type** — a directory user ID does not work on `/me/contacts/{id}`, and an ID scraped from a search-result URL is not an entity ID.
 - Updating one entity means one PATCH. If it fails, fix the request and retry once or twice — do not loop the same PATCH or fan it out across other entities.
 - **Planner writes need an `If-Match` etag** — fetch the task first; on a 412/precondition error, re-fetch and retry (see `references/tasks-work-iq.md`).
 
 ## Workflow
 
-1. Get the entity's `id` from `fetch` or `create_entity`
+1. Get the entity's `id` from `fetch` or `create_entity`; for etag-protected entities, fetch the latest `@odata.etag`
 2. (Optional) `get_schema` with `operationType: "update"` to confirm updatable fields
-3. `update_entity` with only the fields to change
+3. Preview the exact target, path, current value(s), and new value(s); wait for explicit user confirmation
+4. `update_entity` with only the confirmed fields to change
+5. Verify the update from the tool response (or a focused follow-up read when the response is silent) before reporting success
 
 ## Examples
 

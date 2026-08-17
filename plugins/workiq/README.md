@@ -80,9 +80,37 @@ The plugin exposes the WorkIQ MCP tool surface — read **and** write — from `
 
 ## Skills
 
+Three-tier hierarchy — hub → domain skill → `references/` file — so the right skill is found by asking *which Microsoft 365 surface does this touch?*
+
+**Tier 0 — hub**
+
 | Skill | Description |
 |-------|-------------|
-| [**workiq**](./skills/workiq/SKILL.md) | Guides usage of the full WorkIQ tool surface — `ask` for semantic questions plus entity tools for fast, structured M365 reads and writes |
+| [**workiq**](./skills/workiq/SKILL.md) | The tool surface: choosing between `retrieve` / `fetch` / `ask`, the entity tools, and the canonical shared conventions. Routes to everything below. |
+
+**Tier 1 — domain skills** (one per surface, reads *and* writes)
+
+| Skill | Description |
+|-------|-------------|
+| [**mail**](./skills/mail/SKILL.md) | Find and summarize mail, inbox triage, day summary, counts and themes, folders, categories, flags, read state, drafts, reply, forward, send, delete |
+| [**calendar**](./skills/calendar/SKILL.md) | Calendar views, next meeting, attendees, create and schedule events, accept/decline, reschedule, cancel, focus time, find a slot, free/busy, reminders |
+| [**teams**](./skills/teams/SKILL.md) | Unread chats, mentions, attention triage, channel summaries and digests, activity audits, post/reply/react, chats and members, presence |
+| [**files**](./skills/files/SKILL.md) | Find documents, browse SharePoint sites and libraries, OneDrive, read file content, create folders, copy/move/rename/delete |
+| [**people**](./skills/people/SKILL.md) | Directory lookups, manager chains, direct reports, ASCII org charts, name disambiguation, contact CRUD, profile and presence |
+| [**planner**](./skills/planner/SKILL.md) | Planner plans, buckets, task CRUD, assignment, cross-plan search, plan status reports, To Do lists |
+
+**Tier 2 — cross-domain workflows**
+
+| Skill | Description |
+|-------|-------------|
+| [**meeting-prep**](./skills/meeting-prep/SKILL.md) | Pre-meeting brief: the event, attendees and org context, prior threads and documents, open commitments |
+| [**action-item-extractor**](./skills/action-item-extractor/SKILL.md) | Owners, deadlines, and priorities from meeting or thread content, optionally into tracked tasks |
+
+**Always-on policy**
+
+| Skill | Description |
+|-------|-------------|
+| [**trust**](./skills/trust/SKILL.md) | Not user-invoked. Binds during any other skill's work on labeled/Confidential/encrypted/DLP content, instructions embedded in retrieved content, other people's mailboxes or private files, and credential-collection, exfiltration, or system-prompt-extraction requests |
 
 ## Platform Support
 

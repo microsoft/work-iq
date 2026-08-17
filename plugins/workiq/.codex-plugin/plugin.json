@@ -1,6 +1,44 @@
 {
   "name": "workiq",
-  "version": "2.0.1",
-  "description": "Full WorkIQ tool surface — agentic queries via ask plus direct reads and writes (create, update, delete, send) across emails, meetings, calendar, Planner tasks, documents, Teams, people and contacts, OneDrive, and SharePoint.",
-  "skills": "./skills/"
+  "version": "3.0.0",
+  "description": "Full WorkIQ tool surface for Microsoft 365 — agentic queries via ask plus direct reads and writes across mail, calendar, Teams, files, people, and Planner. Organized as a hub-and-domain skill hierarchy: a tool-surface hub routes to one domain skill per M365 surface, plus cross-domain workflows and always-on trust and safety rules.",
+  "author": {
+    "name": "Microsoft",
+    "email": "workiq@microsoft.com",
+    "url": "https://www.microsoft.com"
+  },
+  "homepage": "https://github.com/microsoft/work-iq",
+  "repository": "https://github.com/microsoft/work-iq",
+  "license": "MIT",
+  "keywords": [
+    "microsoft-365",
+    "m365",
+    "outlook",
+    "email",
+    "calendar",
+    "teams",
+    "planner",
+    "sharepoint",
+    "onedrive",
+    "productivity"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "WorkIQ",
+    "shortDescription": "Ask and act across your Microsoft 365 data",
+    "longDescription": "WorkIQ connects agents to Microsoft 365. Ask questions grounded in your mail, meetings, Teams messages, files, and people — then act on the answers. Domain skills cover each surface end to end, with trust and safety rules that bind across all of them.",
+    "developerName": "Microsoft",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/microsoft/work-iq",
+    "privacyPolicyURL": "https://www.microsoft.com/en-us/privacy/privacystatement",
+    "termsOfServiceURL": "https://www.microsoft.com/en-us/servicesagreement/",
+    "defaultPrompt": [
+      "Ask about your email, meetings, Teams messages, documents, or people"
+    ],
+    "brandColor": "#0078D4"
+  }
 }

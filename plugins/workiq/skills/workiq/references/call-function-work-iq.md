@@ -28,8 +28,10 @@ and more.
 - **Only via this tool.** Calling a delta path through `fetch` fails. Do not approximate
   delta with `fetch` + a `lastModifiedDateTime` filter — that misses deletions and true change
   semantics.
-- **First sync:** call the delta path with no token. Page through `@odata.nextLink` responses
-  (re-issue each link as a server-relative `functionUrl`) until you get `@odata.deltaLink`.
+- **First sync:** call the delta path with no token. Page through at most 5 `@odata.nextLink`
+  responses or 500 changed items by default (re-issue each link as a server-relative
+  `functionUrl`) while trying to reach `@odata.deltaLink`. If the bound is hit first, report the
+  result as partial in `*Notes*` and ask before an intentionally exhaustive sync.
 - **Resume:** if the user has a saved delta token / deltaLink, call **that link's path and query
   verbatim** (as a server-relative path) instead of starting over. The `$deltatoken` /
   `$skiptoken` values are opaque — never invent or modify them.
@@ -47,4 +49,3 @@ and more.
 ```json
 { "functionUrl": "/me/mailFolders/inbox/messages/delta" }
 ```
-

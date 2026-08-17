@@ -11,6 +11,19 @@ Retrieve the OpenAPI schema for a WorkIQ path or operation — fields available 
 >
 > Each path supports only the values matching its real operations — wrong values return precise errors like `No 'create' operation for path: me/sendMail`. When that happens, **do not** retry blindly; the mapping above is correct. Do not fall back to a related entity path (e.g. `/me/messages`) for an action-verb schema — the wrapper shape differs.
 
+
+> **⚠️ `operationType: "action"` returns the REQUEST-body schema only.** It describes what to put in
+> `jsonBody`; it does **not** expose the action's response shape. Verified: `/me/events/{id}/cancel`
+> returns `cancel_request { Comment }` and nothing about the response.
+>
+> If the user asks what an action *returns*, call `get_schema` once, say plainly that the response
+> schema is not exposed, and stop. Do not call `search_paths`, retry another `format`, or hunt for a
+> response-schema path — and never fill the gap from general Graph knowledge.
+>
+> This is also how you tell an action from a create: if `operationType: "create"` returns
+> `Schema not found` but `"action"` resolves, the path is an action and belongs to `do_action`.
+
+
 ## Parameters
 
 | Parameter | Type | Required | Description |
@@ -76,5 +89,4 @@ Do **not**:
 - Calling `update_entity` on `/me/presence` returns **404 NotFound** — presence state is mutated via the `setPresence` / `setUserPreferredPresence` **action verbs**, not via PATCH on the entity.
 - The same pattern applies to other state-driven entities surfaced primarily through action verbs.
 
-**Rule:** when `search_paths` reports an action verb (`/me/presence/setPresence`, `/me/messages/{id}/send`, `/me/events/{id}/accept`) for a state change, route to `do_action` against that verb. Do NOT use the schema for the parent entity as license to `update_entity` — schema availability for `update` is a Graph metadata artifact, not a permission grant.
-
+**Rule:** when `search_paths` reports an action verb (`/me/presence/setPresence`, `/me/messages/{id}/send`, `/me/events/{id}/accept`) for a state change, preview the exact effect, wait for explicit user confirmation, then route to `do_action` against that verb. Do NOT use the schema for the parent entity as license to `update_entity` — schema availability for `update` is a Graph metadata artifact, not a permission grant.

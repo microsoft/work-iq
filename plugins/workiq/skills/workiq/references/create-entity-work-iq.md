@@ -21,9 +21,10 @@ POST a new WorkIQ entity to a collection — calendar events, draft emails, task
 
 ## Workflow
 
-1. `get_schema` with the collection URL and `operationType: "create"` to confirm required fields
-2. `create_entity` with the collection URL and a valid body
-3. Save the returned `id` for later updates
+1. `get_schema` with the collection URL and `operationType: "create"` to confirm required fields when the body shape is not already known
+2. Preview the exact entity to create — parent path, recipients/attendees/collaborators, title/subject/body, due date/time, and visible side effects — and wait for explicit user confirmation
+3. `create_entity` with the confirmed collection URL and body
+4. Verify the creation from the tool response and save the returned `id` for later updates
 
 ## Examples
 

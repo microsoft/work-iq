@@ -37,8 +37,10 @@ Planner task body fields: `planId`, `title`, `bucketId`, `assignments`, `dueDate
   5. If you have an owner/group ID but not the group-plans path, use
     `/planner/plans?$filter=owner eq '{Group or UserId}'&$select=id,title,owner`.
   6. Only use `ask` after the structured `/me/planner/plans`, assigned-task `planId`, group-backed
-    `/groups/{group-id}/planner/plans`, and owner-filtered `/planner/plans` lookup paths are
-    exhausted, unavailable, or policy-blocked.
+    `/groups/{group-id}/planner/plans`, and owner-filtered `/planner/plans` lookup paths return
+    no usable match or leave a fuzzy/ambiguous plan name.
+    If any path returns `Access denied for path: <X>`, report that denial and stop — do not retry,
+    try sibling paths, or substitute `ask`/`retrieve`.
 - **Private tasks and "Assigned to me" tasks:** use `/me/planner/tasks`.
 - **Enforce filtering on Planner collection GETs:**
   - `GET /planner/plans` requires `$filter=owner eq '{Group or UserId}'`.
@@ -59,9 +61,12 @@ Planner task body fields: `planId`, `title`, `bucketId`, `assignments`, `dueDate
 ## Resolve-then-act (do not loop)
 
 1. Resolve the target with `fetch` (Planner task) — match by `title`. (Planner plan) - first using `/me/planner/plans` else using `/groups/{group-id}/planner/plans`
-2. If the fetch does not find it, try **one** `ask` to locate it semantically.
+2. If the fetch does not find it and did not hit an access/policy denial, try **one** `ask` to locate it semantically.
 3. If still not found, **stop and report "not found"** — do not fire 10+ more `fetch`/`search_paths`/`ask` calls.
-4. Once you have the id, call the mutation (`create_entity` / `update_entity` / `delete_entity`).
+4. Once you have the id, preview the exact task/plan, target path, fields, due date, assignee,
+   etag requirement, and create/update/delete effect; wait for explicit user confirmation.
+5. After confirmation, execute the confirmed mutation (`create_entity` / `update_entity` / `delete_entity`).
+6. Verify the mutation from the tool response before reporting success.
 
 ## Examples
 

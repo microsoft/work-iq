@@ -82,7 +82,7 @@ See the **URL Format Rules** section of `SKILL.md` for full examples.
 
 **Cause:** The WorkIQ MCP server requires tenant admin consent on first use, and the current user must be signed in.
 
-**Fix:** Direct the user to the [Tenant Administrator Enablement Guide](../../../../ADMIN-INSTRUCTIONS.md). For interactive sign-in issues, retry the tool call — the hosted MCP server will prompt for sign-in if needed.
+**Fix:** Direct the user to the [Tenant Administrator Enablement Guide](../../../../../ADMIN-INSTRUCTIONS.md). For interactive sign-in issues, retry the tool call — the hosted MCP server will prompt for sign-in if needed.
 
 ## HTTP 403 Forbidden on an entity tool call
 

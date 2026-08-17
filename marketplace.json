@@ -8,8 +8,8 @@
     {
       "name": "workiq",
       "source": "./plugins/workiq",
-      "description": "Full WorkIQ tool surface \u2014 agentic queries via ask plus direct reads and writes (create, update, delete, send) across emails, meetings, calendar, Planner tasks, documents, Teams, people and contacts, OneDrive, and SharePoint.",
-      "version": "2.0.1"
+      "description": "Full WorkIQ tool surface for Microsoft 365 \u2014 agentic queries via ask plus direct reads and writes across mail, calendar, Teams, files, people, and Planner. Organized as a hub-and-domain skill hierarchy: a tool-surface hub routes to one domain skill per M365 surface, plus cross-domain workflows and always-on trust and safety rules.",
+      "version": "3.0.0"
     },
     {
       "name": "workiq-preview",
@@ -22,12 +22,6 @@
       "source": "./plugins/microsoft-365-agents-toolkit",
       "description": "Toolkit for building and evaluating Microsoft 365 Copilot declarative agents \u2014 scaffolding, JSON manifest development, capability configuration, and eval workflows.",
       "version": "1.3.1"
-    },
-    {
-      "name": "workiq-productivity",
-      "source": "./plugins/workiq-productivity",
-      "description": "WorkIQ productivity skills powered by the local WorkIQ CLI \u2014 read-only insights across email, meetings, calendar, Teams, SharePoint, projects, and people.",
-      "version": "1.0.0"
     }
   ]
 }

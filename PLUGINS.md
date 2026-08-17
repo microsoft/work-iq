@@ -51,7 +51,6 @@ Once the marketplace is registered, install any plugin with a single command:
 /plugin install workiq@work-iq
 /plugin install workiq-preview@work-iq
 /plugin install microsoft-365-agents-toolkit@work-iq
-/plugin install workiq-productivity@work-iq
 ```
 
 > **Tip:** Restart your Copilot CLI session after installing a plugin for the new skills to become available.
@@ -68,7 +67,6 @@ copilot plugin list
 copilot plugin uninstall workiq
 copilot plugin uninstall workiq-preview
 copilot plugin uninstall microsoft-365-agents-toolkit
-copilot plugin uninstall workiq-productivity
 ```
 
 ---
@@ -77,10 +75,9 @@ copilot plugin uninstall workiq-productivity
 
 | # | Plugin | Skills | Description |
 |---|--------|--------|-------------|
-| 1 | [**workiq**](#workiq) | 1 | Full WorkIQ tool surface — agentic queries plus direct M365 reads and writes |
+| 1 | [**workiq**](#workiq) | 10 | Full M365 tool surface plus a hub-and-domain skill hierarchy covering mail, calendar, Teams, files, people, and Planner |
 | 2 | [**workiq-preview**](#workiq-preview) | 1 | Preview build with the full entity tool surface (read + write) |
 | 3 | [**microsoft-365-agents-toolkit**](#microsoft-365-agents-toolkit) | 4 | Toolkit for building M365 Copilot declarative agents |
-| 4 | [**workiq-productivity**](#workiq-productivity) | 10 | Read-only productivity insights across M365 |
 
 ---
 
@@ -95,13 +92,41 @@ copilot plugin uninstall workiq-productivity
 
 | Server | Tools |
 |--------|-------|
-| `workiq` (hosted) | `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `accept_eula`, `get_debug_link` |
+| `workiq` (hosted) | Exposed to the host as `workiq-ask`, `workiq-retrieve`, `workiq-fetch`, `workiq-fetch_blob`, `workiq-get_schema`, `workiq-search_paths`, `workiq-create_entity`, `workiq-update_entity`, `workiq-delete_entity`, `workiq-do_action`, `workiq-call_function`, plus `accept_eula` and `get_debug_link` |
 
 ### Skills
 
+Organized as a three-tier hierarchy — `workiq` (hub) → domain skill → `references/` file — so the model can route by *which M365 surface the request touches*.
+
+**Tier 0 — hub**
+
 | Skill | Description |
 |-------|-------------|
-| [**workiq**](./plugins/workiq/skills/workiq/SKILL.md) | Guides usage of the full WorkIQ tool surface — `ask` for semantic questions plus entity tools for fast, structured M365 reads and writes |
+| [**workiq**](./plugins/workiq/skills/workiq/SKILL.md) | The tool surface: choosing between `retrieve` / `fetch` / `ask`, the entity tools, and the canonical shared conventions. Routes to everything below. |
+
+**Tier 1 — domain skills** (one per M365 surface, reads *and* writes)
+
+| Skill | Description |
+|-------|-------------|
+| [**mail**](./plugins/workiq/skills/mail/SKILL.md) | Find and summarize mail, inbox triage, day summary, counts and themes, folders, categories, flags, read state, drafts, reply, forward, send, delete |
+| [**calendar**](./plugins/workiq/skills/calendar/SKILL.md) | Calendar views, next meeting, attendees, create and schedule events, accept/decline, reschedule, cancel, focus time, find a slot, free/busy, reminders |
+| [**teams**](./plugins/workiq/skills/teams/SKILL.md) | Unread chats, mentions, attention triage, channel summaries and digests, activity audits, post/reply/react, chats and members, presence |
+| [**files**](./plugins/workiq/skills/files/SKILL.md) | Find documents, browse SharePoint sites and libraries, OneDrive, read file content, create folders, copy/move/rename/delete |
+| [**people**](./plugins/workiq/skills/people/SKILL.md) | Directory lookups, manager chains, direct reports, ASCII org charts, name disambiguation, contact CRUD, profile and presence |
+| [**planner**](./plugins/workiq/skills/planner/SKILL.md) | Planner plans, buckets, task CRUD, assignment, cross-plan search, plan status reports, To Do lists |
+
+**Tier 2 — cross-domain workflows**
+
+| Skill | Description |
+|-------|-------------|
+| [**meeting-prep**](./plugins/workiq/skills/meeting-prep/SKILL.md) | Pre-meeting brief: the event, attendees and org context, prior threads and documents, open commitments |
+| [**action-item-extractor**](./plugins/workiq/skills/action-item-extractor/SKILL.md) | Owners, deadlines, and priorities from meeting or thread content, optionally into tracked tasks |
+
+**Always-on policy**
+
+| Skill | Description |
+|-------|-------------|
+| [**trust**](./plugins/workiq/skills/trust/SKILL.md) | Not user-invoked. Binds during any other skill's work on labeled/Confidential/encrypted/DLP content, instructions embedded in retrieved content, other people's mailboxes or private files, and credential-collection, exfiltration, or system-prompt-extraction requests |
 
 ### Example prompts
 
@@ -112,6 +137,15 @@ copilot plugin uninstall workiq-productivity
 "Accept the 2pm meeting from Rob"
 "Send the draft email to the engineering distribution list"
 "Show me the channels in the DevX team"
+
+# workflow skills
+"Prep me for my next meeting"
+"Draft replies to the emails that need a response"
+"Clean up my inbox — flag what matters, archive the rest"
+"What needs my attention in Teams?"
+"Summarize the #launch channel this week and post it back"
+"How much time did I spend in meetings this month?"
+"Show the org chart for Sarah Johnson"
 ```
 
 ---
@@ -173,45 +207,6 @@ copilot plugin uninstall workiq-productivity
 "Create eval prompts for my agent"
 "Run my evals and explain the failures"
 "Improve my agent instructions based on the latest eval results"
-```
-
----
-
-## workiq-productivity
-
-> **10 read-only skills** — email, meetings, Teams, SharePoint, projects, and people.
-
-**Install:** `/plugin install workiq-productivity@work-iq`
-**Source:** [`plugins/workiq-productivity/`](./plugins/workiq-productivity/)
-
-### Skills
-
-| Skill | Description |
-|-------|-------------|
-| [**action-item-extractor**](./plugins/workiq-productivity/skills/action-item-extractor/SKILL.md) | Extract action items with owners, deadlines, and priorities |
-| [**daily-outlook-triage**](./plugins/workiq-productivity/skills/daily-outlook-triage/SKILL.md) | Quick summary of inbox and calendar for the day |
-| [**email-analytics**](./plugins/workiq-productivity/skills/email-analytics/SKILL.md) | Analyze email patterns — volume, senders, response times |
-| [**meeting-cost-calculator**](./plugins/workiq-productivity/skills/meeting-cost-calculator/SKILL.md) | Calculate time and cost spent in meetings |
-| [**org-chart**](./plugins/workiq-productivity/skills/org-chart/SKILL.md) | Visual ASCII org chart for any person |
-| [**multi-plan-search**](./plugins/workiq-productivity/skills/multi-plan-search/SKILL.md) | Search tasks across all Planner plans |
-| [**planner-status-report**](./plugins/workiq-productivity/skills/planner-status-report/SKILL.md) | Generate a status report for one Planner plan |
-| [**site-explorer**](./plugins/workiq-productivity/skills/site-explorer/SKILL.md) | Browse SharePoint sites, lists, and libraries |
-| [**channel-audit**](./plugins/workiq-productivity/skills/channel-audit/SKILL.md) | Audit channels for inactivity and cleanup |
-| [**channel-digest**](./plugins/workiq-productivity/skills/channel-digest/SKILL.md) | Summarize activity across multiple channels |
-
-### Example prompts
-
-```
-"Extract action items from today's meetings"
-"Show me my inbox and calendar for today"
-"Analyze my email patterns for the past month"
-"How much time did I spend in meetings this week?"
-"Show the org chart for Sarah Johnson"
-"Search all my Planner tasks for 'budget review'"
-"Generate a status report for the Contoso launch plan"
-"Browse the Marketing SharePoint site"
-"Audit inactive channels in the Engineering team"
-"Summarize activity across my Teams channels"
 ```
 
 ---

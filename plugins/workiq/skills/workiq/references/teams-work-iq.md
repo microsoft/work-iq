@@ -49,7 +49,8 @@ To "send a chat to Alex" or message yourself:
 
 1. `fetch` on `/me/chats?$expand=members` and find the existing 1:1 chat whose members
    match the target person.
-2. POST the message to that chat with `create_entity` on `/chats/{chatId}/messages`.
+2. Preview the recipient chat and message body, wait for explicit user confirmation, then POST
+   the message to that chat with `create_entity` on `/chats/{chatId}/messages`.
 3. **Only create a new chat** (POST `/chats` with `chatType` and `members`) if no existing chat
    with that person is found. Never create a new group chat to deliver a single 1:1 message.
 
@@ -67,8 +68,12 @@ To "send a chat to Alex" or message yourself:
 
 1. Resolve the chat or team/channel with **one or two** `fetch` calls
    (`/me/chats?$expand=members`, `/me/joinedTeams` → channels).
-2. If you can't find it, try **one** `ask`, then **stop and report "not found"**.
-3. When paging a message list, fetch a page or two — do **not** follow `@odata.nextLink` for
-   dozens of pages. Answer from the latest page(s) and say the list is partial if it is.
-4. Perform the requested mutation directly once you have the IDs — posting, replying, reacting,
+2. If you can't find it and did not hit an access/policy denial, try **one** `ask`, then **stop and report "not found"**.
+3. When paging a message list, fetch at most 2 pages or 100 messages by default — do **not** follow
+   `@odata.nextLink` for dozens of pages. Answer from the latest page(s) and say the list is partial
+   in `*Notes*` if it is; ask before an intentionally exhaustive scan.
+4. Once you have the IDs, preview the exact target, message body/reaction/presence state, and path;
+   wait for explicit user confirmation.
+5. After confirmation, perform the requested mutation directly — posting, replying, reacting,
    or editing is the goal, not enumerating the whole message history first.
+6. Verify the mutation from the tool response before reporting success.
