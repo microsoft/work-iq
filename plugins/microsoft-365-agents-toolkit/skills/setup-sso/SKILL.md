@@ -157,7 +157,7 @@ When M365 Copilot calls your agent, it must prove "this request is for an author
 | **3** | **Step 1 — Create Entra ID app** | App identity (single- or multi-tenant) + Copilot redirect URI |
 | **4** | Set up dev tunnel *(local backends)* | Exposes localhost to the internet |
 | **5** | **Step 2 — ATK OAuth registration** | Registers SSO on Copilot's side; emits **Auth ID** + **API URI** |
-| **6** | **Step 3 — Update Entra app** | Sets the API URI, `access_as_user` scope, pre-auth, User.Read |
+| **6** | **Step 3 — Update Entra app** | Sets the API URI, `access_as_user` scope, pre-auth (User.Read only if OBO) |
 | **7** | Patch config files | Wire the Auth ID + backend URL into the agent |
 | **8** | Validate + sideload | Installs agent into M365 Copilot |
 | **9** | Build, start & test *(local backends)* | Verify SSO end-to-end |

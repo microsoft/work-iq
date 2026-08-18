@@ -159,9 +159,12 @@ Remove-Item $bodyFile -ErrorAction SilentlyContinue
 > **Only if you also reuse this app for Teams bots / message extensions** do you add the host clients below — a declarative agent does **not** need them:
 > `1fec8e78-bce4-4aaf-ab1b-5451cc387264` (Teams desktop/mobile), `5e3ce6c0-2b1f-4285-8d4b-75ee78787346` (Teams web), `d3590ed6-52b3-4102-aeff-aad2292ab01c` (Office desktop), `4765445b-32c6-49b0-83e6-1d93765276ca` (Microsoft 365 web), `bc59ab01-8403-45c6-8796-ac3ef710b3e3` (Outlook desktop), `27922004-5251-4030-b22d-91ecd9a37ea4` (Outlook web).
 
-**3. Add the Graph `User.Read` delegated permission and grant consent:**
+**3. (OPTIONAL — OBO/Graph only) Add the Graph `User.Read` delegated permission:**
+
+> **Skip this for pure SSO (this skill's default).** Validating the signed-in user's identity needs **no** Graph permission — the claims come from the SSO token itself. Add `User.Read` **only** if you will later call Microsoft Graph on the user's behalf (OBO). Adding it also introduces an **admin-consent** requirement that pure SSO does **not** have.
 
 ```powershell
+# OBO/Graph scenario ONLY — do NOT run for pure SSO setup:
 az ad app permission add --id $ClientId `
   --api 00000003-0000-0000-c000-000000000000 `
   --api-permissions e1fe6dd8-ba31-4d61-89e7-88639da4683d=Scope
@@ -190,7 +193,7 @@ Remove-Item $bodyFile -ErrorAction SilentlyContinue
 az ad app show --id $ClientId --query "{appIdUri:identifierUris[0], tokenVersion:api.requestedAccessTokenVersion, scopes:api.oauth2PermissionScopes[].value, preAuthCount:length(api.preAuthorizedApplications), graphPerms:length(requiredResourceAccess)}" -o json
 ```
 
-Expected: `appIdUri` = the ATK-generated URI, `tokenVersion` = `2`, `scopes` = `["access_as_user"]`, `preAuthCount` = `1` (M365 Copilot), `graphPerms` = `1`.
+Expected: `appIdUri` = the ATK-generated URI, `tokenVersion` = `2`, `scopes` = `["access_as_user"]`, `preAuthCount` = `1` (M365 Copilot), `graphPerms` = `0` for pure SSO (**`1` only if you added `User.Read` for OBO**).
 
 ### Step S6 — Wire SSO into the Plugin Manifest
 
