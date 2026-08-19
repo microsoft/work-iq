@@ -9,7 +9,10 @@ try {
     Invoke-WebRequest -Uri "http://localhost:$Port/mcp" -Method POST -ContentType "application/json" -Body $body | Out-Null
     Write-Host "WARNING: Got 200 — auth not enforced. Check the Phase 7 guard insertion." -ForegroundColor Yellow
 } catch {
-    $code = $_.Exception.Response.StatusCode.value__
+    # $_.Exception.Response is null on connection-refused/DNS failures — guard before reading StatusCode
+    # so we reliably print the "server not running" message instead of masking it with a null-access error.
+    $resp = $_.Exception.Response
+    $code = if ($resp) { $resp.StatusCode.value__ } else { $null }
     if ($code -eq 401) { Write-Host "VERIFIED: 401 Unauthorized — SSO guard working OK" -ForegroundColor Green }
     elseif (-not $code) { Write-Host "Could not reach http://localhost:$Port/mcp — is the server running?" -ForegroundColor Yellow }
     else { Write-Host "Got HTTP $code" -ForegroundColor Yellow }
