@@ -10,14 +10,15 @@ substitute a separate endpoint, another MCP server, or an invented REST URL.
    `{"query":"<business record, workflow, or app intent>","environmentId":"<optional>","limit":10}`. The `query`
    is required. Results include grounded paths plus environment and application IDs. For example, use
    `{"query":"qualify a lead"}` to discover the relevant sales application and operations.
-2. Use `search_paths` to discover Business Applications paths. Set `filter` to a plain leading-slash path such as
-   `/businessapps` for path-prefix matching, or to a regular expression over paths when a narrower pattern is
-   needed. The filter is **not a natural-language or semantic search**. Returned paths can be passed directly to
-   `fetch`, `get_schema`, or a write tool.
-3. Discover **every** Business Applications resource this way — environments, apps, tables, records, skills, APIs,
+2. Use `fetch` on `/businessapps/environments/` when the user explicitly asks to list environments or identify the
+   default environment. Do not guess an environment ID.
+3. Use `search_paths` with a natural-language description of the business task when broader semantic discovery is
+   useful. For Business Applications, the provider interprets `filter` semantically rather than as a path-prefix
+   regex. Returned paths can be passed directly to `fetch`, `get_schema`, or a write tool.
+4. Discover **every** Business Applications resource this way — environments, apps, tables, records, skills, APIs,
    and operations. Take each identifier from the returned paths. Do not guess an ID or name, and do not assume a
    default environment.
-4. Use `get_schema` on the returned concrete path before an unfamiliar mutation or operation. Never fill in
+5. Use `get_schema` on the returned concrete path before an unfamiliar mutation or operation. Never fill in
    `{environmentId}`, `{tableName}`, `{recordId}`, `{appName}`, `{apiName}`, `{skillName}`, or operation names
    from memory.
 
@@ -25,9 +26,10 @@ substitute a separate endpoint, another MCP server, or an invented REST URL.
 
 | Intent | WorkIQ tool and Business Applications path |
 |---|---|
+| List environments/default | `fetch` `/businessapps/environments/` |
 | List or describe tables | `fetch` or `get_schema` `/businessapps/environments/{environmentId}/tables[/<tableName>]` |
 | Read a record | `fetch` `/businessapps/environments/{environmentId}/tables/{tableName}/records/{recordId}` |
-| Query environment data | `call_function` `/businessapps/environments/{environmentId}/query` with `jsonBody: {"querytext":"SELECT ..."}` |
+| Query environment data | `do_action` `/businessapps/environments/{environmentId}/query` with `jsonBody: {"querytext":"SELECT ..."}` |
 | Create a table | `create_entity` on `/businessapps/environments/{environmentId}/tables` with `{tableName, columns, displayName?, description?}` |
 | Create a record | `create_entity` on `/businessapps/environments/{environmentId}/tables/{tableName}/records` with `{"item":{...}}` |
 | Update a record | `update_entity` on `/businessapps/environments/{environmentId}/tables/{tableName}/records/{recordId}` with changed fields |
@@ -40,13 +42,13 @@ substitute a separate endpoint, another MCP server, or an invented REST URL.
 | Update a business skill | `update_entity` on `/businessapps/environments/{environmentId}/skills/{skillName}` with changed fields |
 | Delete a business skill | `delete_entity` on `/businessapps/environments/{environmentId}/skills/{skillName}` |
 | Run an app-scoped operation | `do_action` on the exact `.../apps/{appName}/.../operations/{operationName}` path returned by `get_schema` |
-| Invoke a Custom API | `call_function` `/businessapps/environments/{environmentId}/apis/{apiName}` with the API inputs in `jsonBody` |
+| Invoke a Custom API | `do_action` on the exact `/businessapps/environments/{environmentId}/customapis/{apiName}` path returned by discovery, with API inputs in `jsonBody` |
 | Delegate an open-ended goal to an environment | `do_action` `/businessapps/environments/{environmentId}/execute-work` with `{"instruction":"...","sessionId":"<optional>"}` |
 | Invoke an in-app MCP tool | `do_action` on the exact `/businessapps/environments/{environmentId}/mcp/{serverName}/tools/{toolName}` path |
 
-`call_function` supports an optional `jsonBody` for Business Applications paths. Continue encoding Microsoft
-Graph/OData function parameters in the URL; use `jsonBody` only when the discovered `/businessapps` function schema
-requires it, especially the environment query and Custom API paths.
+Environment SQL queries and Custom APIs with input bodies are actions, not functions. Use `do_action` with the
+schema-defined `jsonBody`. Use `call_function` only for an exact function path returned by discovery; do not use it
+for `/businessapps/environments/{environmentId}/query`.
 
 Business Applications record file operations are distinct from Microsoft Graph binary content and the
 `fetch_blob` / `upload_blob` release status. Do not substitute those Graph blob tools for the
@@ -79,7 +81,8 @@ Prefer direct tools when WorkIQ already exposes the precise operation:
 
 - Use `fetch`, `get_schema`, or `search_paths` for discovery, metadata, and exact reads.
 - Use `create_entity`, `update_entity`, or `delete_entity` for a known data mutation.
-- Use `call_function` for a discovered query or function.
+- Use `do_action` for a discovered environment SQL query; use `call_function`
+  only for a discovered function path.
 - Use `do_action` on a discovered app-scoped operation or Custom API when that operation directly satisfies the
   request.
 
@@ -87,6 +90,19 @@ Choose `execute-work` when the requested outcome is best expressed as a delegate
 WorkIQ operation. For a continuation, pass the prior `sessionId`; otherwise omit it. Treat the returned work result
 as evidence from the environment, and surface any ambiguity, partial completion, requested confirmation, or failure
 rather than claiming success.
+
+`execute-work` is not a fallback for a missing named skill, app operation, or
+Custom API. When the user asks to run a specific named capability:
+
+1. discover the environment's available skills and operations;
+2. fetch the candidate definition when one is returned;
+3. require an exact capability match before invoking it;
+4. if it does not exist, state that clearly and abstain from execution.
+
+Do not silently substitute a similar skill, combine nearby records into an
+invented result, or reinterpret a different workflow as the requested
+capability. You may offer discovered alternatives, but run one only after the
+user chooses it.
 
 ## App-scoped operations
 
@@ -104,7 +120,7 @@ App-scoped paths intentionally differ from environment table paths:
 
 ## Grounding rules
 
-- WorkIQ's top-level `ask` can also answer questions about Business Applications request, though some applications may not be included in ask() so you may need to explore both ask() and /businessapps/me paths to get an answer.
+- WorkIQ's top-level `ask` can also answer questions about Business Applications requests, though some applications may not be included in `ask`, so use `/businessapps/me` or `search_paths` for authoritative path discovery.
 - Do not invent `/businessapps` REST shapes, append OData syntax to an undiscovered Business Applications path, or
   move `/records/` into an app-scoped path.
 - Preserve exact casing and IDs returned by tools in subsequent calls, although structural path segments are
