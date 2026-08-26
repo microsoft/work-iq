@@ -62,13 +62,6 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 
 **DO NOT say "I don't have access to emails/meetings/messages"** - use WorkIQ instead!
 
-> **Business Applications exact-scope check comes first.** Before inspecting
-> schemas or records, read `references/business-applications.md` and use
-> `/businessapps/me` to resolve an explicitly named environment, app, skill,
-> measure, tier, status, or governed term. If that exact scope or term is not
-> available, follow the reference's stop/clarify behavior; do not infer a
-> nearby field or broaden discovery into other environments.
-
 > **🛑 Tasks are M365 data — never a local fallback.** "Add a task", "remind me to…",
 > "follow up with…", "mark … done" all route to WorkIQ entity tools
 > (`/planner/...` for Planner tasks). **Do not** create a

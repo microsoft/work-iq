@@ -90,27 +90,6 @@ write-confirmation rule before calling `create_entity`, `update_entity`,
 - Schema and customization requests must use the discovered schema-mutation
   operation. Record-level access does not imply customization rights.
 
-## Exact scope and governed terminology
-
-Do not silently broaden or reinterpret an explicit business scope.
-
-- When the user names an environment, app, skill, view, measure, tier, status,
-  or other governed concept, require an exact accessible match before reading
-  records or acting.
-- If no accessible environment matches the requested name, say only that no
-  accessible matching environment was found and stop after that scoped
-  discovery result. Do not list other environments, call broad `fetch` or
-  `search_paths`, confirm whether a hidden environment exists, inspect the same
-  record elsewhere, expose alternate records, or redirect the write.
-- If a governed glossary has no definition for the requested term, do not map
-  it to a name-similar field, category, threshold, or inferred business rule.
-  When discovery returns the glossary resource, fetch that glossary once to
-  ground the absence and any defined alternatives. Then state that the term is
-  undefined and ask what criteria should qualify, or offer only alternatives
-  that the fetched glossary actually defines.
-- Once exact-scope discovery proves the requested scope or concept unavailable,
-  stop exploratory record queries unless the user chooses an alternative.
-
 ## When to use `execute-work`
 
 Use `execute-work` when the user wants to **delegate an open-ended goal** to the business agent in a specific
