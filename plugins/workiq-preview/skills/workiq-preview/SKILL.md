@@ -114,6 +114,12 @@ Common failure: fetching the entity and stopping, asking the user "did you want 
 >   tool response confirms it (2xx/created/updated). If you could not find the target or the
 >   write failed, say so — do not substitute a different action (e.g., sending a new email
 >   instead of replying) and report the original request as completed.
+> - **Authorization and privilege failures are terminal for that requested
+>   mutation.** When a write returns an explicit missing privilege, access
+>   denial, or policy denial, stop the mutation workflow immediately. Do not
+>   search for another endpoint, delegated agent, app operation, record/view
+>   update, or other workaround that tries to achieve the same change through
+>   a different resource.
 
 ### Grounding rules
 

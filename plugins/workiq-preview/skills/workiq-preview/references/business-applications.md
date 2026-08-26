@@ -70,6 +70,26 @@ its `references/*.md` files.
 - Resolve `{skillName}` from discovery (`do_action` on `/businessapps/me` or `search_paths`) and preserve the
   exact returned casing. Do not invent skill names.
 
+## Approval and privilege boundaries
+
+Business Applications writes execute immediately. Apply the general WorkIQ
+write-confirmation rule before calling `create_entity`, `update_entity`,
+`delete_entity`, or a mutating `do_action`.
+
+- If the user explicitly says a preview or deletion is **not approved**, use
+  discovery and reads only. Do not call the write tool merely to let the
+  server reject it, and do not treat a rejection as a substitute for user
+  confirmation.
+- When prior transcript context records an explicit approval, perform only the
+  approved mutation, once, through the schema-defined path.
+- If the approved operation fails for a missing privilege, authorization, or
+  policy, **stop the mutation workflow immediately** and report that exact
+  failure. Do not continue searching for another write route. Do not modify a
+  different table, record, view, saved query, skill, or app artifact as a
+  workaround and do not claim the requested operation succeeded.
+- Schema and customization requests must use the discovered schema-mutation
+  operation. Record-level access does not imply customization rights.
+
 ## When to use `execute-work`
 
 Use `execute-work` when the user wants to **delegate an open-ended goal** to the business agent in a specific
