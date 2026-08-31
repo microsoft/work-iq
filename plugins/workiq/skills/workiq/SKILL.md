@@ -58,6 +58,7 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 | Listing files in a OneDrive/SharePoint folder | "List files in my OneDrive 'Specs' folder" | `fetch` |
 | Listing tasks/plans/buckets in Planner | "List my Planner tasks due this week" | `fetch` — see `references/tasks-work-iq.md` avoid `ask` |
 | Listing / creating / completing Planner tasks | "Add a task to follow up with finance", "Mark my task done", "List my Planner tasks" | entity tools on `/planner/...` — see `references/tasks-work-iq.md` |
+| Structured records or workflows in CRM, ERP, or Power Apps | "Qualify a lead", "Update the open service case" | start with `do_action` `/businessapps/me` and `{"query":"qualify a lead"}`, then follow the returned app and operation paths — read `references/business-applications.md` first |
 | Get a personal contact by name | "Get the contact card for Morgan Avery" | `fetch` (`/me/contacts?$filter=...`) — subject to server policy |
 | List or manage Outlook categories | "What Outlook categories do I have?" | `fetch` (`/me/outlook/masterCategories`); writes subject to server policy |
 | Org chart / direct reports / manager lookup | "Who are Rob's direct reports?" | `fetch` (`/users/{id}/directReports`) |
@@ -124,6 +125,7 @@ When the user asks to delete, update, send, forward, copy, move, or react to som
 | "Delete" any entity | `fetch` to find it | `delete_entity` on the entity URL |
 | "Update/rename/change" any entity | `fetch` to find it | `update_entity` on the entity URL |
 | "Create draft and send" | `create_entity` to draft | `do_action` `/me/messages/{id}/send` |
+| "Qualify a lead" | `do_action` `/businessapps/me` with `{"query":"qualify a lead"}` to resolve the app, environment, and operation path | `get_schema`, then `do_action` on the exact returned app-scoped operation |
 
 Common failure: fetching the entity and stopping, asking the user "did you want me to do anything else?", or saying "I found it." The user asked you to do something — finish it.
 
@@ -142,6 +144,12 @@ Common failure: fetching the entity and stopping, asking the user "did you want 
 >   tool response confirms it (2xx/created/updated). If you could not find the target or the
 >   write failed, say so — do not substitute a different action (e.g., sending a new email
 >   instead of replying) and report the original request as completed.
+> - **Authorization and privilege failures are terminal for that requested
+>   mutation.** When a write returns an explicit missing privilege, access
+>   denial, or policy denial, stop the mutation workflow immediately. Do not
+>   search for another endpoint, delegated agent, app operation, record/view
+>   update, or other workaround that tries to achieve the same change through
+>   a different resource.
 
 ### Grounding rules
 
@@ -264,6 +272,7 @@ Entity tools provide **fast, direct access to specific M365 data** via Work IQ A
 | Calendar | `/me/events`, `/me/calendarView` | list/get/create/update/delete; accept/decline via `/me/events/{id}/{action}` |
 | Planner | `/me/planner/plans`, `/planner/tasks` | list/create/update/complete/delete — see `references/tasks-work-iq.md` |
 | Teams | `/me/chats`, `/chats/{chatId}/messages`, `/me/joinedTeams`, `/teams/{teamId}/channels/{channelId}/messages`, `/me/presence` | chats vs channels are different surfaces — see `references/teams-work-iq.md` |
+| Business Applications | `/businessapps/me` | semantic discovery of business apps, records, and workflows via `do_action` with a `query`; follow the returned paths — see `references/business-applications.md` |
 | People | `/me`, `/users/{id}`, `/users/{id}/directReports`, `/me/manager`, `/me/contacts` | profile, org, contacts — see directory-vs-contacts warning below |
 | Outlook categories | `/me/outlook/masterCategories` | list/get/create/update/delete — writes commonly policy-denied |
 | Files | `/me/drive`, `/drives/{id}`, `/sites/{id}` | for named-file metadata, call `call_function` once with `/me/drive/root/search(q='{urlEncodedExactName}')` and do not follow with `/me/drive/items/{id}`; use `fetch_blob` for binary content after resolving the item ID — see `references/fetch-blob-work-iq.md`; uploads are not released yet |
@@ -439,7 +448,24 @@ Read the relevant reference file for full parameter details and examples:
 - `references/tasks-work-iq.md` — if you need to list, create, update, complete, or delete Planner tasks
 - `references/teams-work-iq.md` — if you need to send, reply, react, or read Teams chat/channel messages, or get/set presence
 - `references/sharepoint-work-iq.md` — if you need to resolve SharePoint sites, group-backed team sites, document libraries, document search results, or raw SharePoint file content
+- `references/business-applications.md` — if you need to discover or use business-application environments, data, apps, skills, APIs, operations, or delegated work
 - `references/update-entity-work-iq.md` — if you need to update fields on an existing entity
 - `references/delete-entity-work-iq.md` — if you need to delete an entity
 - `references/do-action-work-iq.md` — if you need to send mail, accept/decline meetings, copy/move messages
 - `references/troubleshooting.md` — if a tool call fails unexpectedly, returns an error, or behaves differently than documented
+
+## Business Applications (`/businessapps`)
+
+WorkIQ exposes business-application environments, data, apps, skills, APIs, and operations under `/businessapps/`,
+which is distinct from Microsoft Graph application registrations. Business Applications are systems of record for
+structured operational data and workflows, such as customer and sales records in CRM, finance or supply-chain
+records in ERP, and line-of-business data in Power Apps. Route intent tied to records or workflows in a business
+system to `/businessapps`; use Graph for Microsoft 365 collaboration and directory content such as mail, Teams,
+calendars, files, and people. Read `references/business-applications.md` before handling a Business Applications
+request. Start intent-driven discovery with `do_action` on `/businessapps/me` and a concise `query` describing the
+needed record, workflow, or app; use the returned paths, environment, and application IDs. Example:
+`actionUrl: "/businessapps/me"` with `jsonBody: {"query":"qualify a lead"}`. Every Business Applications resource —
+environments, apps, tables, records, skills, and APIs — is discovered this way or with `search_paths`; take each
+identifier from the returned paths. Business skills are addressed as resources under
+`/businessapps/environments/{environmentId}/skills/{skillName}` and are readable with `fetch` and writable with
+`create_entity`, `update_entity`, and `delete_entity`.
