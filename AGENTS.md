@@ -68,12 +68,14 @@ plugins/<plugin-name>/
 ### Available plugins
 
 - **workiq** — Full WorkIQ tool surface for Microsoft 365 (read + write). Bundles:
-  - `workiq` skill — Guides usage of `ask` for semantic questions plus the entity tools for fast, structured M365 reads and writes
-  - Hosted MCP server (`workiq`) with tools: `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `get_debug_link`
+  - `workiq` skill — Routes work-context gathering for caller-owned reasoning to preview `retrieve` when available, Copilot-synthesized answers to `ask`, and exact reads/writes/downloads to entity tools
+  - Hosted MCP server (`workiq`); logical tool names include `ask`, `list_agents`, `fetch`, `fetch_blob`, `get_schema`, `search_paths`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`, and tenant-dependent preview `retrieve`. Resolve exact names and schemas from the host's connected catalog.
 
 - **workiq-preview** — Preview build with the full WorkIQ tool surface (read + write). Bundles:
-  - `workiq-preview` skill — Guides usage of `ask_work_iq` for semantic questions plus the entity tools for fast, structured M365 reads and writes
-  - Hosted MCP server (`workiq-preview`) with tools: `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `get_debug_link`
+  - `workiq-preview` skill — Same retrieve/ask/entity routing, with its own bundled `references/retrieve-work-iq.md`
+  - Hosted MCP server (`workiq-preview`); discover its actual tool catalog. Installing this plugin does not enable server-side preview tools for a tenant.
+
+For both skills, keep retrieve guidance aligned: `copilot` (default) searches the M365 index plus available federated connectors, external sources, and MCP tools; `grounding` is M365-index-only. These are retrieval strategies, not a choice of who synthesizes the answer. `Dataverse` and `GraphConnectors` capabilities cannot be used with `grounding`. Preserve returned citations/metadata, distinguish retrieval errors from no matches, and never bypass access or policy denials through another strategy or tool.
 
 - **microsoft-365-agents-toolkit** — Toolkit for building M365 Copilot declarative agents. Bundles:
   - `install-atk` skill — Install or update the M365 Agents Toolkit CLI and VS Code extension

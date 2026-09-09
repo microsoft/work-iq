@@ -4,11 +4,21 @@ Use this reference when a WorkIQ tool call fails or behaves unexpectedly.
 
 ## Tool name not found
 
+For preview `retrieve`, first check [availability and fallback](retrieve-work-iq.md#availability-and-fallback): absence from the connected catalog can be genuine tenant-dependent availability, not a prefix error.
+
 **Symptom:** A call to `ask`, `fetch`, etc. fails with "tool does not exist" or similar.
 
 **Cause:** Your MCP host exposes the tool under a prefixed name derived from the **MCP server name** (`workiq-preview`), not the logical name documented in the skill.
 
 **Fix:** Scan your available-tools list for an entry whose name **ends with** the logical name (e.g., `ask`). In Copilot CLI the prefixed form is `workiq-preview-ask`; in Claude Desktop it's `mcp__workiq-preview__ask`. Call the exact prefixed name your host requires.
+
+## `retrieve` is unavailable, rejects input, or returns empty evidence
+
+- **Not advertised:** Do not call it or invent aliases. Preview availability is tenant-dependent; installing `workiq-preview` does not enable it. Use the [documented fallback](retrieve-work-iq.md#availability-and-fallback).
+- **Invalid input:** Load the live schema. `query` must be an array with at least one non-empty, non-whitespace string; `capabilities` uses objects such as `{"name":"Email"}`, not strings. Only `copilot` and `grounding` strategies are accepted. `Dataverse` and `GraphConnectors` cannot be combined with `grounding`; preserve requested sources rather than silently dropping them.
+- **`stoppedReason: "error"` with zero hits:** Retrieval failed; this is not a successful no-match result and does not establish a tenant rollout or permissions problem. Report the observed failure and returned request ID when useful.
+- **Explicit access/policy denial:** Stop. Do not change strategy, agent, tool, or endpoint to bypass it.
+- **Empty successful or partial results:** State the evidence limitation; do not claim no relevant work exists or complete source coverage.
 
 ## Entity tool returns a 400 / "bad request" on a Graph URL
 

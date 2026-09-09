@@ -1,6 +1,6 @@
 # Work IQ Plugin
 
-Full WorkIQ tool surface for GitHub Copilot CLI: agentic semantic queries via `ask` **plus** direct, structured reads and writes against Microsoft 365 — emails, meetings, calendar, documents, Teams messages, OneDrive/SharePoint files, and people.
+Full WorkIQ tool surface for GitHub Copilot CLI: work-context retrieval via preview `retrieve` when available, Copilot-synthesized answers via `ask`, and direct, structured reads and writes against Microsoft 365 — emails, meetings, calendar, documents, Teams messages, OneDrive/SharePoint files, and people.
 
 ## Installation
 
@@ -40,7 +40,30 @@ The MCP tool surface is served by the hosted WorkIQ endpoint above, so updating 
 
 The plugin exposes the WorkIQ MCP tool surface — read **and** write — from `https://workiq.svc.cloud.microsoft/mcp`.
 
-### Semantic queries (`ask`)
+### Gather work context (`retrieve`, preview)
+
+Use `retrieve` when the calling agent will reason over work evidence itself, for example to ground an implementation or compose its own answer. It returns retrieval hits and grounding `markdown` with citations and source metadata, rather than delegating the finished answer to Copilot.
+
+| Strategy | When to use |
+|----------|-------------|
+| `copilot` (default) | Source locations are unknown or may span the M365 index and available federated connectors, external data sources, or MCP tools. |
+| `grounding` | The request is fully satisfiable from indexed M365 content: SharePoint, OneDrive, Teams, and Outlook. |
+
+Both strategies return context for the caller. `strategy: "copilot"` is not an `ask` call. `Dataverse` and `GraphConnectors` capabilities cannot be combined with `grounding`.
+
+**Preview availability is tenant-dependent.** Discover the actual tool and schema in the connected server's catalog before calling it. Installing either plugin does not enable the server-side preview. If unavailable, the agent can use `ask` for a synthesized answer when appropriate, but must not present it as raw retrieval evidence or bypass an access/policy denial.
+
+```
+"Gather work context and design decisions to ground my Project X implementation"
+"Find Project X evidence across our connected enterprise sources"
+"Gather Project X rollout context from indexed SharePoint, email, and Teams content"
+```
+
+See the [retrieve reference](./skills/workiq-preview/references/retrieve-work-iq.md) for parameters, capability filters, citation handling, and fallbacks.
+
+### Copilot-synthesized answers (`ask`)
+
+Use `ask` to delegate retrieval, reasoning, and answer synthesis to Microsoft 365 Copilot, or continue a conversation using the returned `conversationId`.
 
 ```
 "What did John say about the proposal?"
@@ -82,7 +105,7 @@ The plugin exposes the WorkIQ MCP tool surface — read **and** write — from `
 
 | Skill | Description |
 |-------|-------------|
-| [**workiq-preview**](./skills/workiq-preview/SKILL.md) | Guides usage of the full WorkIQ tool surface — `ask` for semantic questions plus entity tools for fast, structured M365 reads and writes |
+| [**workiq-preview**](./skills/workiq-preview/SKILL.md) | Routes work-context gathering to preview `retrieve` when available, Copilot-owned synthesis to `ask`, and exact reads/writes/downloads to entity tools |
 
 ## Platform Support
 
