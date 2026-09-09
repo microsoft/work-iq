@@ -13,12 +13,12 @@ substitute a separate endpoint, another MCP server, or an invented REST URL.
 2. Use `fetch` on `/businessapps/environments/` when the user explicitly asks to list environments or identify the
    default environment. Do not guess an environment ID.
 3. Use `search_paths` with a natural-language description of the business task when broader semantic discovery is
-   useful. For Business Applications, the provider interprets `filter` semantically rather than as a path-prefix
-   regex. Returned paths can be passed directly to `fetch`, `get_schema`, or a write tool.
-4. Discover **every** Business Applications resource this way — environments, apps, tables, records, skills, APIs,
+   useful. For Business Applications, prefer a natural language `query` for path discovery. Returned paths can be
+   passed directly to `fetch`, `get_schema`, or a write tool.
+5. Discover **every** Business Applications resource this way — environments, apps, tables, records, skills, APIs,
    and operations. Take each identifier from the returned paths. Do not guess an ID or name, and do not assume a
    default environment.
-5. Use `get_schema` on the returned concrete path before an unfamiliar mutation or operation. Never fill in
+6. Use `get_schema` on the returned concrete path before an unfamiliar mutation or operation. Never fill in
    `{environmentId}`, `{tableName}`, `{recordId}`, `{appName}`, `{apiName}`, `{skillName}`, or operation names
    from memory.
 
