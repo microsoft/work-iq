@@ -68,7 +68,7 @@ plugins/<plugin-name>/
 ### Available plugins
 
 - **workiq** — Full WorkIQ tool surface for Microsoft 365 (read + write). Bundles:
-  - `workiq` skill — Guides usage of `ask` for semantic questions plus the entity tools for fast, structured M365 reads and writes
+  - `workiq` skill — Guides usage of `ask` for semantic questions plus the entity tools for fast, structured M365 and Business Applications reads and writes
   - Hosted MCP server (`workiq`) with tools: `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `get_debug_link`
 
 - **workiq-preview** — Preview build with the full WorkIQ tool surface (read + write). Bundles:
