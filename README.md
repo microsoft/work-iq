@@ -126,7 +126,6 @@ workiq version
 
 | Command | Description |
 |---------|-------------|
-| `workiq accept-eula` | Accept the End User License Agreement (EULA) |
 | `workiq ask` | Ask a question to a specific agent or run in interactive mode |
 | `workiq mcp` | Start MCP stdio server for agent communication |
 | `workiq version` | Show version information |
@@ -148,9 +147,6 @@ workiq version
 ### Examples
 
 ```bash
-# Accept the EULA (required on first use)
-workiq accept-eula
-
 # Interactive mode
 workiq ask
 
@@ -198,7 +194,7 @@ We welcome new plugins! See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full gu
 
 ## 📄 License
 
-By using this package, you accept the license agreement. See [NOTICES.TXT](./NOTICES.TXT) and EULA within the package for legal terms.
+By using this package, you accept the license agreement. See [LICENSE](./LICENSE) and [NOTICES.TXT](./NOTICES.TXT) for legal terms.
 
 ## Trademarks
 
