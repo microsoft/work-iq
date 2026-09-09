@@ -1,6 +1,8 @@
 # do_action
 
-POST a WorkIQ action — a named operation that performs a task (send mail, copy/move messages, accept/decline a meeting, compute free/busy) rather than creating a resource.
+POST a WorkIQ action — a named operation such as sending mail, creating a reply
+draft, copying/moving messages, accepting/declining a meeting, or computing free/busy.
+An action can create a resource; that does not make it a collection POST.
 
 > **📘 Action body shapes live here.** This file is the source of truth for action `jsonBody` shapes. You can also call `get_schema` with `operationType: "action"` to retrieve the request-body schema directly; it does not return the action's response resource schema.
 
@@ -16,6 +18,7 @@ POST a WorkIQ action — a named operation that performs a task (send mail, copy
 ## When to Use
 
 - Send mail (vs. creating a draft) — `/me/sendMail`, `/me/messages/{id}/send`
+- Create an unsent reply / reply-all / forward draft — `/me/messages/{id}/createReply`, `/createReplyAll`, `/createForward`
 - Accept / decline / tentatively accept a meeting — `/me/events/{id}/{accept|decline|tentativelyAccept}`
 - Cancel an organizer-owned meeting and notify attendees — `/me/events/{id}/cancel`
 - Copy or move a message — `/me/messages/{id}/{copy|move}`
@@ -26,7 +29,11 @@ POST a WorkIQ action — a named operation that performs a task (send mail, copy
 - Initiate a large file upload session — `/me/drive/.../createUploadSession`
 - Subscribe to change notifications
 
-Vs. `create_entity`: use `do_action` for verbs (send, copy, move, accept, reply, getSchedule); use `create_entity` to create a new stored resource. Function-shaped names that still take a JSON body (`getSchedule`, `findMeetingTimes`) are actions — POST them here.
+Vs. `create_entity`: use `do_action` for action verbs, including `createReply`,
+`createReplyAll`, and `createForward`; use `create_entity` for collection POSTs
+such as a fresh draft at `/me/messages`. Draft-creation actions do not send.
+Function-shaped names that take a JSON body (`getSchedule`, `findMeetingTimes`)
+are actions — POST them here.
 
 ## Examples
 

@@ -103,6 +103,10 @@ Use `ask` to delegate retrieval, reasoning, and answer synthesis to Microsoft 36
 
 ## Skills
 
+The skill opens with a concise tool-surface guide. Endpoint-specific recipes and
+setup details remain in [detailed workflows](./skills/workiq-preview/references/workflows-work-iq.md);
+load only the section needed for the current task.
+
 | Skill | Description |
 |-------|-------------|
 | [**workiq-preview**](./skills/workiq-preview/SKILL.md) | Routes work-context gathering to preview `retrieve` when available, Copilot-owned synthesis to `ask`, and exact reads/writes/downloads to entity tools |

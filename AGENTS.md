@@ -77,6 +77,14 @@ plugins/<plugin-name>/
 
 For both skills, keep retrieve guidance aligned: `copilot` (default) searches the M365 index plus available federated connectors, external sources, and MCP tools; `grounding` is M365-index-only. These are retrieval strategies, not a choice of who synthesizes the answer. `Dataverse` and `GraphConnectors` capabilities cannot be used with `grounding`. Preserve returned citations/metadata, distinguish retrieval errors from no matches, and never bypass access or policy denials through another strategy or tool.
 
+Keep both `SKILL.md` front pages aligned except for their skill/server names.
+Detailed endpoint workflows and setup live in each skill's
+`references/workflows-work-iq.md`; read only the relevant section and preserve
+its bounded contracts. Keep domain references consistent with the front page:
+reply/forward draft creation uses `do_action`, ordinary `calendarView` uses
+`fetch`, delta uses `call_function`, and query defaults apply only where supported.
+Email-exchange reconstruction must distinguish sent messages from unsent drafts.
+
 - **microsoft-365-agents-toolkit** — Toolkit for building M365 Copilot declarative agents. Bundles:
   - `install-atk` skill — Install or update the M365 Agents Toolkit CLI and VS Code extension
   - `declarative-agent-developer` skill — Scaffolding, JSON manifest authoring, capability configuration, deployment

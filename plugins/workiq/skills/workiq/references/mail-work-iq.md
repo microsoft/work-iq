@@ -1,11 +1,15 @@
 # Mail (Outlook messages and folders)
 
 Use the WorkIQ **entity tools** for mail requests — listing/searching messages, reading folders,
-drafting/sending/replying/forwarding, marking read, copying/moving, and deleting. Use `ask` only
-for synthesis questions ("summarize the deadline thread with John"), not for finding,
-listing, or mutating individual messages.
+drafting/sending/replying/forwarding, marking read, copying/moving, and deleting.
+Use `retrieve` when gathering semantic evidence for your own synthesis, or `ask`
+when delegating the answer to M365 Copilot. Exact messages and bounded workflows
+stay on entity tools; neither semantic tool supplies authoritative mutation IDs.
 
 ## Bounded fallback when mail synthesis `ask` fails
+
+Never use these fallbacks after an explicit authentication, consent, access, or
+policy denial. Follow the reported remediation instead.
 
 For a mail synthesis question scoped to a specific person and topic, call `ask` exactly once.
 If that call explicitly fails or reports that it cannot complete, make exactly one focused
@@ -56,6 +60,20 @@ do OR matching. Pair with `$top` to bound the result set when you need a single 
 For **mail folder name lookups** (`/me/mailFolders`), `$filter=displayName eq 'X'` is fine —
 folder names are exact-match by design. Use it for `rename` / `move` / `delete` folder chains.
 
+## Reconstructing an email exchange
+
+Fetch matching messages with
+`id,subject,from,toRecipients,ccRecipients,conversationId,isDraft,sentDateTime,body`
+in `$select`. Match the conversation and participants; subject similarity alone
+does not establish that messages belong to the same exchange.
+
+Exclude `isDraft:true` from exchanged messages even if a sent timestamp is present
+or the body looks like a reply. Order non-draft messages by `sentDateTime` and base
+quotations on their actual bodies, not `bodyPreview`. Label relevant drafts
+separately as **unsent**. If history is partial, timestamps are missing, or draft
+status is unavailable, qualify the reconstruction rather than inventing an order
+or presenting unconfirmed messages as sent.
+
 ## Canonical paths
 
 | Operation | Tool | Path |
@@ -104,8 +122,9 @@ exception to the fallback below: use one exact-subject `fetch`, then
 do not call `ask`, inspect schemas, run discovery, or switch to `createReplyAll`.
 
 1. Resolve the message with **one** `fetch` (filter by `$search` for subject, or by `id`).
-2. If the first fetch misses, try **one** `ask` to locate it semantically.
-3. If still not found, **stop and report "not found"** — do not fire 10+ more
+2. If the first fetch misses, make at most one focused structured lookup when it
+   can resolve the ambiguity. Do not use semantic hits as authoritative mutation IDs.
+3. If still not found, **stop and report "not found within the searched scope"** — do not fire 10+ more
    `fetch`/`search_paths`/`ask` calls.
 4. Once you have the id, call the mutation directly. Finding the message is not the goal;
    performing the requested action is.
