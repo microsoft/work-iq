@@ -47,21 +47,28 @@ For each relevant email, note:
 
 ### Step 3: Get Today's Calendar
 
-Retrieve all meetings for today:
+Retrieve today's meetings with a **structured calendar read** — not `ask`. Use `fetch` on `/me/calendarView` for the day's window, which returns each event's real time instant as `{ "dateTime": "...", "timeZone": "UTC" }` instead of a pre-formatted, unlabeled string:
 
 ```
-workiq-ask (
-  question: "List all my calendar events for today with subject, start time, end time, location, attendees, whether I'm the organizer, and my response status for each."
+workiq-fetch (
+  entityUrls: ["/me/calendarView?startDateTime=<today's local midnight, ISO 8601 with offset>&endDateTime=<tomorrow's local midnight, ISO 8601 with offset>&$select=subject,start,end,location,onlineMeeting,attendees,organizer,isOrganizer,responseStatus,isAllDay,showAs&$orderby=start/dateTime"]
 )
 ```
 
+Substitute the placeholders with real ISO 8601 datetimes for the user's day — local midnight today through local midnight tomorrow (a half-open `[start, end)` window), each with its **own** UTC offset (e.g. `2026-07-15T00:00:00-04:00` to `2026-07-16T00:00:00-04:00`). Don't send offset-less values: Graph treats those as UTC, which shifts the window off the user's actual day. URL-encode the query values.
+
 For each meeting, capture:
 - Subject/title
-- Start and end times
-- Location (physical or Teams link)
+- Start and end times (as the UTC instants returned in `start`/`end` — see the conversion note below)
+- Location — physical location from `location`, or the Teams join URL from `onlineMeeting.joinUrl` when present (`location` alone usually holds only a display name, not the join link)
 - Attendees
-- Whether user is organizer or attendee
-- Response status (accepted, tentative, declined)
+- Whether user is organizer or attendee (`isOrganizer`)
+- Response status — read `responseStatus.response` (values include `organizer`, `accepted`, `tentativelyAccepted`, `declined`, `notResponded`, `none`; treat `notResponded`/`none` as an unresponded invite)
+
+Notes:
+- **Use `/me/calendarView`, not `/me/events`, for a date window.** `calendarView` expands recurring series into individual occurrences within the window; `/me/events` does not expand occurrences — it returns single events and recurring *series masters* at the master's original date, so the day's actual instances would be missing or misdated.
+- **Convert times yourself, and mind the tz format.** Each `start`/`end` is an unambiguous UTC instant (`{ dateTime, timeZone: "UTC" }`). Convert it to the user's time zone (from Step 1) so the result is daylight-saving-correct. Note the user's `mailboxSettings.timeZone` is often a **Windows** zone ID (e.g. `Eastern Standard Time`), not an IANA name (`America/New_York`) — map it to IANA (or use a library that accepts both) before converting. **Do not** rely on `ask` to format meeting times or "report in my local time zone" — its human-formatted times are unlabeled and can be off by the DST offset (e.g. rendered one hour early during summer months), and it doesn't expose the underlying instant to check against.
+- **Don't paginate with `$skip`** — `calendarView` rejects it. If the response includes an `@odata.nextLink`, follow it with another `fetch`, converting it to a server-relative path first (strip the scheme, authority, and API-version prefix; keep the path and the opaque query string, including `$skiptoken`).
 
 ### Step 4: Generate Triage Summary
 
@@ -152,7 +159,8 @@ The skill will:
 
 | MCP Server | Tool | Purpose |
 |---|---|---|
-| workiq (Local WorkIQ CLI) | `ask` | User profile, inbox email retrieval, and calendar/meeting retrieval |
+| workiq (Local WorkIQ CLI) | `ask` | User profile and inbox email retrieval |
+| workiq (Local WorkIQ CLI) | `fetch` | Exact calendar reads via `/me/calendarView` (returns UTC instants for DST-correct conversion) |
 
 ## Tips for Effective Triage
 
@@ -182,15 +190,15 @@ The skill will:
 - **Resolution**: Inform the user that no recent inbox emails were found. Retry with a broader time window (e.g., "last 48 hours") before concluding the inbox is empty.
 
 #### No Calendar Events Found
-- **Symptom**: `ask` returns no calendar events for today.
-- **Cause**: The user genuinely has no meetings, or the date context was ambiguous.
-- **Resolution**: Rephrase the question with an explicit date. If the response confirms no events, report that the calendar is clear for today.
+- **Symptom**: `fetch` on `/me/calendarView` returns no events for today.
+- **Cause**: The user genuinely has no meetings, or the date window was built for the wrong day.
+- **Resolution**: Double-check that `startDateTime` and `endDateTime` bound the intended local day. If the window is correct and the response is still empty, report that the calendar is clear for today.
 
 #### Incorrect or Missing Time Zone
-- **Symptom**: Meeting times appear in UTC or are offset by several hours.
-- **Cause**: The profile query did not return time zone information, or the calendar question did not specify a time zone.
-- **Resolution**: Fall back to UTC and explicitly note in the summary that times are shown in UTC. Prompt the user to confirm their preferred time zone.
+- **Symptom**: Meeting times appear offset by an hour (often exactly the DST delta) or in UTC.
+- **Cause**: The event times were read from `ask`'s pre-formatted string instead of the `calendarView` UTC instant; the user's `timeZone` from Step 1 was missing; or a Windows zone ID (e.g. `Eastern Standard Time`) was passed to an IANA-only converter and silently failed.
+- **Resolution**: Always read `start`/`end` from the `calendarView` response and convert the UTC instant to the user's zone — never format meeting times via `ask`. Map a Windows zone ID to IANA (or use a converter that accepts both) before converting. If the user's time zone is unavailable or unmappable, show times in UTC, label them clearly as UTC, and prompt the user to confirm their preferred time zone.
 
 #### Partial Data Retrieved
-- **Symptom**: One `ask` call succeeds but another returns an error or incomplete data.
+- **Symptom**: One call succeeds (e.g. the `ask` inbox pull) but another returns an error or incomplete data (e.g. the `fetch` calendar read).
 - **Resolution**: Present the sections that did complete successfully. Clearly label any missing section (e.g., "⚠️ Calendar unavailable — could not retrieve today's meetings") so the user knows the summary is incomplete and can take manual action.
