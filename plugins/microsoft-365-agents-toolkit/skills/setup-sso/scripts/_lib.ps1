@@ -1,4 +1,4 @@
-# Shared helpers for the setup-sso-ui-widget scripts.
+# Shared helpers for the setup-sso widget-branch scripts.
 # Dot-source at the top of each script:  . "$PSScriptRoot/_lib.ps1"
 # State is carried between scripts in env/.env.local (the project's ATK local env), so scripts are
 # self-contained and take (almost) no arguments. Build-time-only values use an SSO_ prefix and are
