@@ -1,6 +1,11 @@
 # SharePoint
 
-Use this reference for SharePoint site, group-backed team site, document-library, and raw file-content tasks. Prefer the bounded routes below over broad discovery, repeated `search_paths`, or `ask`.
+Use this reference for SharePoint site, group-backed team site, basic
+document-library listing, document discovery, and raw file-content tasks.
+When the user asks about custom library columns or wants files filtered,
+counted, grouped, sorted, or compared by metadata, defer to
+`sharepoint-library-metadata.md` and use list-item `fields`. Prefer the bounded
+routes below over broad discovery, repeated `search_paths`, or `ask`.
 
 ## First accessible SharePoint site
 

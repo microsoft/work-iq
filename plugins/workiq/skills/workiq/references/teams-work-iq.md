@@ -65,9 +65,9 @@ member identity from that chat. Call
 ```
 
 This is a known deployed contract. Do not call `search_paths` or `get_schema`,
-do not send an empty body, and do not omit `tenantId`. If the complete request
-returns HTTP 500, retry that identical request at most once; do not change the
-payload or explore alternate fields.
+do not send an empty body, and do not omit `tenantId`. If the action returns
+HTTP 500 or another ambiguous result, do not replay it. Re-fetch the chat state
+when it is observable; otherwise report the outcome as indeterminate.
 
 To mark a named 1:1 chat unread, use the same bounded chat fetch and signed-in
 member identity, then fetch
@@ -79,8 +79,9 @@ Call `/chats/{chatId}/markChatUnreadForUser` with:
 ```
 
 Do not call `search_paths` or `get_schema`, send an empty body, omit
-`tenantId`, or probe unsupported member fields. If the complete action returns
-HTTP 500, retry that identical request at most once and stop.
+`tenantId`, or probe unsupported member fields. If the action returns HTTP 500
+or another ambiguous result, do not replay it. Re-fetch the chat state when it
+is observable; otherwise report the outcome as indeterminate.
 
 Message body shape (chat and channel): `{"body": {"contentType": "text", "content": "..."}}`.
 Confirm non-obvious payloads (reactions, presence) with `get_schema` before POSTing.
@@ -102,8 +103,10 @@ To "send a chat to Alex" or message yourself:
   `{"availability": "Busy", "activity": "Busy", "expirationDuration": "PT1H"}`.
   This is the user-preferred presence and the right route for user requests.
 - `/me/presence/setPresence` is the **application session** variant and requires a `sessionId` —
-  only use it if you have one. If a presence write fails, retry at most once or twice, then
-  report the failure; do not cycle through alternate presence endpoints.
+  only use it if you have one. If a presence write has an ambiguous result, do
+  not replay it; fetch the current presence when possible and otherwise report
+  the outcome as indeterminate. Do not cycle through alternate presence
+  endpoints.
 
 ## Resolve-then-act (do not loop)
 

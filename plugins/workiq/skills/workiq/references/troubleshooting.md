@@ -31,10 +31,20 @@ See the **URL Format Rules** section of `SKILL.md` for full examples.
 
 **Fix / how to proceed:**
 
-1. Check the request itself first — URL format rules (server-relative path, URL-encoded query values), `jsonBody` string encoding, and that the path/ID is real (no `{id}` literals, no guessed IDs). Fix and retry **once**.
+1. For an idempotent read, check the request first — URL format rules,
+   URL-encoded query values, and that the path/ID is real (no `{id}` literals
+   or guessed IDs). Fix and retry **once**.
 2. If a multi-URL `fetch` failed, retry the URLs individually — one bad URL can fail the batch.
-3. If it still fails, **stop retrying**. Do not probe many path variants, other backends, or alternative APIs hunting for a way around it.
-4. **Report it honestly:** tell the user which call failed and that the server returned no diagnostic detail. You may suggest possible causes (missing Graph scopes, unsupported path) only as explicitly unconfirmed hypotheses. **Never state a specific status code or error ("403", "AccessDenied", "Insufficient privileges") that you did not actually observe in a tool response.**
+3. For `create_entity`, `update_entity`, `delete_entity`, or `do_action`, a
+   `null`, timeout, or other ambiguous response does **not** prove that the
+   mutation failed. **Do not replay it.** Use a safe read to reconcile the
+   affected resource or state when possible.
+4. If reconciliation cannot determine whether the mutation happened, stop and
+   report the outcome as **indeterminate**. Ask the user how to proceed rather
+   than risking a duplicate or repeated side effect.
+5. Do not probe many path variants, other backends, or alternative APIs hunting
+   for a way around the failure.
+6. **Report it honestly:** tell the user which call failed and that the server returned no diagnostic detail. You may suggest possible causes (missing Graph scopes, unsupported path) only as explicitly unconfirmed hypotheses. **Never state a specific status code or error ("403", "AccessDenied", "Insufficient privileges") that you did not actually observe in a tool response.**
 
 ## `search_paths` rejects a `backend` / `source` / `provider` argument
 

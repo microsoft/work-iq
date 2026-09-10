@@ -23,7 +23,11 @@ PATCH an existing WorkIQ entity. Only fields in the body are changed; other fiel
 
 - **`entityUrl` must address exactly one entity by ID.** A collection or query URL (`/me/planner/tasks?$filter=startswith(title,'...')`) is rejected with "Write requests are only supported on contained entities" — resolve the ID with `fetch` first, then PATCH `/.../{id}`.
 - The ID must come from a real tool response for the **same entity type** — a directory user ID does not work on `/me/contacts/{id}`, and an ID scraped from a search-result URL is not an entity ID.
-- Updating one entity means one PATCH. If it fails, fix the request and retry once or twice — do not loop the same PATCH or fan it out across other entities.
+- Updating one entity means one PATCH. Retry once only after a definitive
+  pre-execution validation error that you corrected. For `null`, timeout, or
+  another ambiguous outcome, do not replay the PATCH; reconcile with a safe
+  read and report an indeterminate outcome if the resulting state cannot be
+  determined.
 - **Planner writes need an `If-Match` etag** — fetch the task first; on a 412/precondition error, re-fetch and retry (see `references/tasks-work-iq.md`).
 
 ## Workflow

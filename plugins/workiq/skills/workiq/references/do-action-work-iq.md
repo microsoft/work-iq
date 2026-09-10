@@ -281,10 +281,12 @@ known, so skip `search_paths` and `get_schema`.
 }
 ```
 
-The response returns an `uploadUrl` for a later chunk upload. **However, this
-skill does not expose a binary-upload tool** — see the deny rule in `SKILL.md`.
-When the user only asks to create the session, report the session metadata and
-stop; do not upload file content.
+The response returns an `uploadUrl` for a later chunk upload. Treat that URL as
+a temporary preauthenticated credential: never include, quote, cite, log, or
+return `uploadUrl` in model output. **This skill does not expose a binary-upload
+tool** — see the deny rule in `SKILL.md`. When the user only asks to create the
+session, report only non-secret metadata such as `expirationDateTime` and
+`nextExpectedRanges`, then stop; do not upload file content.
 
 ## Common failures (do not retry)
 
