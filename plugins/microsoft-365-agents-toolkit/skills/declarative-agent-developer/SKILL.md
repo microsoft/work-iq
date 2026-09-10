@@ -10,6 +10,8 @@ description: >
   "configure my agent", "deploy my agent", "fix my agent manifest", "edit my agent",
   "localize my agent", "add localization", "translate my agent", "multi-language agent",
   "add an API plugin", "add an MCP plugin", "add OAuth to my plugin",
+  "add email actions to agent", "add meeting actions to agent",
+  "add editorial answers to agent", "set agent response mode",
   "review instructions", "improve instructions", "fix my instructions"
 ---
 
@@ -67,7 +69,7 @@ When you encounter ANY problem (missing files, malformed JSON, validation errors
 - Missing `declarativeAgent.json` → Detect (file not found) → Inform ("no manifest found") → Ask ("would you like to create a new agent?")
 - Malformed JSON → Detect (parse errors) → Inform (list specific syntax issues) → Ask ("should I fix these syntax errors?")
 - Validation errors → Detect (parse and check manifest) → Inform (list all errors) → Ask ("how would you like to fix these?")
-- Version incompatibility → Detect (feature requires newer version) → Inform ("this feature requires v1.6, your agent is v1.4") → Ask ("should I upgrade?")
+- Version incompatibility → Detect (feature requires newer version) → Inform ("this feature requires v1.8, your agent is v1.7") → Ask ("should I upgrade?")
 
 ---
 
@@ -80,11 +82,30 @@ When you encounter ANY problem (missing files, malformed JSON, validation errors
 | Adding an API plugin | [API Plugins](references/api-plugins.md) |
 | Adding an MCP server | [MCP Plugin](references/mcp-plugin.md) |
 | Adding OAuth to an MCP or API plugin | [Authentication](references/authentication.md) |
+| Adding email write operations (`EmailActions`) | [Editing Workflow](references/editing-workflow.md) |
+| Adding meeting or calendar write operations (`MeetingActions`) | [Editing Workflow](references/editing-workflow.md) |
+| Adding predefined semantic Q&A (`editorial_answers`) | [Editing Workflow](references/editing-workflow.md) |
+| Choosing the default response mode | [Conversation Design](references/conversation-design.md) |
 | Reviewing or improving existing agent instructions | [Instruction Review](references/instruction-review.md) |
 | User reports agent gives generic/wrong answers | [Instruction Review](references/instruction-review.md) |
 | Localizing an agent into multiple languages | [Localization](references/localization.md) |
 | Adding a new language to an already-localized agent | [Localization](references/localization.md) |
 | Writing agent instructions | [Conversation Design](references/conversation-design.md) |
+
+---
+
+## Build-Time Feature Discovery
+
+When creating or designing an agent, actively evaluate these features instead of waiting for the user to name their manifest identifiers:
+
+| Requirement signal | Feature to surface |
+|--------------------|--------------------|
+| Send, archive, flag, move, delete, or organize email; manage rules, auto-replies, or folders | `EmailActions` |
+| Schedule meetings, create calendar events or time-finding polls, or provide time insights | `MeetingActions` |
+| Return approved, stable answers for semantically similar FAQ-style questions | `editorial_answers` |
+| Prefer fast replies or deeper reasoning by default | `behavior_overrides.default_response_mode` |
+
+Surface only relevant options during requirements discovery. Do not add them without clear user intent. For write capabilities, distinguish them from the read-only `Email` and `Meetings` capabilities and include confirmation guidance for sensitive operations.
 
 ---
 
@@ -133,7 +154,9 @@ Then read `M365_TITLE_ID` from `env/.env.local` and **ALWAYS** present the revie
 Before adding ANY feature, read the `version` field in `declarativeAgent.json` and check the [Schema](references/schema.md) feature matrix. If the feature isn't supported in that version, **refuse** and offer to upgrade.
 
 Key version gates:
-- `sensitivity_label`, `worker_agents`, `EmbeddedKnowledge` → **v1.6 only**
+- `EmailActions`, `MeetingActions` → **v1.8+**
+- `editorial_answers`, `behavior_overrides.default_response_mode`, `conversation_starters[].depends_on` → **v1.7+**
+- `sensitivity_label`, `worker_agents`, `EmbeddedKnowledge`, `user_overrides` → **v1.6+**
 - `Meetings` → **v1.5+**
 - `ScenarioModels`, `behavior_overrides`, `disclaimer` → **v1.4+**
 - `Dataverse`, `TeamsMessages`, `Email`, `People` → **v1.3+**

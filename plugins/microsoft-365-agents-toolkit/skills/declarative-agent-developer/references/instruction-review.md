@@ -242,7 +242,7 @@ These apply specifically to agents with API plugins (actions).
 
 ---
 
-## Capability Reference (v1.6)
+## Capability Reference (v1.8)
 
 Use this table to understand what each built-in capability provides and to detect intent mismatches between instructions and the manifest. This is a **guide for understanding intent**, not a keyword checklist.
 
@@ -258,9 +258,11 @@ Use this table to understand what each built-in capability provides and to detec
 | `Dataverse` | Search Dataverse tables | "Dataverse", "CRM", "Dynamics", "Power Platform data", "business data" |
 | `TeamsMessages` | Search Teams channels, chats, meeting chats (messages only — NOT transcripts) | "Teams", "channels", "chat", "messages", "Teams messages", "mentions", "DMs" |
 | `Email` | Search user's email (and shared/group mailboxes) | "email", "inbox", "messages", "mail", "sent items", "flagged", "unread" |
+| `EmailActions` | Perform email write operations | "send email", "archive", "flag", "mark read", "move email", "delete email", "inbox rule", "auto-reply", "create mail folder" |
 | `People` | Search people in the organization | "people", "org chart", "who is", "manager", "reports to", "birthday", "OOO", "colleagues" |
 | `ScenarioModels` | Use task-specific AI models | "model", "custom model", "specialized model" |
 | `Meetings` | Search calendar events, meeting details, **and meeting transcripts** | "meetings", "calendar", "events", "schedule", "invites", "attendees", "join link", "transcript", "what was discussed", "meeting notes", "recording" |
+| `MeetingActions` | Perform meeting and calendar write operations | "schedule meeting", "create event", "find a time", "time poll", "calendar availability", "time insights" |
 | `EmbeddedKnowledge` | Use files bundled in the app package | "embedded files", "local files", "bundled docs" (not yet available) |
 
 > **How to use this table:** During Phase 2 (Comprehension Check) and Phase 3 (Diagnose), use this table to understand intent alignment — not for strict keyword matching. For **A1**: if a capability is in the manifest but the instructions never describe a scenario where the agent would use that data source (even in general terms), flag it as a gap — but do NOT require the exact capability name. For **A5**: if the instructions clearly direct the agent to access a data source that has no corresponding capability configured, flag it as an intent mismatch. Ambiguous phrasing that could apply to multiple capabilities should NOT be flagged.
@@ -293,6 +295,11 @@ Use this table during Phase 1 step 7 to check if the agent's schema version supp
 | `People.include_related_content` | v1.6 | Include related docs, emails, and Teams messages for people searches |
 | `Email.group_mailboxes` | v1.6 | Search Microsoft 365 Group mailboxes |
 | `Meetings.items_by_id` | v1.6 | Scope to specific meetings/series |
+| `editorial_answers` | v1.7 | Predefined question-answer pairs selected through semantic similarity |
+| `behavior_overrides.default_response_mode` | v1.7 | Default to `Auto`, `Quick response`, or `Think deeper` |
+| `conversation_starters[].depends_on` | v1.7 | Display starters only when required capabilities are configured |
+| `EmailActions` | v1.8 | Email triage, supervised send, delete, rules, auto-reply, and folder management |
+| `MeetingActions` | v1.8 | Meeting scheduling, time-finding polls, and time insights |
 
 > **How to use:** If the agent is on v1.4 and the instructions reference "meeting transcripts" or "calendar events", flag that `Meetings` requires v1.5+. If the instructions reference "people and what we have in common", flag that `People.include_related_content` requires v1.6. Always offer to upgrade — never silently change the version.
 
@@ -339,8 +346,8 @@ Present your understanding in this structure:
 | [For each capability implied by instructions but NOT configured] | ❌ | ✅ | [Instructions assume this exists but it's not configured — will fail or hallucinate] |
 
 **Version upgrade opportunities:**
-- [If the current schema version is not the latest (v1.6), list capabilities available in newer versions that could benefit this agent's intent. Example: "You're on v1.4. Upgrading to v1.5 would unlock `Meetings` (calendar + transcripts), which aligns with your instruction's references to meeting prep and scheduling."]
-- [If already on v1.6: "✅ You're on the latest schema version — no upgrade needed."]
+- [If the current schema version is older than the skill baseline (v1.8), list features available in newer versions that could benefit this agent's intent. Example: "You're on v1.7. Upgrading to v1.8 would unlock `EmailActions`, which aligns with the instructions to triage and send email."]
+- [If already on v1.8: "✅ You're on the skill's target schema version — no upgrade needed."]
 
 **Tone / personality:** [What personality or communication style the instructions establish, if any]
 

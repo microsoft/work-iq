@@ -63,7 +63,7 @@ A minimal declarative agent manifest file (`declarativeAgent.json`):
 
 ```json
 {
-  "version": "v1.6",
+  "version": "v1.8",
   "name": "My Support Agent",
   "description": "An agent to help with customer support inquiries",
   "instructions": "You are a helpful customer support agent. Help users find information about their issues and guide them to solutions. Be polite and professional at all times."
@@ -78,7 +78,7 @@ A declarative agent with SharePoint and Email capabilities:
 
 ```json
 {
-  "version": "v1.6",
+  "version": "v1.8",
   "name": "Knowledge Base Agent",
   "description": "An agent that searches company knowledge bases and emails",
   "instructions": "You help employees find information from our SharePoint knowledge base and relevant emails. Always cite your sources when providing information.",
@@ -106,7 +106,7 @@ A declarative agent with helpful conversation starters:
 
 ```json
 {
-  "version": "v1.6",
+  "version": "v1.8",
   "name": "HR Assistant",
   "description": "An agent that helps employees with HR-related questions",
   "instructions": "You are an HR assistant helping employees with common HR questions about policies, benefits, and procedures.",
@@ -135,7 +135,7 @@ A declarative agent connected to an external API:
 
 ```json
 {
-  "version": "v1.6",
+  "version": "v1.8",
   "name": "Repairs Agent",
   "description": "An agent that helps manage repair tickets",
   "instructions": "You help users create, find, and track repair tickets. Use the repairs API to search for existing tickets and create new ones when requested.",
@@ -238,7 +238,7 @@ A complete agent combining all features:
 
 ```json
 {
-  "version": "v1.6",
+  "version": "v1.8",
   "id": "customer-support-agent",
   "name": "Customer Support Agent",
   "description": "A comprehensive support agent for customer inquiries",
@@ -293,7 +293,42 @@ A complete agent combining all features:
 
 ---
 
-## Example 10: Localized Agent
+## Example 10: Email, Meeting, and Experience Controls
+
+A v1.8 agent that surfaces the four build-time discovery features:
+
+```json
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/copilot/declarative-agent/v1.8/schema.json",
+  "version": "v1.8",
+  "name": "Executive Assistant",
+  "description": "An agent that manages email and meetings and answers common support questions",
+  "instructions": "Help users manage email and meetings. Confirm before sending or deleting email and before creating or changing calendar events.",
+  "capabilities": [
+    {
+      "name": "EmailActions"
+    },
+    {
+      "name": "MeetingActions"
+    }
+  ],
+  "behavior_overrides": {
+    "default_response_mode": "Quick response"
+  },
+  "editorial_answers": {
+    "answers": [
+      {
+        "question": "How do I contact executive support?",
+        "answer": "Email executive-support@contoso.com."
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Example 11: Localized Agent
 
 A declarative agent with tokenized strings for multi-language support.
 
@@ -301,8 +336,8 @@ A declarative agent with tokenized strings for multi-language support.
 
 ```json
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/copilot/declarative-agent/v1.6/schema.json",
-  "version": "v1.6",
+  "$schema": "https://developer.microsoft.com/json-schemas/copilot/declarative-agent/v1.8/schema.json",
+  "version": "v1.8",
   "name": "[[agent_name]]",
   "description": "[[agent_description]]",
   "instructions": "$[file]('instructions.txt')",

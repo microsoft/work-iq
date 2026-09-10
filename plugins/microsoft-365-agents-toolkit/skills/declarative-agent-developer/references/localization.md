@@ -85,8 +85,8 @@ Replace ALL user-facing strings in `declarativeAgent.json` (and `plugin.json`, i
 
 ```json
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/copilot/declarative-agent/v1.6/schema.json",
-  "version": "v1.6",
+  "$schema": "https://developer.microsoft.com/json-schemas/copilot/declarative-agent/v1.8/schema.json",
+  "version": "v1.8",
   "name": "[[agent_name]]",
   "description": "[[agent_description]]",
   "instructions": "$[file]('instructions.txt')",
