@@ -20,14 +20,14 @@ When developing an agent, you MUST ALWAYS update the app name and description in
 
 ## 🚨 CRITICAL DEPLOYMENT RULE 🚨
 
-When making ANY edits to an agent — including instructions, conversation starters, capabilities, plugins, or any file in `appPackage/` — you MUST ALWAYS deploy using `npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env local --interactive false` before returning to the user. This applies to EVERY turn, not just the final turn. Never return to the user with undeployed changes.
+When making ANY edits to an agent — including instructions, conversation starters, capabilities, plugins, or any file in `appPackage/` — you MUST ALWAYS deploy using `wiqd agent provision --env local` before returning to the user. This applies to EVERY turn, not just the final turn. Never return to the user with undeployed changes.
 
 **You must NEVER:**
 - Skip deploy because "it's just instructions" — deploy after every change
-- Tell the user to "run `npx -y --package @microsoft/m365agentstoolkit-cli atk provision` yourself" — YOU must run it
+- Tell the user to "run `wiqd agent provision` yourself" — YOU must run it
 - Deploy when validation found errors — not even "to test" or "to demonstrate"
 - Deploy "to show the user what happens" when there are errors — just report the errors
-- Run `npx -y --package @microsoft/m365agentstoolkit-cli atk provision` "for educational purposes" to demonstrate failure — errors = STOP, not a teaching moment
+- Run `wiqd agent provision` "for educational purposes" to demonstrate failure — errors = STOP, not a teaching moment
 
 **Only exception:** The user explicitly asks you NOT to deploy. Only the user can opt out, never you.
 
@@ -96,24 +96,24 @@ When you add, remove, or modify ANY capability or plugin, you MUST complete ALL 
 **Action:** Configure the agent using JSON manifest files:
 - Edit `declarativeAgent.json` to define agent properties
 - Configure capabilities with appropriate scoping
-- Set up API plugin integrations using `npx -y --package @microsoft/m365agentstoolkit-cli atk add action` (**NEVER manually create plugin files**)
+- Set up API plugin integrations using `wiqd agent add action` (**NEVER manually create plugin files**)
 - Write clear instructions and conversation starters
 - Ensure proper JSON syntax and schema compliance
 
 **After ALL edits, immediately run:**
 ```bash
-npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env local --interactive false
+wiqd agent provision --env local
 ```
 This command is part of the edit — not a separate optional step. Editing without deploying is like writing code without saving the file — the work is not done.
 
-**⛔ API Plugin Rule — HARD RULE, NO EXCEPTIONS:** To add an API plugin, you MUST use `npx -y --package @microsoft/m365agentstoolkit-cli atk add action` — one command per OpenAPI spec with **ALL operations included in a single call**. Never run separate `npx -y --package @microsoft/m365agentstoolkit-cli atk add action` calls for different operations from the same spec — this creates multiple plugins instead of one. You are FORBIDDEN from manually creating `ai-plugin.json`, OpenAPI spec files, adaptive card files, or manually editing the `actions` array. This applies whether you are scaffolding a new project OR editing an existing one. If the workspace already has an agent and the user says "add an API plugin", you STILL must use `npx -y --package @microsoft/m365agentstoolkit-cli atk add action`. If `npx -y --package @microsoft/m365agentstoolkit-cli atk add action` fails, report the error — do NOT fall back to manual file creation. **Manual plugin file creation = automatic eval failure.**
+**⛔ API Plugin Rule — HARD RULE, NO EXCEPTIONS:** To add an API plugin, you MUST use `wiqd agent add action` — one command per OpenAPI spec with **ALL operations included in a single call**. Never run separate `wiqd agent add action` calls for different operations from the same spec — this creates multiple plugins instead of one. You are FORBIDDEN from manually creating `ai-plugin.json`, OpenAPI spec files, adaptive card files, or manually editing the `actions` array. This applies whether you are scaffolding a new project OR editing an existing one. If the workspace already has an agent and the user says "add an API plugin", you STILL must use `wiqd agent add action`. If `wiqd agent add action` fails, report the error — do NOT fall back to manual file creation. **Manual plugin file creation = automatic eval failure.**
 
 ```bash
 # ✅ The ONLY way to add an API plugin — ALL operations in ONE call:
-npx -y --package @microsoft/m365agentstoolkit-cli atk add action --api-plugin-type api-spec --openapi-spec-location <URL> --api-operation "GET /path,POST /path,PATCH /path/{id},DELETE /path/{id}" -i false
+wiqd agent add action --openapi-spec <URL> --operations "GET /path,POST /path,PATCH /path/{id},DELETE /path/{id}"
 ```
 
-**After adding a plugin with `npx -y --package @microsoft/m365agentstoolkit-cli atk add action`, you MUST complete ALL of these — skipping any step is an eval failure:**
+**After adding a plugin with `wiqd agent add action`, you MUST complete ALL of these — skipping any step is an eval failure:**
 
 **🔌 POST-PLUGIN MANDATORY STEPS (do ALL of these, in order):**
 1. **Customize `ai-plugin.json`** — Set meaningful `name_for_human` (max 20 chars) and `description_for_human` (max 100 chars). Set a descriptive `description_for_model` on each function. NEVER leave defaults.
@@ -141,7 +141,7 @@ npx -y --package @microsoft/m365agentstoolkit-cli atk add action --api-plugin-ty
 
 **⛔ MANDATORY POST-EDIT CHECKPOINT — YOU ARE NOT DONE YET:**
 After editing ANY file in `appPackage/`, you MUST deploy before responding to the user. Skipping this is an eval failure:
-- **Deploy** — Run `npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env local --interactive false`. If you edited files but did not run this command, your work is incomplete. The only exception is if the user explicitly asked you not to deploy.
+- **Deploy** — Run `wiqd agent provision --env local`. If you edited files but did not run this command, your work is incomplete. The only exception is if the user explicitly asked you not to deploy.
 
 If you are about to respond to the user and you have NOT deployed, **STOP and deploy now**.
 
@@ -151,7 +151,7 @@ If you are about to respond to the user and you have NOT deployed, **STOP and de
 
 **Action:** Provision required Azure resources and register the agent:
 ```bash
-npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env local --interactive false
+wiqd agent provision --env local
 ```
 
 **Result:** Returns a test URL like `https://m365.cloud.microsoft/chat/?titleId=T_abc123xyz`
@@ -186,7 +186,7 @@ Then wait for the user's response.
 
 **Action:** Deploy to staging/production environments:
 ```bash
-npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env prod --interactive false
+wiqd agent provision --env prod
 ```
 
 **Reference:** [deployment.md](deployment.md) for environment management and CI/CD patterns
@@ -196,10 +196,10 @@ npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env prod --int
 **Action:** Package and share the agent:
 ```bash
 # Package the agent
-npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env dev --interactive false
+wiqd agent package --env dev
 
 # Share to tenant (for shared agents)
-npx -y --package @microsoft/m365agentstoolkit-cli atk share --scope tenant --env dev
+wiqd agent share --scope tenant --env dev
 ```
 
 ---
@@ -210,7 +210,7 @@ npx -y --package @microsoft/m365agentstoolkit-cli atk share --scope tenant --env
 
 **RULE:** When making any changes to an agent (JSON manifest files, instructions, capabilities, API plugins), you MUST complete the following workflow before returning to the user:
 
-1. Provision/deploy the agent: `npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env local --interactive false`
+1. Provision/deploy the agent: `wiqd agent provision --env local`
 2. Read `M365_TITLE_ID` from `env/.env.local`
 3. Present the review UX with the test link:
    ```
@@ -240,7 +240,7 @@ npx -y --package @microsoft/m365agentstoolkit-cli atk share --scope tenant --env
 
 **STOP.** Before writing your response to the user, verify ALL of the following:
 
-- [ ] I ran `npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env local --interactive false` and it succeeded
+- [ ] I ran `wiqd agent provision --env local` and it succeeded
 - [ ] I read `M365_TITLE_ID` from `env/.env.local`
 - [ ] I presented the review UX with the `🚀 Test Your Agent in M365 Copilot:` link
 

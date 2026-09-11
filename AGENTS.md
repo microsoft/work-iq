@@ -77,7 +77,7 @@ plugins/<plugin-name>/
 
 - **microsoft-365-agents-toolkit** — Toolkit for building M365 Copilot declarative agents. Bundles:
   - `install-atk` skill — Install or update the M365 Agents Toolkit CLI and VS Code extension
-  - `declarative-agent-developer` skill — Scaffolding, JSON manifest authoring, capability configuration, deployment
+  - `declarative-agent-developer` skill — DA schema and capability guidance, with project lifecycle operations executed through the wiqd CLI
   - `teams-app-developer` skill — Build, test, and deploy code-based Teams apps: bots, CEA, tabs, message extensions, Agents Playground, Azure provision/deploy, and Slack-to-Teams migration
   - `ui-widget-developer` skill — Build MCP servers with OpenAI Apps SDK widget rendering for Copilot Chat
   - `m365-agent-evaluator` skill — Generate, run, and analyze evaluation suites for M365 Copilot declarative agents

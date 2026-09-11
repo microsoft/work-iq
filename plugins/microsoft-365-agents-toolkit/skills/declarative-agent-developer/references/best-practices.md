@@ -64,7 +64,7 @@ Follow these best practices for successful M365 Copilot agent development.
 ## Deployment
 
 - **Environment Strategy:** Use separate environments for dev, staging, and production
-- **CI/CD Integration:** Automate testing and deployment using ATK CLI
+- **CI/CD Integration:** Automate testing and deployment using wiqd CLI
 - **Version Management:** Bump versions before re-provisioning shared agents
 - **Rollback Plan:** Have a rollback strategy for failed deployments
 - **Monitoring:** Implement monitoring and alerting for production agents

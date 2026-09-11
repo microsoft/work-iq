@@ -6,7 +6,7 @@ This guide explains how to configure authentication for MCP server plugins and A
 > - You want your agent to sign in the current M365 user and pass their verified identity to your plugin (Entra SSO)
 > - Your MCP server requires OAuth authentication (most third-party MCP servers do)
 > - Your API plugin requires OAuth (not just API key auth)
-> - You need to register SSO or OAuth credentials in the Teams Developer Portal via ATK
+> - You need to register SSO or OAuth credentials in the Teams Developer Portal through the wiqd lifecycle
 
 > **When NOT to use this guide:**
 > - The MCP server or API is unauthenticated → use `"auth": {"type": "None"}` directly
@@ -35,7 +35,9 @@ This guide covers two distinct patterns. Pick the one that matches your goal —
 
 Use this pattern when you want the agent to authenticate the **signed-in M365 user** and pass their verified identity (claims like `name`, `oid`, `tid`) to your plugin's backend — no separate login screen. This is **single sign-on against your own Entra tenant**, not a connection to a third-party OAuth service.
 
-> **⚡ Automate this end-to-end.** For an agent built with the `ui-widget-developer` skill (OAI Apps path — `mcpPlugin.json` + a raw-http MCP server), the **`setup-sso-ui-widget`** skill (in this same `microsoft-365-agents-toolkit` plugin) performs every step below automatically — Entra app registration, ATK OAuth, manifest wiring, JWKS token guard, and sideload. Its [`sso-explained.md`](../../setup-sso-ui-widget/references/sso-explained.md) has the runtime token-flow deep dive.
+> For a new MCP action, prefer `wiqd agent add action --mcp-auth-type entra-sso
+> --mcp-client-id "<client-id>"`. Use the detailed steps below to review or customize an existing
+> action, then validate and provision through wiqd.
 
 > **Same config for API plugins and MCP servers.** The Entra app registration, the `oauth/register` step, and the `OAuthPluginVault` manifest reference are identical for both. Only the location of the `auth` block in the manifest differs.
 
@@ -48,7 +50,7 @@ Use this pattern when you want the agent to authenticate the **signed-in M365 us
 | | Entra SSO | Third-party OAuth (Steps 1–4) |
 |---|---|---|
 | `identityProvider` | `MicrosoftEntra` | `Custom` |
-| Client secret | Not required (ATK derives it from the tenant) | Required |
+| Client secret | Not required (the lifecycle derives it from the tenant) | Required |
 | `authorizationUrl` / `tokenUrl` | Not needed (derived from tenant) | Required |
 | Who signs in | The current M365 user | An account on the external service |
 | Result | Verified caller identity (no downstream access without OBO) | Delegated access to the external API |
@@ -74,9 +76,9 @@ az ad app update --id $ClientId `
 
 > **Tenants with an app-creation policy:** some tenants require additional metadata on `az ad app create` (for example a `--service-management-reference <id>` value), and may require multiple owners on both the app and its service principal before admin consent can be granted. If your tenant enforces such a policy, `az ad app create` will fail with a policy error — add the value it asks for and retry.
 
-### Step S2 — Register the SSO Config with ATK (`MicrosoftEntra`)
+### Step S2 — Register the SSO Config (`MicrosoftEntra`)
 
-Add an `oauth/register` step to **both** `m365agents.yml` and `m365agents.local.yml`. The `MicrosoftEntra` flow only needs the **Client ID** and the **service (base) URL** — **no** `clientSecret`, `authorizationUrl`, or `tokenUrl`. ATK derives those from the tenant and writes back the generated **Application ID URI**:
+Add an `oauth/register` step to **both** `m365agents.yml` and `m365agents.local.yml`. The `MicrosoftEntra` flow only needs the **Client ID** and the **service (base) URL** — **no** `clientSecret`, `authorizationUrl`, or `tokenUrl`. The lifecycle derives those from the tenant and writes back the generated **Application ID URI**:
 
 ```yaml
   - uses: oauth/register
@@ -92,20 +94,18 @@ Add an `oauth/register` step to **both** `m365agents.yml` and `m365agents.local.
       applicationIdUri: <PREFIX>_SSO_APP_ID_URI
 ```
 
-> Pre-seed `AAD_APP_CLIENT_ID=<appId>` and empty `<PREFIX>_SSO_AUTH_ID=` / `<PREFIX>_SSO_APP_ID_URI=` in your env file **before** provisioning. Run `atk provision` (use `--env local` for local projects, which runs `m365agents.local.yml`), then read the generated `<PREFIX>_SSO_AUTH_ID` and `<PREFIX>_SSO_APP_ID_URI` back from the env file.
-
-> **Concrete key names used by the `setup-sso-ui-widget` skill:** `<PREFIX>` and the middle segment are project-chosen. Wherever this doc shows `<PREFIX>_SSO_AUTH_ID` / `<PREFIX>_SSO_APP_ID_URI`, that skill's automation concretely uses **`MCP_DA_OAUTH_AUTH_ID`** (the `configurationId`) and **`MCP_DA_OAUTH_APP_ID_URI`** (the `applicationIdUri`).
+> Pre-seed `AAD_APP_CLIENT_ID=<appId>` and empty `<PREFIX>_SSO_AUTH_ID=` / `<PREFIX>_SSO_APP_ID_URI=` in your env file **before** provisioning. Run `wiqd agent provision` (use `--env local` for local projects, which runs `m365agents.local.yml`), then read the generated `<PREFIX>_SSO_AUTH_ID` and `<PREFIX>_SSO_APP_ID_URI` back from the env file.
 
 ### Step S3 — Link the Application ID URI Back to the Entra App
 
-`oauth/register` **outputs** the Application ID URI (`<PREFIX>_SSO_APP_ID_URI`). Read it back from the env file and set it as the app's identifier URI so the ATK OAuth config and the Entra app point at the same identity:
+`oauth/register` **outputs** the Application ID URI (`<PREFIX>_SSO_APP_ID_URI`). Read it back from the env file and set it as the app's identifier URI so the OAuth config and the Entra app point at the same identity:
 
 ```powershell
 $AppIdUri = ((Get-Content env/.env.local | Where-Object { $_ -match '^<PREFIX>_SSO_APP_ID_URI=' }) -replace '^<PREFIX>_SSO_APP_ID_URI=','').Trim()
 az ad app update --id $ClientId --identifier-uris "$AppIdUri"
 ```
 
-> This link is what lets Copilot request a token whose `aud` matches the URI your backend validates. Do this **after** S2 so you use the exact URI ATK generated.
+> This link is what lets Copilot request a token whose `aud` matches the URI your backend validates. Do this **after** S2 so you use the exact URI generated by the lifecycle.
 >
 > **⛔ Critical — accept every audience form Entra may emit.** A real SSO token's `aud` is frequently the **bare client-id GUID**, *not* the `api://` URI — even on a `ver: 2.0` token. Validate `aud` against **all** of `[<clientId GUID>, api://<clientId>, <AppIdUri>]`. Accepting only the `api://` / Application ID URI form will **401 a valid token** and trigger the endless sign-in loop (see *SSO Behavior — 401 vs 403* below). Still reject tokens minted for a *different* app.
 
@@ -190,11 +190,11 @@ Remove-Item $bodyFile -ErrorAction SilentlyContinue
 az ad app show --id $ClientId --query "{appIdUri:identifierUris[0], tokenVersion:api.requestedAccessTokenVersion, scopes:api.oauth2PermissionScopes[].value, preAuthCount:length(api.preAuthorizedApplications), graphPerms:length(requiredResourceAccess)}" -o json
 ```
 
-Expected: `appIdUri` = the ATK-generated URI, `tokenVersion` = `2`, `scopes` = `["access_as_user"]`, `preAuthCount` = `1` (M365 Copilot), `graphPerms` = `1`.
+Expected: `appIdUri` = the lifecycle-generated URI, `tokenVersion` = `2`, `scopes` = `["access_as_user"]`, `preAuthCount` = `1` (M365 Copilot), `graphPerms` = `1`.
 
 ### Step S6 — Wire SSO into the Plugin Manifest
 
-The **`auth` block is identical** for MCP servers and API plugins — only the surrounding runtime `type`/`spec` differs. Reference the ATK-generated SSO config via `OAuthPluginVault`:
+The **`auth` block is identical** for MCP servers and API plugins — only the surrounding runtime `type`/`spec` differs. Reference the generated SSO config via `OAuthPluginVault`:
 
 ```json
 "auth": {
@@ -277,7 +277,7 @@ Authenticated plugins use a three-part setup:
 
 1. **Discover** OAuth endpoints from the server's well-known metadata
 2. **Obtain** client credentials (via Dynamic Client Registration or manual entry)
-3. **Register** the OAuth configuration in `m365agents.yml` so ATK provisions it in the Teams Developer Portal
+3. **Register** the OAuth configuration in `m365agents.yml` so wiqd provisions it in the Teams Developer Portal
 
 The result is a `<PREFIX>_MCP_AUTH_ID` environment variable that the plugin manifest references via `OAuthPluginVault`.
 
