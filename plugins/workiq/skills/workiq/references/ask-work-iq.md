@@ -1,6 +1,6 @@
 # ask
 
-Query Microsoft 365 Copilot for workplace intelligence using natural language. This is the primary tool for all M365 data questions — it grounds answers in real organizational data via Microsoft Graph.
+Delegate a natural-language workplace question to Microsoft 365 Copilot for retrieval, reasoning, and a synthesized answer. For work context that you will reason over or synthesize yourself, prefer preview [`retrieve`](retrieve-work-iq.md) when available. `retrieve` with `strategy: "copilot"` still returns grounding evidence, not an `ask` answer.
 
 > **⏱️ Latency:** Typical calls take 10–60 seconds; broad questions can run several minutes (hard limit ~300s). Don't chain many `ask` calls where one scoped call or a fast entity tool would do, and split overly broad questions into focused sub-questions.
 >
@@ -20,12 +20,11 @@ Query Microsoft 365 Copilot for workplace intelligence using natural language. T
 ## When to Use
 
 Use `ask` when:
-- You need information that exists somewhere in M365 (emails, meetings, documents, Teams, Calendar, people)
-- The user asks about what someone said, shared, or communicated
-- You need organizational context before implementing something
-- Any question that could be answered by Outlook, Teams, SharePoint, OneDrive, or Calendar
+- You want Microsoft 365 Copilot to synthesize a workplace answer across accessible sources.
+- You are continuing a Copilot conversation using a returned `conversationId`.
+- Preview `retrieve` is unavailable and a synthesized answer meets the user's need; disclose the fallback rather than presenting it as raw retrieval evidence.
 
-Prefer `ask` over entity tools when the question is open-ended or exploratory. Switch to entity tools when you need precise, structured data or need to write/modify data.
+An open-ended question alone does not determine the tool: use `retrieve` for caller-owned reasoning and `ask` for Copilot-owned synthesis. Use entity tools for precise structured data or mutations. Do not use either semantic tool to bypass an access or policy denial.
 
 ## Do NOT use `ask` as a shortcut for:
 
@@ -65,10 +64,8 @@ Prefer `ask` over entity tools when the question is open-ended or exploratory. S
 ```
 
 ### Calendar and schedule
-```json
-{ "question": "What meetings do I have today?" }
-{ "question": "What's on my calendar tomorrow?" }
-```
+
+For an exact schedule ("What meetings do I have today?"), use `fetch` on a bounded `/me/calendarView` rather than `ask` or `retrieve`.
 
 ### Priorities and goals
 ```json
@@ -77,7 +74,9 @@ Prefer `ask` over entity tools when the question is open-ended or exploratory. S
 { "question": "What's blocking the release?" }
 ```
 
-### Grounding implementation work
+### Delegating a requirements summary
+
+This asks Copilot to synthesize the requirements. To gather evidence for your own implementation reasoning instead, use `retrieve` as described in [its reference](retrieve-work-iq.md).
 ```json
 { "question": "Based on the latest spec for Project X, what are the backend requirements?" }
 ```

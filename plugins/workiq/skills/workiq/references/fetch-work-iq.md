@@ -15,7 +15,9 @@ Fetch one or more WorkIQ entities by path using HTTP GET. Use this for precise, 
 - When you already have an entity ID and want its full details
 - For multi-fetch: pass multiple URLs to retrieve several entities in one call
 
-Prefer `ask` for open-ended questions. Use `fetch` when you need precise, filtered, or structured data.
+Use `retrieve` for semantic evidence you will synthesize, or `ask` for a delegated
+answer. Use `fetch` for precise, filtered, or structured data, including ordinary
+`/me/calendarView` reads; its `/me/calendarView/delta` variant uses `call_function`.
 
 Use `fetch` (not `ask`) to resolve exact targets before mutations — find an event ID before deleting/updating, a draft before adding recipients or sending, a Teams chat/channel/message before editing/reacting/posting, a mail thread before reply/forward/move/mark-read.
 
@@ -82,7 +84,11 @@ Common URL encodings for OData query values:
 
 ## OData Query Tips
 
-**Always include `$select`** with only the fields you need to reduce response size (e.g., `/me/messages?$select=id,subject,from`). For collection endpoints, include `$top` to bound results.
+Include `$select` with only needed fields and `$top` to bound collections
+**where the endpoint supports them**. Specific contracts in
+[detailed workflows](workflows-work-iq.md) take precedence: channel-member listing
+does not take `$top`, and reads such as `/groups/{groupId}/drive?$expand=root`
+deliberately omit `$select`. Do not probe unsupported query variants after a 400.
 
 | Parameter | Purpose | Example |
 |-----------|---------|---------|

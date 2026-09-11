@@ -77,8 +77,8 @@ copilot plugin uninstall workiq-productivity
 
 | # | Plugin | Skills | Description |
 |---|--------|--------|-------------|
-| 1 | [**workiq**](#workiq) | 1 | Full WorkIQ tool surface — agentic queries plus direct M365 reads and writes |
-| 2 | [**workiq-preview**](#workiq-preview) | 1 | Preview build with the full entity tool surface (read + write) |
+| 1 | [**workiq**](#workiq) | 1 | Work context via preview retrieve when available, Copilot answers, and direct M365 reads/writes |
+| 2 | [**workiq-preview**](#workiq-preview) | 1 | Preview plugin with the same retrieve/ask/entity routing; tool availability depends on the tenant |
 | 3 | [**microsoft-365-agents-toolkit**](#microsoft-365-agents-toolkit) | 4 | Toolkit for building M365 Copilot declarative agents |
 | 4 | [**workiq-productivity**](#workiq-productivity) | 10 | Read-only productivity insights across M365 |
 
@@ -86,7 +86,7 @@ copilot plugin uninstall workiq-productivity
 
 ## workiq
 
-> Full WorkIQ tool surface for GitHub Copilot CLI: agentic semantic queries via `ask` **plus** direct, structured reads and writes against Microsoft 365 — emails, meetings, calendar, documents, Teams messages, OneDrive/SharePoint files, and people.
+> Full WorkIQ tool surface for GitHub Copilot CLI: preview `retrieve` for work context when available, `ask` for Copilot-synthesized answers, and direct, structured M365 reads and writes.
 
 **Install:** `/plugin install workiq@work-iq`
 **Source:** [`plugins/workiq/`](./plugins/workiq/)
@@ -95,13 +95,15 @@ copilot plugin uninstall workiq-productivity
 
 | Server | Tools |
 |--------|-------|
-| `workiq` (hosted) | `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `get_debug_link` |
+| `workiq` (hosted) | `ask`, `list_agents`, `fetch`, `fetch_blob`, `get_schema`, `search_paths`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`; preview `retrieve` when available |
+
+These are logical names; discover the connected host's exact names and schemas. `retrieve` is tenant-dependent. Its default `copilot` strategy can search the M365 index plus available federated connectors, external sources, and MCP tools; `grounding` is M365-index-only. Both return context for caller-side synthesis, unlike `ask`. See the [retrieve reference](./plugins/workiq/skills/workiq/references/retrieve-work-iq.md).
 
 ### Skills
 
 | Skill | Description |
 |-------|-------------|
-| [**workiq**](./plugins/workiq/skills/workiq/SKILL.md) | Guides usage of the full WorkIQ tool surface — `ask` for semantic questions plus entity tools for fast, structured M365 reads and writes |
+| [**workiq**](./plugins/workiq/skills/workiq/SKILL.md) | Preview `retrieve` for caller-owned reasoning, `ask` for Copilot-owned synthesis, and entity tools for exact reads/writes/downloads |
 
 ### Example prompts
 
@@ -118,7 +120,7 @@ copilot plugin uninstall workiq-productivity
 
 ## workiq-preview
 
-> **Preview build.** Same natural-language access as `workiq`, plus a broader set of entity tools for direct, structured M365 reads and writes — fetch, create, update, delete, do-action, call-function, schema discovery, and blob downloads.
+> **Preview plugin.** Same work-context retrieval, Copilot-answer, and structured entity workflows as `workiq`. Installing this plugin does not enable tenant-gated tools such as preview `retrieve`.
 
 **Install:** `/plugin install workiq-preview@work-iq`
 **Source:** [`plugins/workiq-preview/`](./plugins/workiq-preview/)
@@ -127,13 +129,15 @@ copilot plugin uninstall workiq-productivity
 
 | Server | Tools |
 |--------|-------|
-| `@microsoft/workiq@preview` | `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `get_debug_link` |
+| `workiq-preview` (hosted) | Discover the connected catalog for exact names and availability; uses the same logical tool names as `workiq`, including `retrieve` only where available |
 
 ### Skills
 
 | Skill | Description |
 |-------|-------------|
-| [**workiq-preview**](./plugins/workiq-preview/skills/workiq-preview/SKILL.md) | Guides usage of the full WorkIQ tool surface — `ask_work_iq` for semantic questions plus entity tools for fast, structured reads and writes |
+| [**workiq-preview**](./plugins/workiq-preview/skills/workiq-preview/SKILL.md) | Preview `retrieve` for caller-owned reasoning, `ask` for Copilot-owned synthesis, and entity tools for exact reads/writes/downloads |
+
+The [preview retrieve reference](./plugins/workiq-preview/skills/workiq-preview/references/retrieve-work-iq.md) documents the same strategy distinction, parameters, capability restrictions, and availability fallback.
 
 ### Example prompts
 

@@ -14,14 +14,15 @@ POST a new WorkIQ entity to a collection — calendar events, draft emails, task
 ## When to Use
 
 - New calendar event
-- Draft email (use `do_action` `/me/sendMail` to send immediately)
+- Fresh draft email at `/me/messages`; reply / reply-all / forward drafts use
+  `do_action` with `createReply` / `createReplyAll` / `createForward`, not this tool.
 - New Planner task
 - New Teams channel message
 - Any POST creating a new item in a collection
 
 ## Workflow
 
-1. `get_schema` with the collection URL and `operationType: "create"` to confirm required fields
+1. If the body is unfamiliar, use `get_schema` with the collection URL and `operationType: "create"` to confirm required fields; skip discovery for a documented known contract.
 2. `create_entity` with the collection URL and a valid body
 3. Save the returned `id` for later updates
 
