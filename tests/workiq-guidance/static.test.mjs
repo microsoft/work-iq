@@ -35,25 +35,59 @@ for (const file of ['AGENTS.md', 'README.md', 'PLUGINS.md', 'CONTRIBUTING.md',
   });
 }
 
-test('affected plugin metadata agrees across host and marketplace manifests', () => {
-  const json = file => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
-  const registries = ['marketplace.json', '.claude-plugin/marketplace.json'].map(json);
-  const sharedVersion = registries[0].plugins.find(plugin => plugin.name === 'workiq')?.version;
-  assert.match(sharedVersion ?? '', /^\d+\.\d+\.\d+$/);
+function checkMetadata(registries, hostManifests) {
   for (const name of packages) {
     const entries = registries.map(registry => registry.plugins.find(plugin => plugin.name === name));
     assert.ok(entries.every(Boolean), `Missing marketplace entry for ${name}`);
     const canonical = entries[0];
-    assert.equal(canonical.version, sharedVersion, `${name}: current policy requires matching WorkIQ skill versions`);
-    for (const manifest of [
-      entries[1], ...['.github/plugin', '.claude-plugin', '.codex-plugin']
-        .map(host => json(`plugins/${name}/${host}/plugin.json`))
-    ]) {
+    for (const manifest of [entries[1], ...hostManifests[name]]) {
       for (const field of ['name', 'version', 'description']) {
         assert.equal(manifest[field], canonical[field], `${name}: ${field} differs across manifests`);
       }
     }
     assert.equal(entries[1].source, canonical.source);
     assert.match(canonical.description, /retrieve-first.*Grounding.*intentional.*ask/);
+  }
+}
+
+test('affected plugin metadata agrees across host and marketplace manifests', () => {
+  const json = file => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
+  const registries = ['marketplace.json', '.claude-plugin/marketplace.json'].map(json);
+  const hostManifests = Object.fromEntries(packages.map(name => [name,
+    ['.github/plugin', '.claude-plugin', '.codex-plugin']
+      .map(host => json(`plugins/${name}/${host}/plugin.json`))
+  ]));
+  checkMetadata(registries, hostManifests);
+});
+
+test('public and preview versions may diverge but each package must remain consistent', () => {
+  const entries = packages.map((name, index) => ({
+    name, version: index ? '2.2.0' : '2.1.0', source: `./plugins/${name}`,
+    description: 'Synthetic retrieve-first Grounding with intentional ask.'
+  }));
+  const registries = [{ plugins: entries }, { plugins: structuredClone(entries) }];
+  const hostManifests = Object.fromEntries(entries.map(entry => [entry.name,
+    Array.from({ length: 3 }, () => structuredClone(entry))
+  ]));
+  assert.doesNotThrow(() => checkMetadata(registries, hostManifests));
+  hostManifests['workiq-preview'][0].version = '2.1.0';
+  assert.throws(() => checkMetadata(registries, hostManifests), /workiq-preview: version differs/);
+});
+
+test('plugin descriptions retain workload and action discovery beyond retrieval', () => {
+  const registry = JSON.parse(fs.readFileSync(path.join(root, 'marketplace.json'), 'utf8'));
+  const checkDiscovery = description => {
+    for (const term of ['email', 'calendars?', 'meetings', 'Teams', 'SharePoint', 'OneDrive',
+      'people', 'contacts', 'Planner', 'search', 'summarize', 'read', 'create', 'update', 'delete', 'send', 'download']) {
+      assert.match(description, new RegExp(`\\b${term}\\b`, 'i'), `Missing capability: ${term}`);
+    }
+    assert.ok(description.toLowerCase().indexOf('email') < description.indexOf('retrieve-first'),
+      'Lead with workloads rather than retrieval policy');
+  };
+  for (const name of packages) {
+    const description = registry.plugins.find(plugin => plugin.name === name).description;
+    checkDiscovery(description);
+    assert.throws(() => checkDiscovery(description.replace(/Planner/gi, 'work')), /Planner/);
+    assert.throws(() => checkDiscovery(description.replace(/\bsend\b/gi, 'act')), /send/);
   }
 });

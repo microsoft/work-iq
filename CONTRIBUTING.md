@@ -43,10 +43,10 @@ All plugins must be registered in `marketplace.json`, with a matching entry in
 }
 ```
 
-For the current WorkIQ release policy, `workiq` and `workiq-preview` ship the same
-plugin/skill version. Synchronize the public version from root `marketplace.json`
-across both entries, the mirrored marketplace, and all host manifests. Other
-plugins retain their own versions.
+`workiq` and `workiq-preview` may have different plugin/skill versions. For each
+package, synchronize its own root `marketplace.json` version with its mirrored
+marketplace entry and host manifests. Matching versions in one release do not
+require future releases to stay in lockstep.
 
 ## 🚀 Adding a New Plugin
 

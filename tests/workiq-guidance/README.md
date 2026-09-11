@@ -37,8 +37,10 @@ causes. It is historical offline evidence, not an assertion about the current ch
   links have explicit reasons in the contract; their safety policy is still linted.
   Prose paraphrases need not match a paragraph snapshot. Affected plugin names,
   versions, and descriptions must agree across both marketplaces and all host
-  plugin manifests. Under the current release policy, preview and public WorkIQ
-  skill versions must also match the root marketplace's public WorkIQ version.
+  plugin manifests for each package. Public and preview versions may differ;
+  each is compared only with its own root marketplace entry.
+  Metadata also retains explicit workloads and actions ahead of routing policy,
+  guarding discovery coverage without claiming a measured agent-quality effect.
 - **Oracle tests** prove that the assertion runner accepts/rejects specified trace
   structures, including wrong actual calls, missing approval, replay and false outcomes.
 - **Observed host/mock tests** require a separately instrumented host to load the

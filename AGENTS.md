@@ -105,11 +105,16 @@ has one canonical owner: `files-work-iq.md`, `calendar-work-iq.md`, `mail-work-i
 `teams-work-iq.md`, or `tasks-work-iq.md`; `agents-work-iq.md` owns agent discovery.
 `workflows-work-iq.md` is the index, setup, people, and cross-domain guide.
 `troubleshooting.md` owns operation-aware recovery. Read only the relevant contract.
-The current release policy requires `workiq-preview` and `workiq` to carry the
-same plugin/skill version. Use the `workiq` entry in root `marketplace.json` as
-the version reference; synchronize preview, the mirrored marketplace, and each
-package's GitHub/Claude/Codex manifests. Availability differences do not imply
-different skill versions. The guidance gate checks this policy.
+`workiq` and `workiq-preview` may version independently. For each package, use
+its own entry in root `marketplace.json` as the version reference and synchronize
+its mirrored marketplace entry and GitHub/Claude/Codex manifests. Matching
+versions for a particular release do not establish a permanent lockstep policy.
+The guidance gate checks consistency within each package, not between packages.
+Plugin descriptions must lead with discoverable workloads and actions, not only
+retrieval policy. Keep email, calendar/meetings, Teams, SharePoint/OneDrive files,
+people/contacts, Planner, and supported operations explicit; retain public-only
+Business Applications coverage. Hosts may use plugin metadata, skill frontmatter,
+or tool descriptions differently, so none of these layers replaces the others.
 
 Confirmation and denial stops override happy-path call budgets. Classify effects
 by operation, not tool name: `do_action` can be read-only. Never replay ambiguous
