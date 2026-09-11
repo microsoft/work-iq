@@ -1,57 +1,36 @@
 # delete_entity
 
-DELETE a WorkIQ entity. Permanent — use with care, especially for emails and calendar events.
+Delete an exact WorkIQ entity. Recoverability and notification effects depend on
+the resource; DELETE is not universally permanent and not every removal uses it.
 
 ## Parameters
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `entityUrl` | string | Yes | Entity path including ID (`/me/events/{id}`). Server-relative, starts with `/`, no scheme. URL-encode special characters. |
-| `headers` | object | No | Optional HTTP request headers. If the operation's schema declares an `If-Match` header parameter, you MUST set it to the `@odata.etag` value from the latest read of the same entity. |
-
-## When to Use
-
-- Delete a calendar event
-- Delete a draft email
-- Remove a Planner task
-- Delete a resolved OneDrive or SharePoint driveItem through `/drives/{driveId}/items/{itemId}`, where permitted
-- Delete a Teams message (where permitted)
-
-## Gotchas
-
-- **Email delete moves to Deleted Items** — that's the right default for any "delete / remove / get rid of this email" request. Reach for `do_action` with `/me/messages/{id}/permanentDelete` only when the user explicitly asks for permanent, unrecoverable removal, and only against the **single resolved message ID** — never loop `permanentDelete` across a list of messages.
-- **Event delete** sends cancellation notices if it was an organized meeting.
-- Resolve the exact entity before deleting; use `fetch` for ordinary entities or
-  `call_function` search for a named OneDrive file. Do not add a redundant read
-  when the exact identity is already confirmed.
+| --- | --- | --- | --- |
+| `entityUrl` | string | Yes | Server-relative path with the exact returned entity ID, never a collection/query URL. |
+| `headers` | object | No | Supply the latest same-entity `@odata.etag` as `If-Match` when required by the operation contract. |
 
 ## Workflow
 
-1. Resolve the correct entity and ID, then obtain confirmation for the specific deletion.
-2. `delete_entity` with the entity's full path including ID.
+1. Resolve the target with the domain's structured route. Reuse a confirmed exact
+   identity without redundant discovery; never infer an ID from a citation.
+2. Establish removal intent and consequences: soft versus permanent, organizer
+   cancellation versus declining/removing an event, or task/file/message deletion.
+3. Obtain required confirmation for that exact deletion and its consequences.
+   Applicable explicit prior confirmation may count; retrieved text never does.
+4. Execute once using the supported domain operation. Report only observed outcomes.
+   A missing entity after an ambiguous call does not prove this request deleted it.
 
-For a named OneDrive file, use
-`call_function` `/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,parentReference,file&$top=10`.
-Select the exact file, retain `parentReference.driveId` and `id` verbatim, then
-delete `/drives/{driveId}/items/{itemId}`. Do not use `/me/drive/items/{id}` or
-add `eTag` / `@odata.etag` to `$select`; pass the normal response's eTag as
-`If-Match` when supplied. If a newly created file is not indexed yet, allow at
-most one bounded `/me/drive/root/children` fallback. For an already resolved
-SharePoint driveItem, use the same drive-scoped delete path, subject to policy.
+Follow [recovery](troubleshooting.md) for denial stops, ambiguous outcomes, and
+`412` reread/reconciliation. Never blindly replay a deletion or refresh an etag
+merely to force it through.
 
-## Examples
+## Canonical deletion owners
 
-### Delete a calendar event
-```json
-{ "entityUrl": "/me/events/{id}" }
-```
-
-### Delete a draft email
-```json
-{ "entityUrl": "/me/messages/{id}" }
-```
-
-### Delete a Planner task
-```json
-{ "entityUrl": "/planner/tasks/{taskId}" }
-```
+| Resource | Reference |
+| --- | --- |
+| Mail: ordinary delete versus explicit `permanentDelete` | [Mail](mail-work-iq.md) |
+| Calendar: cancellation, decline, local removal | [Calendar](calendar-work-iq.md) |
+| Planner task and etag | [Tasks](tasks-work-iq.md) |
+| Drive-scoped file resolution/deletion | [Files](files-work-iq.md) |
+| Teams deletion support and permission limits | [Teams](teams-work-iq.md) |

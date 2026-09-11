@@ -7,6 +7,13 @@ counted, grouped, sorted, or compared by metadata, defer to
 `sharepoint-library-metadata.md` and use list-item `fields`. Prefer the bounded
 routes below over broad discovery, repeated `search_paths`, or `ask`.
 
+These structured routes serve exact discovery and operations, not a semantic
+summary default. Ordinary caller-owned context follows [retrieval policy](retrieve-work-iq.md)
+with explicit Grounding; [ask](ask-work-iq.md) requires intentional delegation.
+The endpoint examples are inherited contracts, not newly verified live responses.
+Use live schemas for unfamiliar operations, and apply [recovery](troubleshooting.md):
+explicit access/authentication/policy denial stops without alternate paths or tools.
+
 ## First accessible SharePoint site
 
 Use `search=`, not `$search=`, for SharePoint site discovery. The path catalog may advertise OData `$search`, but SharePoint site enumeration works with the non-OData `search` query parameter.
@@ -49,11 +56,16 @@ Then list root children with the resolved root id:
 { "entityUrls": ["/drives/{driveId}/items/{rootId}/children"] }
 ```
 
-If a drive root alias such as `/drives/{driveId}/root` or `/drives/{driveId}/root/children` is denied, do not keep retrying root variants. Use `/groups/{groupId}/drive?$expand=root` and `/drives/{driveId}/items/{rootId}/children`.
+Choose the supported group-drive/root-item route above from the outset. If any
+drive root alias or item path is explicitly denied, stop that workflow and report
+the actual diagnostic; do not switch addressing modes to bypass the denial.
+An error is not evidence that the root folder is empty.
 
 ## Search SharePoint documents across sites
 
-Use Microsoft Search for bounded cross-site document discovery. This is the primary route when the user asks to find, list, or download a SharePoint document without already providing a site or drive item id.
+Use the read-only Microsoft Search action for bounded structured cross-site
+document discovery when the user wants file candidates or a download without a
+site/item ID. For semantic evidence and summaries, use the retrieval policy above.
 
 ```json
 {
@@ -91,6 +103,11 @@ Filter the returned hits before answering or downloading:
 
 When the final answer needs the site display name and search did not return it directly, derive the unique site slug from each SharePoint `webUrl` and make one batched fetch with `/sites?search={siteSlug}&$select=id,displayName,name,webUrl&$top=5` for those slugs.
 
+Use a slug only as a lookup term, not as an authoritative site identity. Match
+returned site URLs before attaching a display name; qualify ambiguous or missing
+matches. Inspect each nested status and preserve successful entries. A bounded
+search is not proof of complete library coverage.
+
 ## Download raw SharePoint file content
 
 After selecting a SharePoint file driveItem, download raw bytes with `fetch_blob` using the drive-scoped content path:
@@ -100,3 +117,7 @@ After selecting a SharePoint file driveItem, download raw bytes with `fetch_blob
 ```
 
 Do not use `/me/drive` for SharePoint requests. Do not call `fetch` for `/content`; `fetch` only returns JSON metadata. If `fetch_blob` reports that the payload exceeds the 4 MB limit, return the item's `webUrl` so the user can download it directly.
+
+Retain source drive and item IDs from authoritative structured fields; do not
+infer them from a search citation or site slug. Shared copy/move/delete and
+upload-session mechanics belong in [Files](files-work-iq.md).

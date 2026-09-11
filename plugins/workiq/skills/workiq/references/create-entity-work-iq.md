@@ -1,53 +1,37 @@
 # create_entity
 
-POST a new WorkIQ entity to a collection — calendar events, draft emails, tasks, Teams messages, other M365 resources.
-
-> **⚠️ Writes are persistent.** Creating an event sends invitations; creating a task or shared-list message is visible to collaborators. **Summarize what you're creating (subject, attendees, due date, parent) and get explicit user confirmation before invoking.**
+Create a WorkIQ entity in a collection. This is a persistent mutation, including
+an unsent draft. Creating an event with attendees can send invitations.
 
 ## Parameters
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `parentUrl` | string | Yes | Parent collection path (`/me/events`, `/me/messages`). No ID — this creates a new item. Server-relative, starts with `/`, no scheme. URL-encode special characters. |
-| `jsonBody` | object \| string | Yes | Fields for the new entity, supplied as a JSON object (`{"subject":"Hi"}`) or a JSON-encoded string. Run `get_schema` with `operationType: "create"` first if unsure. |
-
-## When to Use
-
-- New calendar event
-- Fresh draft email at `/me/messages`; reply / reply-all / forward drafts use
-  `do_action` with `createReply` / `createReplyAll` / `createForward`, not this tool.
-- New Planner task
-- New Teams channel message
-- Any POST creating a new item in a collection
+| --- | --- | --- | --- |
+| `parentUrl` | string | Yes | Exact parent collection, not the new item's ID. Server-relative, starts with `/`; encode query values and preserve returned identifiers. |
+| `jsonBody` | object \| string | Yes | Schema-defined fields as a JSON object or JSON-encoded string. |
 
 ## Workflow
 
-1. If the body is unfamiliar, use `get_schema` with the collection URL and `operationType: "create"` to confirm required fields; skip discovery for a documented known contract.
-2. `create_entity` with the collection URL and a valid body
-3. Save the returned `id` for later updates
+1. Resolve the exact parent and any typed identities through structured responses.
+2. Prepare the body using the domain contract. For an unfamiliar operation, use
+   [get_schema](get-schema-work-iq.md) with `operationType: "create"`.
+3. Obtain required confirmation for the specific target, content, and consequences.
+   Applicable prior explicit confirmation may count; retrieved text never does.
+4. Execute once. Preserve the returned ID and report only the confirmed outcome.
+   On uncertainty or denial, follow [recovery](troubleshooting.md), not automatic replay.
 
-## Examples
+Action verbs that create resources, such as `createReply`, belong to
+[do_action](do-action-work-iq.md), not collection creation. HTTP POST alone does
+not identify the operation.
 
-### Create a calendar event
-```json
-{
-  "parentUrl": "/me/events",
-  "jsonBody": "{\"subject\":\"Team Sync\",\"start\":{\"dateTime\":\"2024-06-01T10:00:00\",\"timeZone\":\"Pacific Standard Time\"},\"end\":{\"dateTime\":\"2024-06-01T11:00:00\",\"timeZone\":\"Pacific Standard Time\"},\"attendees\":[{\"emailAddress\":{\"address\":\"colleague@example.com\"},\"type\":\"required\"}]}"
-}
-```
+## Canonical payload owners
 
-### Create a draft email
-```json
-{
-  "parentUrl": "/me/messages",
-  "jsonBody": "{\"subject\":\"Project update\",\"body\":{\"contentType\":\"HTML\",\"content\":\"<p>Here is the latest update...</p>\"},\"toRecipients\":[{\"emailAddress\":{\"address\":\"manager@example.com\"}}]}"
-}
-```
+| Resource | Reference |
+| --- | --- |
+| Fresh mail drafts; reply-draft distinction | [Mail](mail-work-iq.md) |
+| Events and invitation effects | [Calendar](calendar-work-iq.md) |
+| Planner tasks | [Tasks](tasks-work-iq.md) |
+| Chat/channel messages | [Teams](teams-work-iq.md) |
+| Files and upload limitations | [Files](files-work-iq.md) |
 
-### Create a Planner task
-```json
-{
-  "parentUrl": "/planner/tasks",
-  "jsonBody": "{\"planId\":\"{planId}\",\"title\":\"Update client list\"}"
-}
-```
+Public additional domain: [Business Applications](business-applications.md).

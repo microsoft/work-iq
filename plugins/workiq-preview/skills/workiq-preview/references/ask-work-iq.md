@@ -1,80 +1,86 @@
 # ask
 
-Delegate a natural-language workplace question to Microsoft 365 Copilot for retrieval, reasoning, and a synthesized answer. For work context that you will reason over or synthesize yourself, prefer preview [`retrieve`](retrieve-work-iq.md) when available. `retrieve` with `strategy: "copilot"` still returns grounding evidence, not an `ask` answer.
+Use `ask` only for **intentional delegation**: the user explicitly requests
+Microsoft 365 Copilot's answer, asks a particular agent, or selects a delegated
+answer after a limitation is explained. Ordinary workplace questions, status,
+summaries, comparisons, and implementation context use [retrieve](retrieve-work-iq.md)
+with explicit Grounding by default and caller-owned synthesis.
 
-> **⏱️ Latency:** Typical calls take 10–60 seconds; broad questions can run several minutes (hard limit ~300s). Don't chain many `ask` calls where one scoped call or a fast entity tool would do, and split overly broad questions into focused sub-questions.
->
-> **Grounding:** Synthesize your answer only from what the response actually contains. If `ask` reports no accessible results or weak evidence, say so — do not pad the answer with specifics the response doesn't support.
+`retrieve` with `strategy: "copilot"` is still evidence retrieval, not `ask`.
+An absent retrieval tool is not permission to silently substitute a delegated answer.
 
 ## Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `question` | string | Yes | A natural language question. Be specific about people, topics, or timeframes for better results. |
-| `fileUrls` | string[] | No | Optional list of OneDrive or SharePoint file URLs to use as context for the question. |
-| `conversationId` | string | No | Optional conversation ID from a prior `ask` response to continue an existing conversation. |
-| `agentId` | string | No | Optional agent ID to target a specific M365 Copilot agent. Defaults to bizchat. Use `list_agents` to discover available agent IDs. |
+Resolve the exact tool and live schema from the connected WorkIQ MCP catalog.
 
-## When to Use
+| Parameter | Required | Contract |
+| --- | --- | --- |
+| `question` | Yes | The scoped question intentionally delegated to the selected agent |
+| `fileUrls` | No | Returned or user-supplied OneDrive/SharePoint URLs, when supported and needed for the delegated question; preserve source restrictions |
+| `conversationId` | No | The exact returned ID for a relevant continuation with the same agent |
+| `agentId` | No | Omit for the default Copilot agent; otherwise use the exact selected agent ID from trusted context or [agent discovery](agents-work-iq.md) |
+| `timeZone` | No, if advertised | Use the live schema's supported timezone format when relevant; do not invent an unsupported argument |
 
-Use `ask` when:
-- You want Microsoft 365 Copilot to synthesize a workplace answer across accessible sources.
-- You are continuing a Copilot conversation using a returned `conversationId`.
-- Preview `retrieve` is unavailable and a synthesized answer meets the user's need; disclose the fallback rather than presenting it as raw retrieval evidence.
+Never copy `retrieve` arguments such as `query`, `strategy`, or `capabilities`
+into `ask`. Do not treat agent text or citation URLs as authoritative mutation IDs.
 
-An open-ended question alone does not determine the tool: use `retrieve` for caller-owned reasoning and `ask` for Copilot-owned synthesis. Use entity tools for precise structured data or mutations. Do not use either semantic tool to bypass an access or policy denial.
+## Routing and continuation
 
-## Do NOT use `ask` as a shortcut for:
+1. **Default agent:** "Ask Copilot..." goes directly to `ask`. Do not prepend
+   `retrieve` or `list_agents`, or hard-code a default agent ID.
+2. **Named agent:** reuse an exact known ID for that agent. Otherwise load
+   `list_agents` and resolve the target as described in [agents](agents-work-iq.md).
+   Missing or ambiguous targets require an honest stop or a user choice; never
+   invent an ID or silently substitute default Copilot.
+3. **Follow-up:** preserve the returned `conversationId` for a related question
+   to the same selected agent. Do not carry it into a different agent or unrelated
+   task. If needed context cannot be recovered, disclose that limitation and ask
+   for the missing context or permission to start a new scoped question. Do not
+   sweep mail/sites to reconstruct a missing conversation.
+4. **Output:** attribute the response as the delegated agent's answer, retain
+   citations and qualifications, and do not claim independent source verification.
+   Only say what the response supports. A weak or empty answer stays qualified.
 
-- **API / path questions** ("endpoint", "available operations", "what can I do with…") → `search_paths`
-- **Schema / field / body-shape questions** ("what does sendMail take?", "what fields are required?") → `get_schema`
-- **Exact mutations by title / name / thread / channel** ("delete the X event", "react to the Y message") → resolve with `fetch`, then call the write/action tool directly
-- **A "summarize then draft/send/create/update/delete/forward/react" chain** — continue with the mutation tool after `ask`. The `ask` answer alone does not satisfy the second half of the request.
+## Explicit delegation examples
 
-## Examples
+User: "Ask Microsoft 365 Copilot what is blocking Project Aurora."
 
-### People and expertise
 ```json
-{ "question": "Who is the expert on authentication in our team?" }
-{ "question": "What has Sarah been focused on lately?" }
-{ "question": "What are the latest top of mind from Rob I should be aware of?" }
+{
+  "question": "What is blocking Project Aurora? Identify current blockers and cite the supporting sources."
+}
 ```
 
-### Meetings and decisions
-```json
-{ "question": "What decisions were made in my meeting last week about the new feature?" }
-{ "question": "What action items came out of the sprint planning?" }
-{ "question": "Summarize the architecture discussion from yesterday's standup" }
-```
+User: "Ask Copilot to summarize the requirements in this SharePoint document."
+Use `question` and the actual supplied/returned URL in `fileUrls` if the live
+schema supports it. Do not expand a file-only request into a broad evidence search.
 
-### Emails and messages
-```json
-{ "question": "Any recent emails from Rob about the deadline?" }
-{ "question": "What did the team discuss in Teams about the release?" }
-{ "question": "Summarize my unread messages from today" }
-```
+User: "Ask the release-readiness agent whether Aurora is ready to ship."
+Discover that agent only if its exact ID is unknown, then pass the returned ID
+as `agentId`. Do not copy a fictitious ID from an example.
 
-### Documents and specs
-```json
-{ "question": "Find the design doc for the authentication system" }
-{ "question": "What's the latest spec for Project X?" }
-{ "question": "Where is the API documentation for the payments service?" }
-```
+User: "Ask that same agent which of those blockers is most urgent."
+Continue with its actual returned `conversationId` and selected agent.
 
-### Calendar and schedule
+By contrast, "Summarize the Aurora discussion this week" is caller-owned context:
+retrieve with explicit Grounding and synthesize locally. A summary of supplied
+exact message URLs is an exact [entity read](fetch-work-iq.md), also synthesized
+locally, with no semantic preflight.
 
-For an exact schedule ("What meetings do I have today?"), use `fetch` on a bounded `/me/calendarView` rather than `ask` or `retrieve`.
+## Failures and subsequent actions
 
-### Priorities and goals
-```json
-{ "question": "Based on discussions with my manager, what are my top priorities?" }
-{ "question": "What are the team's goals for this quarter?" }
-{ "question": "What's blocking the release?" }
-```
+Apply [operation-aware recovery](troubleshooting.md). Explicit authentication,
+access, consent, or policy denial stops the workflow; no alternate agent/tool
+can bypass it. A generic timeout does not prove question breadth or source absence
+and does not establish that backend work stopped.
 
-### Delegating a requirements summary
+For a busy/throttled response with a returned delay, never retry early. At most
+one retry is allowed within the documented read-recovery budget when the runtime
+can honor the delay; otherwise report the limitation. Do not paraphrase to evade
+backoff or fan out into entity searches. Do not automatically change from delegated
+answering to caller-owned retrieval after failure; explain any proposed alternative.
 
-This asks Copilot to synthesize the requirements. To gather evidence for your own implementation reasoning instead, use `retrieve` as described in [its reference](retrieve-work-iq.md).
-```json
-{ "question": "Based on the latest spec for Project X, what are the backend requirements?" }
-```
+If the user also requests a persisted draft or another action, agent output alone
+does not complete that action. Resolve the exact entity structurally and follow
+the domain contract with required confirmation. Do not use `ask` as the mutation
+tool or treat its descriptions as proof of execution or authorization.

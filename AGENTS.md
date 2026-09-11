@@ -6,14 +6,15 @@ Work IQ is a **Copilot CLI plugin marketplace** for managing AI agent plugins fo
 
 ```
 work-iq/
-├── .github/
-│   └── plugin/
-│       └── marketplace.json  # Plugin marketplace registry
+├── .github/workflows/       # Automation and guidance contract checks
+├── marketplace.json        # Copilot plugin marketplace registry
+├── .claude-plugin/marketplace.json # Mirrored Claude marketplace registry
 ├── plugins/                  # Plugin packages (skills + MCP servers)
 │   ├── workiq/
 │   ├── workiq-preview/
 │   ├── microsoft-365-agents-toolkit/
 │   └── workiq-productivity/
+├── tests/workiq-guidance/    # Synthetic contracts, documentation checks, trace oracle
 ├── server.json               # MCP server manifest
 ├── ADMIN-INSTRUCTIONS.md     # Tenant admin consent guide
 ├── CONTRIBUTING.md           # Guide for adding new plugins
@@ -68,22 +69,37 @@ plugins/<plugin-name>/
 ### Available plugins
 
 - **workiq** — Full WorkIQ tool surface for Microsoft 365 (read + write). Bundles:
-  - `workiq` skill — Routes work-context gathering for caller-owned reasoning to preview `retrieve` when available, Copilot-synthesized answers to `ask`, and exact M365/Business Applications reads, writes, library metadata, and downloads to entity tools
+  - `workiq` skill — Retrieve-first caller-owned context with explicit Grounding when available; intentional Copilot/known-agent delegation with `ask`; exact M365/Business Applications reads, writes, library metadata, and downloads on entity tools
   - Hosted MCP server (`workiq`); logical tool names include `ask`, `list_agents`, `fetch`, `fetch_blob`, `get_schema`, `search_paths`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`, and tenant-dependent preview `retrieve`. Resolve exact names and schemas from the host's connected catalog.
 
 - **workiq-preview** — Preview build with the full WorkIQ tool surface (read + write). Bundles:
   - `workiq-preview` skill — Same retrieve/ask/entity routing, with its own bundled `references/retrieve-work-iq.md`
   - Hosted MCP server (`workiq-preview`); discover its actual tool catalog. Installing this plugin does not enable server-side preview tools for a tenant.
 
-For both skills, keep retrieve guidance aligned: `copilot` (default) searches the M365 index plus available federated connectors, external sources, and MCP tools; `grounding` is M365-index-only. These are retrieval strategies, not a choice of who synthesizes the answer. `Dataverse` and `GraphConnectors` capabilities cannot be used with `grounding`. Preserve returned citations/metadata, distinguish retrieval errors from no matches, and never bypass access or policy denials through another strategy or tool.
+For both skills, explicitly send `strategy: "grounding"` for ordinary caller-owned
+context, including unspecified or unknown locations. The API's omitted-parameter
+default remains `copilot`; this skill intentionally chooses a different default.
+Use Copilot retrieval directly for required broader sources or `Dataverse`/
+`GraphConnectors`; preserve source restrictions. `ask` requires intentional
+delegation, with exact IDs from `list_agents` when a named agent is unresolved.
+No automatic retrieval-to-ask fallback, no broader retry for an empty result or
+cap alone, and at most one justified targeted broader escalation per objective.
 
-Keep both `SKILL.md` front pages aligned except for their skill/server names.
-Detailed endpoint workflows and setup live in each skill's
-`references/workflows-work-iq.md`; read only the relevant section and preserve
-its bounded contracts. Keep domain references consistent with the front page:
-reply/forward draft creation uses `do_action`, ordinary `calendarView` uses
-`fetch`, delta uses `call_function`, and query defaults apply only where supported.
-Email-exchange reconstruction must distinguish sent messages from unsent drafts.
+Keep shared routing and safety aligned across both packages. Public-only
+SharePoint/library-metadata and Business Applications references and dispatch links
+are intentional exceptions, not permission for shared-policy drift. Each workflow
+has one canonical owner: `files-work-iq.md`, `calendar-work-iq.md`, `mail-work-iq.md`,
+`teams-work-iq.md`, or `tasks-work-iq.md`; `agents-work-iq.md` owns agent discovery.
+`workflows-work-iq.md` is the index, setup, people, and cross-domain guide.
+`troubleshooting.md` owns operation-aware recovery. Read only the relevant contract.
+
+Confirmation and denial stops override happy-path call budgets. Classify effects
+by operation, not tool name: `do_action` can be read-only. Never replay ambiguous
+mutations; report accepted/pending or unknown outcomes honestly. Preserve mainline
+library-column source truth, completeness, Business Applications paths, and privilege
+boundaries. Ordinary calendar windows use `fetch`; explicit delta uses `call_function`
+and needs a checkpoint for historical change claims. Persisted reply drafts use
+`do_action` without sending; exchanged-mail reconstruction excludes unsent drafts.
 
 - **microsoft-365-agents-toolkit** — Toolkit for building M365 Copilot declarative agents. Bundles:
   - `install-atk` skill — Install or update the M365 Agents Toolkit CLI and VS Code extension
@@ -103,6 +119,24 @@ Email-exchange reconstruction must distinguish sent messages from unsent drafts.
   - `site-explorer` skill — Browse SharePoint sites, lists, and libraries
   - `channel-audit` skill — Audit channels for inactivity and cleanup
   - `channel-digest` skill — Summarize activity across multiple channels
+
+## Guidance validation
+
+The shared synthetic contract and regression suite live in
+[`tests/workiq-guidance/`](tests/workiq-guidance/README.md). With Node 22+, run:
+
+```bash
+npm ci --prefix tests/workiq-guidance --ignore-scripts --no-audit --no-fund
+npm --prefix tests/workiq-guidance test
+```
+
+The path-filtered `workiq-guidance.yml` CI workflow runs documentation checks and
+trace-oracle tests separately. Parsed skill descriptions must stay within 1,024
+characters; local links, retrieval examples, and shared-package policy are checked.
+Static checks and synthetic oracle inputs are not observed agent behavior. Host/mock
+traces, captured endpoint schemas/responses, and matched live coverage evaluation
+remain separate evidence gates; do not claim gains or launch large live evaluations
+from an offline pass. Keep private evidence out of public fixtures.
 
 ## Prerequisites
 
@@ -148,7 +182,7 @@ Skill instructions here...
 ```
 
 After creating a plugin:
-1. Register it in `.github/plugin/marketplace.json` by adding an entry to the `plugins` array
+1. Register it in `marketplace.json` and mirror the entry in `.claude-plugin/marketplace.json`
 2. Install it with `copilot plugin install ./plugins/my-plugin`
 
 ---
@@ -158,7 +192,7 @@ After creating a plugin:
 > **Important:** When making changes to this repository — adding new plugins or modifying workflows — update this AGENTS.md file to reflect those changes. This file serves as the primary context document for AI agents working in this repo. Keep it accurate and current. Specifically:
 >
 > - Add new plugins to the "Available plugins" section when they are created
-> - Register new plugins in `.github/plugin/marketplace.json`
+> - Register new plugins in `marketplace.json` and `.claude-plugin/marketplace.json`; keep host plugin descriptions aligned
 > - Update "Getting Started" if new setup steps are required
 > - Update "Repository Structure" if top-level directories change
 > - **After editing any skill or plugin content**, reinstall the affected plugin so the running session picks up the changes:

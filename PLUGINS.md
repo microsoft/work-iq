@@ -77,7 +77,7 @@ copilot plugin uninstall workiq-productivity
 
 | # | Plugin | Skills | Description |
 |---|--------|--------|-------------|
-| 1 | [**workiq**](#workiq) | 1 | Work context via preview retrieve when available, Copilot answers, and direct M365 reads/writes |
+| 1 | [**workiq**](#workiq) | 1 | Retrieve-first Grounding context, intentional agent answers, and direct M365 reads/writes |
 | 2 | [**workiq-preview**](#workiq-preview) | 1 | Preview plugin with the same retrieve/ask/entity routing; tool availability depends on the tenant |
 | 3 | [**microsoft-365-agents-toolkit**](#microsoft-365-agents-toolkit) | 4 | Toolkit for building M365 Copilot declarative agents |
 | 4 | [**workiq-productivity**](#workiq-productivity) | 10 | Read-only productivity insights across M365 |
@@ -86,7 +86,7 @@ copilot plugin uninstall workiq-productivity
 
 ## workiq
 
-> Full WorkIQ tool surface for GitHub Copilot CLI: preview `retrieve` for work context when available, `ask` for Copilot-synthesized answers, and direct, structured M365 reads and writes.
+> Full WorkIQ tool surface for GitHub Copilot CLI: available `retrieve` with explicit Grounding for caller-owned context, `ask` for intentional agent delegation, and exact M365 reads and writes.
 
 **Install:** `/plugin install workiq@work-iq`
 **Source:** [`plugins/workiq/`](./plugins/workiq/)
@@ -97,18 +97,31 @@ copilot plugin uninstall workiq-productivity
 |--------|-------|
 | `workiq` (hosted) | `ask`, `list_agents`, `fetch`, `fetch_blob`, `get_schema`, `search_paths`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`; preview `retrieve` when available |
 
-These are logical names; discover the connected host's exact names and schemas. `retrieve` is tenant-dependent. Its default `copilot` strategy can search the M365 index plus available federated connectors, external sources, and MCP tools; `grounding` is M365-index-only. Both return context for caller-side synthesis, unlike `ask`. See the [retrieve reference](./plugins/workiq/skills/workiq/references/retrieve-work-iq.md).
+These are logical names; discover the connected host's exact names and schemas.
+`retrieve` is tenant-dependent. The skill always sends an explicit strategy:
+`grounding` for ordinary/unknown-location context, `copilot` directly for required
+broader sources or an explicit broader request. The API default when omitted is
+still `copilot`. Preserve required `Dataverse`/`GraphConnectors` capabilities and
+source restrictions; both strategies return evidence, unlike `ask`. No automatic
+ask fallback when retrieval is unavailable, and no broader retry for empty/capped
+results alone. See the [retrieve reference](./plugins/workiq/skills/workiq/references/retrieve-work-iq.md).
 
 ### Skills
 
 | Skill | Description |
 |-------|-------------|
-| [**workiq**](./plugins/workiq/skills/workiq/SKILL.md) | Preview `retrieve` for caller-owned reasoning, `ask` for Copilot-owned synthesis, and entity tools for exact reads/writes/downloads |
+| [**workiq**](./plugins/workiq/skills/workiq/SKILL.md) | Retrieve-first Grounding context, intentional default/named-agent delegation, and entity tools for exact reads/writes/downloads |
+
+Default "Ask Copilot" requests call `ask` directly. For a named agent, reuse a
+trusted ID or resolve it with [`list_agents`](./plugins/workiq/skills/workiq/references/agents-work-iq.md);
+never silently substitute Copilot. Follow-ups retain the same agent's returned
+`conversationId`. Ordinary questions and summaries do not imply delegation.
 
 ### Example prompts
 
 ```
 "What did John say about the proposal?"
+"Ask the release-readiness agent whether Project Aurora is ready to ship"
 "List my unread emails from Sarah this week"
 "Create a calendar event Friday at 3pm with the design team"
 "Accept the 2pm meeting from Rob"
@@ -135,9 +148,12 @@ These are logical names; discover the connected host's exact names and schemas. 
 
 | Skill | Description |
 |-------|-------------|
-| [**workiq-preview**](./plugins/workiq-preview/skills/workiq-preview/SKILL.md) | Preview `retrieve` for caller-owned reasoning, `ask` for Copilot-owned synthesis, and entity tools for exact reads/writes/downloads |
+| [**workiq-preview**](./plugins/workiq-preview/skills/workiq-preview/SKILL.md) | Retrieve-first Grounding context, intentional default/named-agent delegation, and entity tools for exact reads/writes/downloads |
 
-The [preview retrieve reference](./plugins/workiq-preview/skills/workiq-preview/references/retrieve-work-iq.md) documents the same strategy distinction, parameters, capability restrictions, and availability fallback.
+The [preview retrieve reference](./plugins/workiq-preview/skills/workiq-preview/references/retrieve-work-iq.md)
+documents the same explicit Grounding policy, broader-source exceptions, capability
+restrictions, and honest availability handling. Both packages dispatch to canonical
+file/calendar/mail/Teams contracts and an operation-aware recovery policy.
 
 ### Example prompts
 
@@ -226,6 +242,6 @@ Want to add your own plugin? See [CONTRIBUTING.md](./CONTRIBUTING.md) for the fu
 
 1. Create your plugin under `plugins/{your-plugin}/`
 2. Add `.mcp.json`, `README.md`, and `skills/{name}/SKILL.md`
-3. Register it in [`.github/plugin/marketplace.json`](./.github/plugin/marketplace.json)
+3. Register it in [`marketplace.json`](./marketplace.json) and mirror the entry in [`.claude-plugin/marketplace.json`](./.claude-plugin/marketplace.json)
 4. Update this file (`PLUGINS.md`) with your plugin entry
 5. Submit a pull request

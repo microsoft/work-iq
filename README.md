@@ -166,8 +166,8 @@ workiq mcp
 
 | Plugin | Description |
 |--------|-------------|
-| [**workiq**](./plugins/workiq/) | Query Microsoft 365 data with natural language — emails, meetings, documents, Teams messages, and more. |
-| [**workiq-preview**](./plugins/workiq-preview/) | **Preview build.** Same natural-language access as `workiq`, plus a broader set of entity tools (fetch, create, update, delete, do-action, call-function, blob downloads, schema discovery) for direct, structured M365 reads and writes. |
+| [**workiq**](./plugins/workiq/) | Retrieve-first Microsoft 365 context with explicit Grounding when available, intentional agent delegation with `ask`, and exact entity reads/writes/downloads. |
+| [**workiq-preview**](./plugins/workiq-preview/) | **Preview build.** The same shared retrieval, delegation, and entity-operation policy; actual tool availability depends on the connected tenant. |
 | [**microsoft-365-agents-toolkit**](./plugins/microsoft-365-agents-toolkit/) | Toolkit for building and evaluating M365 Copilot declarative agents — scaffolding, manifest authoring, capability configuration, and eval workflows. |
 | [**workiq-productivity**](./plugins/workiq-productivity/) | Read-only WorkIQ productivity insights — email triage, meeting costs, org charts, channel audits, and more. |
 
