@@ -8,7 +8,11 @@ This guide explains how to integrate Model Context Protocol (MCP) servers as act
 
 MCP servers expose tools that can be consumed by your agent. Unlike OpenAPI-based plugins, MCP plugins use a `RemoteMCPServer` runtime type and embed the tool descriptions directly in the plugin manifest.
 
-> **⚠️ IMPORTANT:** `npx -y --package @microsoft/m365agentstoolkit-cli atk add action` does NOT support MCP servers — it only supports `--api-plugin-type api-spec` for OpenAPI plugins. MCP plugins MUST be created manually following the steps below. This is NOT a violation of the "Always Use `npx -y --package @microsoft/m365agentstoolkit-cli atk add action`" rule — that rule applies only to OpenAPI/REST API plugins.
+> **⚠️ IMPORTANT:** Use `wiqd agent add action --mcp-server-url` to create and register the
+> MCP plugin. Do not create the initial plugin manifest manually. The detailed manifest sections
+> below are retained for reviewing generated output and for advanced customization such as
+> pinning discovered tools or adding response semantics. Follow Step 2 to select an authentication
+> mode and supply all credentials required by that mode.
 
 ## Prerequisites
 
@@ -20,13 +24,10 @@ MCP servers expose tools that can be consumed by your agent. Unlike OpenAPI-base
 
 ## Scaffold the Agent Project First
 
-Before adding an MCP plugin, you **must** have a scaffolded agent project. Run `npx -y --package @microsoft/m365agentstoolkit-cli atk new` if you haven't already:
+Before adding an MCP plugin, you **must** have a scaffolded agent project. Run `wiqd agent create` if you haven't already:
 
 ```bash
-npx -y --package @microsoft/m365agentstoolkit-cli atk new \
-  -n my-agent \
-  -c declarative-agent \
-  -i false
+wiqd agent create --name my-agent
 ```
 
 This creates `m365agents.yml` (and `m365agents.local.yml`) with the **5 required lifecycle steps**:
@@ -39,13 +40,17 @@ This creates `m365agents.yml` (and `m365agents.local.yml`) with the **5 required
 | 4 | `teamsApp/update` | Uploads the package to Teams |
 | 5 | `teamsApp/extendToM365` | **Extends the app to M365 Copilot** — generates `M365_TITLE_ID` |
 
-**What breaks without `extendToM365`:** If this step is missing, `npx -y --package @microsoft/m365agentstoolkit-cli atk provision` will register the Teams app and generate `TEAMS_APP_ID`, but the agent will **never appear in Copilot Chat** because no `M365_TITLE_ID` is generated. This is the most common reason for "provision succeeded but agent not found" failures.
+**What breaks without `extendToM365`:** If this step is missing, `wiqd agent provision` will register the Teams app and generate `TEAMS_APP_ID`, but the agent will **never appear in Copilot Chat** because no `M365_TITLE_ID` is generated. This is the most common reason for "provision succeeded but agent not found" failures.
 
 > **If you already have a project** but are missing `teamsApp/extendToM365`, add it to the `provision` lifecycle in `m365agents.yml` after `teamsApp/update`. See [deployment.md](deployment.md) for the full provisioning reference.
 
 ---
 
-## Step-by-Step Integration
+## Generated Plugin Review and Advanced Customization
+
+Run `wiqd agent add action --mcp-server-url` first. The steps below explain how to inspect and,
+when requested, augment the generated plugin. If the command fails, report the error and stop;
+do not fall back to manual creation.
 
 ### Step 1: Get MCP Server URL
 
@@ -53,7 +58,7 @@ Ask the user for the MCP server URL. Example: `https://learn.microsoft.com/api/m
 
 Derive the **server root** (scheme + host only): e.g., `https://learn.microsoft.com`
 
-### Step 2: Detect Authentication Requirements
+### Step 2: Select Authentication and Add the MCP Action
 
 Before discovering tools, determine if the MCP server requires OAuth authentication.
 
@@ -65,14 +70,49 @@ curl -s <SERVER_ROOT>/.well-known/openid-configuration
 ```
 
 **Decision:**
-- **OAuth metadata found** (either endpoint returns valid JSON with `authorization_endpoint`) → the server requires authentication. Follow [authentication.md](authentication.md) Steps 1-3 to discover endpoints, obtain credentials, and configure `oauth/register` in both `m365agents.yml` and `m365agents.local.yml`. Then continue to [Step 3](#step-3-discover-mcp-tools-mandatory) below for authenticated tool discovery.
-- **No OAuth metadata** (both return 404 or non-JSON) → the server is unauthenticated. Skip directly to [Step 3](#step-3-discover-mcp-tools-mandatory) for unauthenticated tool discovery.
+- **OAuth metadata found** (either endpoint returns valid JSON with `authorization_endpoint`) → ask the user to choose `oauth`, `oauth-dynamic`, or `entra-sso`, then collect the inputs required below.
+- **No OAuth metadata** (both return 404 or non-JSON) → use `none`.
 
-### Step 3: Discover MCP Tools (MANDATORY)
+Run the command for the selected mode:
 
-🚨 **THIS STEP IS MANDATORY — DO NOT SKIP**
+```bash
+# No authentication
+wiqd agent add action \
+  --mcp-server-url "<https-url>" \
+  --mcp-auth-type none
 
-You MUST discover tools via the MCP protocol directly. Tool discovery uses HTTP POST requests to the MCP server URL.
+# OAuth dynamic client registration
+wiqd agent add action \
+  --mcp-server-url "<https-url>" \
+  --mcp-auth-type oauth-dynamic
+
+# Static OAuth
+wiqd agent add action \
+  --mcp-server-url "<https-url>" \
+  --mcp-auth-type oauth \
+  --mcp-client-id "<client-id>" \
+  --mcp-client-secret "<client-secret>" \
+  --mcp-scopes "<space-separated-scopes>"
+
+# Microsoft Entra SSO
+wiqd agent add action \
+  --mcp-server-url "<https-url>" \
+  --mcp-auth-type entra-sso \
+  --mcp-client-id "<client-id>"
+```
+
+`--mcp-scopes` is optional for static OAuth. Do not run a command containing unresolved
+placeholders, and never invent credentials.
+
+The command creates the plugin manifest, registers it in the agent manifest, and configures the
+required authentication lifecycle. Review any discovery or configuration warnings before
+continuing.
+
+### Step 3: Discover MCP Tools When Pinning (Optional)
+
+Dynamic discovery is the default. Perform direct MCP tool discovery only when the user asks to
+pin selected tools or when advanced customization requires inline tool metadata. Tool discovery
+uses HTTP POST requests to the MCP server URL.
 
 #### 3a. Authenticate (OAuth servers only)
 
@@ -202,17 +242,18 @@ EXTRACT_TOOLS
 
 > **⚠️ IMPORTANT:** The example above shows commonly seen fields (`annotations`, `execution`, `_meta`), but MCP servers may return **any** additional properties on tool objects. You **MUST** preserve every property returned by tools/list — copy each tool object in its entirety into `mcp_tool_description.tools[]`. Do NOT cherry-pick known fields; treat the tools/list output as the source of truth and inline it verbatim.
 
-#### 3c. Use All Discovered Tools
+#### 3c. Select Tools to Pin
 
-**Include ALL tools** returned by `tools/list` in the plugin manifest. Do NOT filter or exclude tools unless the developer explicitly asks to limit the tool set.
+Pin only the tools requested by the developer. If the developer asks to pin every tool, include
+all tools returned by `tools/list`.
 
 **Copy each tool object verbatim** — every property the server returns (`name`, `description`, `inputSchema`, `annotations`, `execution`, `_meta`, `outputSchema`, `title`, or any other field) must be preserved in `mcp_tool_description.tools[]`. Do NOT maintain a hardcoded list of "known" fields — the MCP protocol evolves and servers may return new properties at any time.
 
 Tell the user how many tools were discovered and confirm they will all be included.
 
-### Step 4: Create the Plugin Manifest
+### Step 4: Review the Generated Plugin Manifest
 
-Create `{name}-plugin.json` in the `appPackage` folder:
+Locate the generated `{name}-plugin.json` in the `appPackage` folder:
 
 ```json
 {
@@ -233,9 +274,12 @@ Create `{name}-plugin.json` in the `appPackage` folder:
 | `description_for_human` | Brief description of the plugin (max 100 characters) |
 | `namespace` | Unique identifier, lowercase alphanumeric only (no hyphens, no underscores) |
 
-### Step 4a: Add Functions from Discovered Tools
+### Step 4a: Add Functions for Pinned Tools
 
-For EACH discovered tool from Step 3, add a function entry with `name`, `description`, and `capabilities` only. Do **NOT** duplicate `parameters`/`inputSchema` in the function — all tool schema data lives exclusively in `mcp_tool_description.tools[]` (see Step 6).
+For each tool selected in Step 3, add a function entry with `name`, `description`, and
+`capabilities` only. Do **NOT** duplicate `parameters`/`inputSchema` in the function — all tool
+schema data lives exclusively in `mcp_tool_description.tools[]` (see Step 6). If no tools are
+pinned, keep the generated `functions` array empty.
 
 ```json
 {
@@ -336,7 +380,7 @@ For each tool:
 
 ### Step 5: Logo Images (Optional)
 
-Logos are **not mandatory**. The default logos from `npx -y --package @microsoft/m365agentstoolkit-cli atk new` work fine. Ask the user casually:
+Logos are **not mandatory**. The default logos from `wiqd agent create` work fine. Ask the user casually:
 
 > "Would you like to use a custom logo for [name], or is the default fine?"
 
@@ -373,9 +417,11 @@ Output files: `appPackage/color.png` (192×192) and `appPackage/outline.png` (32
 
 Show the resulting icon(s) to the user for approval before proceeding. If the user rejects, ask them to provide their own images and do NOT proceed until approved.
 
-### Step 6: Configure the Runtime
+### Step 6: Review or Customize the Generated Runtime
 
-Add the `RemoteMCPServer` runtime with the tools inlined in `mcp_tool_description.tools`:
+For pinned-tool customization, update the generated `RemoteMCPServer` runtime with the selected
+tools inlined in `mcp_tool_description.tools`. Otherwise, preserve the generated dynamic-discovery
+runtime.
 
 **For authenticated servers** (see [authentication.md](authentication.md)):
 ```json
@@ -441,9 +487,10 @@ Add the `RemoteMCPServer` runtime with the tools inlined in `mcp_tool_descriptio
 > - Do NOT fabricate properties that the server did not return. Only include what tools/list actually gives you.
 > - For authenticated servers, both `m365agents.yml` and `m365agents.local.yml` must include the `oauth/register` step — see [authentication.md](authentication.md).
 
-### Step 7: Register Plugin in Agent Manifest
+### Step 7: Verify Plugin Registration in the Agent Manifest
 
-Add the plugin to your `declarative-agent.json`:
+Verify that `wiqd agent add action` added the plugin to `declarative-agent.json`. Do not add a
+duplicate action:
 
 ```json
 {
@@ -461,17 +508,16 @@ Add the plugin to your `declarative-agent.json`:
 ## Complete Workflow Checklist
 
 ```
-□ Step 0: Scaffold agent project with `npx -y --package @microsoft/m365agentstoolkit-cli atk new` (if not already scaffolded)      ← MANDATORY
+□ Step 0: Scaffold agent project with `wiqd agent create` (if not already scaffolded)      ← MANDATORY
 □ Step 1: Get MCP server URL from user
-□ Step 2: Detect authentication requirements (probe well-known endpoints)
-□       → If OAuth: follow authentication.md (discover endpoints, get creds, configure oauth/register)
-□ Step 3: Discover tools via MCP protocol (initialize → tools/list)               ← MANDATORY
-□       → Include ALL tools (do not filter unless developer explicitly requests it)
-□ Step 4: Create {name}-plugin.json with functions + response_semantics
+□ Step 2: Select authentication and run `wiqd agent add action --mcp-server-url`
+□ Step 3: If pinning tools, discover them via MCP protocol (initialize → tools/list)
+□       → Include the selected tools exactly as returned
+□ Step 4: Review the generated {name}-plugin.json; add pinned functions or response_semantics only when needed
 □ Step 5: Ask user about custom logo (optional — skip if user declines)
-□ Step 6: Add runtime with RemoteMCPServer type (OAuthPluginVault or None)
-□ Step 7: Register plugin in declarativeAgent.json
-□ Step 8: Run npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env local --interactive false
+□ Step 6: Review or customize the generated RemoteMCPServer runtime
+□ Step 7: Verify the generated action registration in declarativeAgent.json
+□ Step 8: Run wiqd agent provision --env local
 ```
 
 ---
@@ -625,7 +671,7 @@ For the Zava Insurance MCP server at `https://zava-insurance-mcp.azurewebsites.n
 
 > **Note how tools with UI widgets** (e.g., `show-claims-dashboard`, `show-claim-detail`, `show-contractors`) include `annotations`, `execution`, AND `_meta` with `resourceUri` — all copied verbatim from the tools/list response. Tools without UI (e.g., `update-claim-status`) still include `execution` when the server returned it, but omit `annotations` and `_meta` since the server didn't provide them.
 
-Register in `declarative-agent.json`: `{ "actions": [{ "id": "zavaPlugin", "file": "zava-plugin.json" }] }`
+Verify the generated registration in `declarative-agent.json`: `{ "actions": [{ "id": "zavaPlugin", "file": "zava-plugin.json" }] }`
 
 ---
 
@@ -713,21 +759,20 @@ You can integrate multiple MCP servers by adding multiple runtimes, each with it
 
 ## Best Practices
 
-1. **Always discover tools via MCP protocol** — run the full handshake (initialize → notifications/initialized → tools/list) before writing the plugin manifest. **NEVER fabricate tool names or descriptions.**
-2. **Full-fidelity tool copying in `mcp_tool_description.tools`** — each tool object must be a verbatim copy of the tools/list output. Copy every property exactly as returned (`inputSchema`, `annotations`, `execution`, `_meta`, `outputSchema`, `title`, and any other field). The MCP protocol evolves — do NOT maintain a hardcoded allowlist of known fields. If the server returns it, the plugin must include it. Never abbreviate, omit, or rename properties. Do NOT duplicate `inputSchema` or other properties in `functions[]`.
-3. **Inline tools in `mcp_tool_description.tools`** — do NOT use a separate tools file; embed the tools array directly in the runtime spec
+1. **Use dynamic discovery by default** — do not pin tools unless the developer requests a fixed tool set or advanced customization requires inline metadata.
+2. **Discover before pinning** — run the full MCP handshake (initialize → notifications/initialized → tools/list), and never fabricate tool names or descriptions.
+3. **Preserve pinned tools exactly** — copy every property returned by `tools/list` into `mcp_tool_description.tools`; do not use a separate tools file or duplicate schema properties in `functions[]`.
 4. **Match function names exactly** — copy tool names directly from the tools/list output
 5. **Always add response semantics** — every function must have `capabilities.response_semantics`, even if using the default (empty body) pattern
-6. **Include all tools by default** — inline every tool from `tools/list` unless the developer explicitly asks to limit the set; for all included tools always keep the complete tool object with all properties
-7. **Logos are optional** — ask the user if they want a custom logo; if not, use the defaults from `npx -y --package @microsoft/m365agentstoolkit-cli atk new`. Logos must be **PNG only** (no JPG, SVG, etc.)
+6. **Pin only the requested tools** — preserve the generated dynamic-discovery configuration when no fixed tool set is requested
+7. **Logos are optional** — ask the user if they want a custom logo; if not, use the defaults from `wiqd agent create`. Logos must be **PNG only** (no JPG, SVG, etc.)
 
 ---
 
-## Next Step — Add Entra SSO (optional)
+## Microsoft Entra SSO
 
-If the MCP server is **your own** (e.g. scaffolded with `create-mcp-app` or `ui-widget-developer`, running on a devtunnel) and you want it to receive the **signed-in M365 user's verified identity** — Entra SSO, no separate login — the companion **`setup-sso-ui-widget`** skill (in this same `microsoft-365-agents-toolkit` plugin) automates every step on top of the plugin you just added: Entra app registration, ATK OAuth (`MicrosoftEntra`), flipping the manifest's `runtimes[].auth` from `None` → `OAuthPluginVault`, a minimal JWKS bearer-token guard in the server, and sideload. It auto-detects and supports **both** the Express (MCP Apps) and raw-http (OAI Apps) server layouts. SSO only — no OBO.
-
-> This closes the **create-mcp-app → add MCP plugin (here) → SSO** path: `create-mcp-app` emits a standalone MCP server, this integration wraps it into the declarative agent (`declarativeAgent.json` + `{name}-plugin.json` + `m365agents.yml`), and `setup-sso-ui-widget` adds Entra SSO to that wrapped agent.
-
-**Tell the user** (after the MCP plugin is added, the server is running, and the agent is provisioned):
-> **Your MCP plugin is wired into the agent.** 🎉 Want me to add **Entra SSO** next, so your tools get the signed-in user's verified identity? I can run the **`setup-sso-ui-widget`** skill — just say the word. (SSO only, no OBO.)
+For a new MCP action, configure Entra SSO during generation with
+`--mcp-auth-type entra-sso --mcp-client-id "<client-id>"` as shown in Step 2. For an existing
+generated action, use [authentication.md](authentication.md) to review the required manifest and
+lifecycle configuration, then validate and provision through wiqd. Do not route this workflow
+through a setup path that directly invokes ATK lifecycle commands.

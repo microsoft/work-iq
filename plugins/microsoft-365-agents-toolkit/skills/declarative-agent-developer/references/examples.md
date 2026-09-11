@@ -15,7 +15,7 @@ Complete workflow for provisioning a JSON-based agent to a development environme
 npm install
 
 # Provision agent to development environment (no compile step needed for JSON agents)
-npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env local --interactive false
+wiqd agent provision --env local
 ```
 
 **Result:** Returns a test URL like `https://m365.cloud.microsoft/chat/?titleId=T_abc123xyz` to test the agent in Microsoft 365 Copilot.
@@ -30,10 +30,10 @@ Workflow for provisioning and sharing an agent with your organization:
 
 ```bash
 # Provision agent to target environment
-npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env dev --interactive false
+wiqd agent provision --env dev
 
 # Share agent with tenant users
-npx -y --package @microsoft/m365agentstoolkit-cli atk share --scope tenant --env dev
+wiqd agent share --scope tenant --env dev
 ```
 
 **Result:** Agent becomes available to all users in the Microsoft 365 tenant.
@@ -48,7 +48,7 @@ Workflow for creating an agent package for distribution:
 
 ```bash
 # Package agent for distribution
-npx -y --package @microsoft/m365agentstoolkit-cli atk package --env prod
+wiqd agent package --env prod
 ```
 
 **Result:** Creates a distributable package file that can be uploaded to the Microsoft 365 admin center or shared externally.

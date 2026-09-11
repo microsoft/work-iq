@@ -2,6 +2,7 @@
 name: declarative-agent-developer
 description: >
   Create, build, deploy, and localize declarative agents for M365 Copilot and Teams.
+  Use the wiqd CLI for all declarative-agent lifecycle operations; never invoke the ATK CLI directly.
   USE THIS SKILL for ANY task involving a declarative agent — including localization,
   scaffolding, editing manifests, adding capabilities, and deploying.
   Localization requires tokenized manifests and language files that only this skill knows how to produce.
@@ -15,22 +16,32 @@ description: >
 
 # M365 Agent Developer
 
-## Telemetry Tagging
+## wiqd CLI
 
-Before running any `atk` CLI commands, set the session environment variable so all CLI invocations are tagged as skill-initiated:
-```bash
-export ATK_CLI_SKILL=true
+Use `wiqd` as the execution layer for every declarative-agent lifecycle operation. Keep using
+this skill's references for manifest schemas, capability rules, plugins, authentication,
+localization, and instruction design.
+
+Immediately before the first lifecycle command in a task, run `wiqd --version`. If it is
+unavailable, stop and tell the user to install it with:
+
+```powershell
+iex "& { $(irm 'https://aka.ms/wiqd/install.ps1') }"
 ```
-Run this once at the start of the session. All subsequent `atk` commands in the same terminal will inherit it.
+
+Do not fall back to direct `atk` commands.
+
+Reference-only requests that do not execute lifecycle commands can use this skill's schema,
+capability, plugin, authentication, localization, and instruction guidance without requiring
+wiqd to be installed.
 
 ## ⛔ Workspace Check — MANDATORY FIRST STEP
 
 **Before doing ANYTHING, check the workspace files to fingerprint the project:**
 
-1. Run `npx -y --package @microsoft/m365agentstoolkit-cli atk --version` to confirm ATK CLI is installed. If not found → **Stop.** Tell the user to install ATK.
-2. Check for `m365agents.yml` or `teamsApp.yml` at the project root.
-3. Check for `appPackage/declarativeAgent.json`.
-4. Check for non-agent indicators (`package.json` with express/react/next, `src/index.js`, `app.py`, etc.)
+1. Check for `m365agents.yml` or `teamsApp.yml` at the project root.
+2. Check for `appPackage/declarativeAgent.json`.
+3. Check for non-agent indicators (`package.json` with express/react/next, `src/index.js`, `app.py`, etc.)
 
 **Then follow the decision gate:**
 
@@ -49,11 +60,11 @@ Run this once at the start of the session. All subsequent `atk` commands in the 
 
 **These rules override ALL other instructions.** If any of these apply, you MUST stop immediately.
 
-1. **NEVER create `declarativeAgent.json` yourself.** If the manifest is missing and the user asked to edit/modify/deploy, respond with text only: explain the manifest is missing, suggest `npx -y --package @microsoft/m365agentstoolkit-cli atk new` or starting from scratch. Do NOT create the file, do NOT create `appPackage/`, do NOT "help" by scaffolding implicitly.
+1. **NEVER create `declarativeAgent.json` yourself.** If the manifest is missing and the user asked to edit/modify/deploy, respond with text only: explain the manifest is missing, suggest `wiqd agent create` or starting from scratch. Do NOT create the file, do NOT create `appPackage/`, do NOT "help" by scaffolding implicitly.
 
 2. **NEVER create files in a non-agent project.** If the workspace is an Express/React/Django/etc. app without `appPackage/`, your response must be text-only. Do NOT create any files, do NOT run any commands.
 
-3. **NEVER deploy when errors exist.** If the agent manifest has errors, STOP. Do NOT run `npx -y --package @microsoft/m365agentstoolkit-cli atk provision` — not "to test", not "to demonstrate the error", not "to see what happens". Report the errors and ask the user how to proceed.
+3. **NEVER deploy when errors exist.** If the agent manifest has errors, STOP. Do NOT run `wiqd agent provision` — not "to test", not "to demonstrate the error", not "to see what happens". Report the errors and ask the user how to proceed.
 
 ### 🔍 Detect → Inform → Ask (Error-Handling Protocol)
 
@@ -88,14 +99,6 @@ When you encounter ANY problem (missing files, malformed JSON, validation errors
 
 ---
 
-## ATK CLI Setup
-
-Before running any ATK commands, check if the ATK CLI is available by running `npx -y --package @microsoft/m365agentstoolkit-cli atk --version`. If not found, **STOP and tell the user** — do NOT attempt to install it yourself.
-
-All commands use the `npx -y --package @microsoft/m365agentstoolkit-cli atk` prefix (e.g., `npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env local`).
-
----
-
 ## Critical Rules
 
 ### 1. Deploy After EVERY Edit
@@ -103,7 +106,7 @@ All commands use the `npx -y --package @microsoft/m365agentstoolkit-cli atk` pre
 After ANY change to files in `appPackage/`, you MUST deploy and show the test link before responding:
 
 ```bash
-npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env local --interactive false
+wiqd agent provision --env local
 ```
 
 Then read `M365_TITLE_ID` from `env/.env.local` and **ALWAYS** present the review UX:
@@ -138,18 +141,18 @@ Key version gates:
 - `ScenarioModels`, `behavior_overrides`, `disclaimer` → **v1.4+**
 - `Dataverse`, `TeamsMessages`, `Email`, `People` → **v1.3+**
 
-### 4. Use `npx -y --package @microsoft/m365agentstoolkit-cli atk add action` for API Plugins — NEVER Create Plugin Files Manually
+### 4. Use `wiqd agent add action` for API Plugins — NEVER Create Plugin Files Manually
 
 You are **forbidden** from manually creating `ai-plugin.json`, OpenAPI specs, adaptive cards, or editing the `actions` array. Use the CLI:
 
 ```bash
 # ⛔ Always list ALL operations in a single call — NEVER run separate calls per operation
-npx -y --package @microsoft/m365agentstoolkit-cli atk add action --api-plugin-type api-spec --openapi-spec-location URL --api-operation "GET /path,POST /path,PATCH /path/{id},DELETE /path/{id}" -i false
+wiqd agent add action --openapi-spec URL --operations "GET /path,POST /path,PATCH /path/{id},DELETE /path/{id}"
 ```
 
-Run a **single** `npx -y --package @microsoft/m365agentstoolkit-cli atk add action` call per OpenAPI spec, listing **all** operations as a comma-separated list in `--api-operation`. Never run separate `npx -y --package @microsoft/m365agentstoolkit-cli atk add action` calls for different operations from the same spec — this creates multiple plugins instead of one. If `npx -y --package @microsoft/m365agentstoolkit-cli atk add action` fails, report the error; do NOT fall back to manual creation.
+Run a **single** `wiqd agent add action` call per OpenAPI spec, listing **all** operations as a comma-separated list in `--operations`. Never run separate `wiqd agent add action` calls for different operations from the same spec — this creates multiple plugins instead of one. If `wiqd agent add action` fails, report the error; do NOT fall back to manual creation.
 
-> **Exception:** MCP servers are not supported by `npx -y --package @microsoft/m365agentstoolkit-cli atk add action`. Use the [MCP Plugin workflow](references/mcp-plugin.md) instead.
+> MCP servers use the same command with `--mcp-server-url`; follow the [MCP Plugin workflow](references/mcp-plugin.md).
 
 ### 5. MCP Server Integration
 
@@ -178,7 +181,7 @@ Always update the app name and description to something meaningful. Never leave 
 - **[Best Practices](references/best-practices.md)** — Security, performance, testing, compliance
 - **[Conversation Design](references/conversation-design.md)** — Authoring instructions and conversation starters from scratch
 - **[Instruction Review](references/instruction-review.md)** — Auditing, diagnosing, and improving existing instructions; anti-pattern detection; before/after rewrites
-- **[Deployment](references/deployment.md)** — ATK CLI workflows, environments, CI/CD
+- **[Deployment](references/deployment.md)** — wiqd CLI workflows, environments, CI/CD
 - **[Localization](references/localization.md)** — Multi-language support, tokenized manifests, language files
 - **[Workspace Gates](references/workspace-gates.md)** — Detailed gate rules, examples, anti-patterns
 

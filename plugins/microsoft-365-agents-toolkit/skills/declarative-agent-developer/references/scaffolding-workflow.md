@@ -4,27 +4,26 @@ Step-by-step instructions for scaffolding a new M365 Copilot agent project.
 
 ## ⛔ STOP — READ THIS FIRST
 
-### ATK CLI Setup
+### wiqd CLI Setup
 
-Check if ATK CLI is available by running `npx -y --package @microsoft/m365agentstoolkit-cli atk --version`. If the command is not found, **STOP and tell the user** that the ATK CLI is required but not installed. Do NOT attempt to install it yourself — the user must install ATK separately before you can proceed.
+Check if wiqd CLI is available by running `wiqd --version`. If the command is not found, **STOP and tell the user** that the wiqd CLI is required but not installed. Provide `iex "& { $(irm 'https://aka.ms/wiqd/install.ps1') }"` as the supported installation command, but do not run it without the user's approval.
 
 ### The Only Valid Command
 
 Copy this command EXACTLY. Replace `<project-name>` with the user's project name:
 
 ```bash
-npx -y --package @microsoft/m365agentstoolkit-cli atk new -n <project-name> -c declarative-agent -with-plugin no -i false
+wiqd agent create --name <project-name>
 ```
 
 ### Forbidden Commands — These Do Not Exist
 
 | ❌ Invalid Command | Why It Fails |
 |-------------------|--------------|
-| `npx -y --package @microsoft/m365agentstoolkit-cli atk init` | DOES NOT EXIST — there is no init command |
-| `npx -y --package @microsoft/m365agentstoolkit-cli atk init --template` | DOES NOT EXIST — there is no init or --template flag |
-| `npx -y --package @microsoft/m365agentstoolkit-cli atk create` | DOES NOT EXIST — there is no create command |
-| `npx -y --package @microsoft/m365agentstoolkit-cli atk scaffold` | DOES NOT EXIST — there is no scaffold command |
-| `--template anything` | DOES NOT EXIST — there is no --template flag |
+| `wiqd agent init` | DOES NOT EXIST — use `wiqd agent create` |
+| `wiqd create` | DOES NOT EXIST — the `agent` noun is required |
+| `wiqd agent scaffold` | DOES NOT EXIST — use `wiqd agent create` |
+| `wiqd agent new` | DOES NOT EXIST — use `wiqd agent create` |
 
 ---
 
@@ -64,17 +63,15 @@ npx -y --package @microsoft/m365agentstoolkit-cli atk new -n <project-name> -c d
 - ✅ Good: `sales-dashboard`, `document-finder`, `hr-faq-agent`
 - ❌ Bad: `agent1`, `test`, `ExpenseTrackerAgent`, `my project`
 
-### Step 3: Run ATK CLI Command and Move Files
+### Step 3: Run wiqd CLI Command and Move Files
 
-**Action:** Execute the scaffolding command, then move files from the ATK-created subfolder to the current directory.
-
-Always use `-i false` (non-interactive mode) to prevent unexpected prompts.
+**Action:** Execute the scaffolding command, then move files from the wiqd-created subfolder to the current directory.
 
 **Commands to execute sequentially:**
 
 1. **Create the project:**
 ```bash
-npx -y --package @microsoft/m365agentstoolkit-cli atk new -n <project-name> -c declarative-agent -with-plugin no -i false
+wiqd agent create --name <project-name>
 ```
 
 2. **Move all files from the subfolder to current directory:**
@@ -89,7 +86,7 @@ rmdir <project-name>
 
 4. **Verify success:**
 - Check that key files exist in the current directory (`package.json`, `m365agents.yml`)
-- Confirm the ATK-created subfolder was removed
+- Confirm the wiqd-created subfolder was removed
 - If the command fails, report the error and stop — do NOT retry automatically
 
 ### Step 4: Add Agent Context Files
@@ -110,7 +107,7 @@ rmdir <project-name>
 ````markdown
 # M365 Declarative Agent Project
 
-This is an M365 Copilot declarative agent project managed by the ATK CLI.
+This is an M365 Copilot declarative agent project managed by the wiqd CLI.
 
 ## Available Skills
 
@@ -120,7 +117,6 @@ When working on this project, you MUST use the appropriate skill for the task. *
 |-------|-------------|
 | **declarative-agent-developer** | Any task involving this agent (see scenarios below). **This is the primary skill for this project.** |
 | **ui-widget-developer** | Only when adding an MCP server that renders rich interactive widgets (HTML) in Copilot Chat using the OpenAI Apps SDK. |
-| **install-atk** | Only when the ATK CLI is not installed or needs updating. |
 
 ## ⛔ MANDATORY: Invoke `declarative-agent-developer` Skill First
 
@@ -137,13 +133,13 @@ When working on this project, you MUST use the appropriate skill for the task. *
 - Localizing an agent into multiple languages
 - Adding a new language to an already-localized agent
 - Writing or updating agent instructions
-- Deploying and provisioning with `atk provision`
-- Validating the project with `atk validate`
+- Deploying and provisioning with `wiqd agent provision`
+- Validating the project with `wiqd agent validate`
 - Fixing manifest errors or validation failures
 
 **Do NOT:**
 - Edit `declarativeAgent.json` or other manifest files directly without the skill
-- Run `npx -y --package @microsoft/m365agentstoolkit-cli atk` commands without the skill
+- Run `wiqd` commands without the skill
 - "Help" by manually making changes — always delegate to the skill
 ````
 
@@ -186,8 +182,8 @@ This workflow **only** handles project creation and agent context setup. After s
 
 | Error | Action |
 |-------|--------|
-| ATK CLI not installed | Stop. Tell the user to install ATK first. |
+| wiqd CLI not installed | Stop. Show the supported wiqd installation command. |
 | Directory not empty | Stop. Show error message. Do not proceed. |
 | Invalid project name | Warn and suggest a corrected name. |
-| `npx -y --package @microsoft/m365agentstoolkit-cli atk new` command fails | Report the error with full output. Do not retry. |
+| `wiqd agent create` command fails | Report the error with full output. Do not retry. |
 | File move fails | Report the error. Files may still be in the subfolder. |

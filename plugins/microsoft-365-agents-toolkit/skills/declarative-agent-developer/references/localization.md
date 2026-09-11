@@ -7,7 +7,7 @@
 1. ⛔ Tokenize `declarativeAgent.json` → replace `name`, `description`, all `conversation_starters[].title` and `.text` with `[[token]]` syntax
 2. ⛔ Create language files → `en.json` (default) + one per additional language, each with `name.short`, `name.full`, `description.short`, `description.full`, and `localizationKeys` mapping EVERY token
 3. ⛔ Update `manifest.json` → add `localizationInfo` with `defaultLanguageTag`, `defaultLanguageFile`, `additionalLanguages`
-4. ⛔ Deploy → `npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env local --interactive false`
+4. ⛔ Deploy → `wiqd agent provision --env local`
 
 **For adding a language to an already-localized agent (Workflow B):**
 
@@ -218,7 +218,7 @@ Add the `localizationInfo` section to `manifest.json`:
 After completing ALL localization changes, deploy the agent:
 
 ```bash
-npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env local --interactive false
+wiqd agent provision --env local
 ```
 
 Then read `M365_TITLE_ID` from `env/.env.local` and present the test link. **⛔ Never skip deployment after localization changes.**
@@ -265,7 +265,7 @@ Add the new language to the `additionalLanguages` array:
 Deploy the agent:
 
 ```bash
-npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env local --interactive false
+wiqd agent provision --env local
 ```
 
 Then present the test link. **⛔ Never skip deployment.**
@@ -363,7 +363,7 @@ my-agent/
 - [ ] A default language file exists (e.g., `en.json`) with `name.short`, `name.full`, `description.short`, `description.full`, and ALL `localizationKeys`
 - [ ] Every additional language file has the EXACT SAME set of `localizationKeys` as the default
 - [ ] `manifest.json` has `localizationInfo` with `defaultLanguageTag`, `defaultLanguageFile`, and `additionalLanguages`
-- [ ] I deployed with `npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env local --interactive false`
+- [ ] I deployed with `wiqd agent provision --env local`
 - [ ] I presented the test link
 
 **If you cannot check ALL boxes, you are NOT done.** Go back and complete the missing steps.

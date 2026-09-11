@@ -10,7 +10,7 @@ This document contains detailed rules for workspace detection, gate scenarios, a
 
 1. **If `declarativeAgent.json` does NOT exist and the user asked to edit/modify/add/deploy → REJECT.** Respond with text only. Do NOT create the file. Do NOT create `appPackage/`. Do NOT look at other directories for examples to copy.
 2. **If `declarativeAgent.json` has malformed JSON → DETECT first, then INFORM, then ASK.** You must parse the file and report errors to the user BEFORE making any edits. Never edit a broken file without first telling the user it's broken.
-3. **If validation finds errors → NEVER run `npx -y --package @microsoft/m365agentstoolkit-cli atk provision`.** There are zero exceptions. Report errors and ask the user.
+3. **If validation finds errors → NEVER run `wiqd agent provision`.** There are zero exceptions. Report errors and ask the user.
 
 **The "Detect → Inform → Ask" protocol is mandatory for ALL error states:**
 - **Detect**: Identify the problem (missing file, parse error, validation error)
@@ -49,8 +49,8 @@ No `appPackage/declarativeAgent.json` exists but user implies an existing agent 
 - ❌ Creating `declarativeAgent.json` from scratch to "help" the user
 - ❌ Creating the `appPackage/` directory
 - ❌ Looking at other directories/fixtures for examples and copying them
-- ❌ Running `npx -y --package @microsoft/m365agentstoolkit-cli atk new` when the user asked to edit (editing ≠ scaffolding)
-- ❌ Running ANY `npx -y --package @microsoft/m365agentstoolkit-cli atk` command — the project is not an agent project
+- ❌ Running `wiqd agent create` when the user asked to edit (editing ≠ scaffolding)
+- ❌ Running ANY `wiqd` command — the project is not an agent project
 
 **Example rejection:**
 ```
@@ -78,7 +78,7 @@ User explicitly says "create a new agent", "scaffold", "start from scratch". The
 - Parse and check `declarativeAgent.json` against the expected schema
 - Report ALL errors to the user with specific details
 - ASK the user before making changes
-- **Do NOT** run `npx -y --package @microsoft/m365agentstoolkit-cli atk provision` — fix errors first, no exceptions
+- **Do NOT** run `wiqd agent provision` — fix errors first, no exceptions
 - **Do NOT** silently rewrite the entire file — surgical fixes only
 - **Do NOT** invent placeholder values for missing required fields
 
@@ -90,12 +90,12 @@ User explicitly says "create a new agent", "scaffold", "start from scratch". The
 3. **ASK**: Ask the user if you should fix the syntax errors. Wait for their response.
 4. **FIX** (only after user confirms): Fix with surgical edits (not a rewrite — if you're changing >20% of lines, stop and reconsider)
 5. **VALIDATE**: Check the manifest against the schema after fixing
-6. **DO NOT DEPLOY**: Even after fixing, do NOT run `npx -y --package @microsoft/m365agentstoolkit-cli atk provision` until the user's original request is also addressed and validation passes cleanly
+6. **DO NOT DEPLOY**: Even after fixing, do NOT run `wiqd agent provision` until the user's original request is also addressed and validation passes cleanly
 
 **⛔ Malformed JSON anti-patterns that WILL cause eval failure:**
 - ❌ Reading the file and immediately editing it without telling the user it's broken
 - ❌ Fixing JSON errors as part of a larger edit (fix syntax → inform → ask, THEN handle the user's request separately)
-- ❌ Running `npx -y --package @microsoft/m365agentstoolkit-cli atk provision` after fixing syntax errors
+- ❌ Running `wiqd agent provision` after fixing syntax errors
 - ❌ Validating AFTER editing instead of detecting errors BEFORE editing
 - ❌ Mentioning malformed JSON only in a summary at the end instead of upfront
 
@@ -122,9 +122,9 @@ User explicitly says "create a new agent", "scaffold", "start from scratch". The
 
 | Scenario | What you see | What you MUST do | What you MUST NOT do |
 |----------|-------------|-----------------|---------------------|
-| Express/React/Node app | `package.json` + `src/index.js` but NO `appPackage/` | Text-only: tell user this is NOT an agent project | ❌ Create `appPackage/` ❌ Run `npx -y --package @microsoft/m365agentstoolkit-cli atk new` ❌ Create ANY files |
+| Express/React/Node app | `package.json` + `src/index.js` but NO `appPackage/` | Text-only: tell user this is NOT an agent project | ❌ Create `appPackage/` ❌ Run `wiqd agent create` ❌ Create ANY files |
 | No manifest, edit request | No `declarativeAgent.json`, user says "add capability" | Text-only: explain manifest is missing | ❌ Create files ❌ Scaffold ❌ "Help" by creating missing files |
-| Manifest missing fields | `declarativeAgent.json` missing `name`/`description`/`instructions` | List ALL missing fields, ASK user | ❌ Invent placeholders ❌ Auto-fill ❌ Run `npx -y --package @microsoft/m365agentstoolkit-cli atk provision` |
+| Manifest missing fields | `declarativeAgent.json` missing `name`/`description`/`instructions` | List ALL missing fields, ASK user | ❌ Invent placeholders ❌ Auto-fill ❌ Run `wiqd agent provision` |
 | Manifest has errors | Manifest has structural/schema errors | Report ALL errors, suggest fixes, ask user | ❌ Silently fix ❌ Deploy ❌ Auto-correct |
 | Valid project, behavior issues | Valid manifest, user says "agent doesn't work well" | Run Instruction Review workflow (5 phases) | ❌ Jump to editing without diagnosis ❌ Deploy without review ❌ Rewrite without user approval |
 
@@ -150,8 +150,8 @@ These will cause eval failure:
 - ❌ Mentioning "the file had malformed JSON" only in a final summary
 
 **Deployment violations:**
-- ❌ Running `npx -y --package @microsoft/m365agentstoolkit-cli atk provision` when validation found errors — not even "to test"
-- ❌ Running `npx -y --package @microsoft/m365agentstoolkit-cli atk provision` "to see what happens"
+- ❌ Running `wiqd agent provision` when validation found errors — not even "to test"
+- ❌ Running `wiqd agent provision` "to see what happens"
 - ❌ Auto-correcting errors and deploying without asking
 - ❌ Deploying "for educational purposes" to show error output
 
