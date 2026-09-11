@@ -49,7 +49,7 @@ server-side.
 |-----------|------|----------|-------------|
 | `query` | string[] | Yes | One or more natural-language queries. At least one non-empty, non-whitespace string is required. Each string runs as a separate retrieval query. Prefer one focused query; batch only distinct evidence needs. |
 | `strategy` | string | API: no; skill: always explicit | `grounding` is the skill default. The API's omitted-parameter default remains `copilot`. Send one accepted value explicitly; other values are rejected. |
-| `capabilities` | object[] | No | Source allow-list: objects of the form `{"name":"Email"}`, not bare strings. Omit or pass `[]` to search all sources available to the selected agent. |
+| `capabilities` | object[] | No | Source allow-list: objects such as `{"name":"Email"}`, not bare strings. The skill default is to omit this field when source families are unspecified. Omission or `[]` retains all sources available to the selected agent/strategy. Restrict only for an explicit source requirement or a concrete justified source need. |
 | `agentId` | string | No | Target a specific agent. Defaults to `bizchat-as-gpt-scenario`; omit unless a specific agent is needed and its ID is known. |
 | `includeDeveloperCard` | boolean | No | Defaults to `false`. Requests orchestration diagnostics (agent metadata, tool invocation details, retrieval summary); enable only for troubleshooting. |
 
@@ -84,7 +84,16 @@ sources. No fixed latency or exhaustive coverage is guaranteed.
 
 Allowed capability names (case-sensitive): `People`, `Meetings`,
 `OneDriveAndSharePoint`, `Email`, `TeamsMessages`, `Dataverse`, `GraphConnectors`.
-Use a narrow allow-list only when the request identifies those source families.
+**If source families are unspecified, omit `capabilities`.** A project topic or
+an unknown document location is not a source-family restriction. Do not construct
+a guessed files/mail/Teams subset that silently excludes other indexed sources,
+such as `People`. Keep the selected strategy's broad supported coverage.
+
+Use an allow-list only to express the user's source requirements or a concrete
+source need established during a permitted targeted repair/escalation. That
+exception is scoped to the missing evidence, not permission to narrow the whole
+objective. Preserve all required families; a source clue is not authorization
+to change the user's restrictions.
 **`Dataverse` and `GraphConnectors` cannot be combined with `grounding`.** Keep
 `copilot` when those sources are needed; do not silently remove them to make a
 request valid.

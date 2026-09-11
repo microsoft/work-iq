@@ -1,5 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
 import { broaderCapabilities, retrievalProblems, terminals } from './contract.mjs';
+import { calendarWindowProblems } from './time-window.mjs';
 
 const equal = isDeepStrictEqual;
 function canonicalArguments(args) {
@@ -117,6 +118,13 @@ export function validateTrace(scenario, trace, { observed = false } = {}) {
         for (const problem of retrievalProblems(event.args, scenario.capabilities)) fail('retrieval-schema', problem);
         if (!scenario.strategies.includes(event.args.strategy)) fail('strategy-unavailable', 'Requested strategy is not advertised.');
         const caps = Array.isArray(event.args.capabilities) ? event.args.capabilities.map(c => c?.name) : [];
+        const requestedSourceScope = scenario.scope.required.length > 0 ||
+          scenario.scope.allowed.length < scenario.capabilities.length;
+        const targetedSourceNeed = missingEvidence?.capability &&
+          scenario.scope.allowed.includes(missingEvidence.capability) && caps.includes(missingEvidence.capability);
+        if (caps.length && !requestedSourceScope && !targetedSourceNeed) {
+          fail('source-scope', 'Unspecified source families require an omitted capability filter, not a guessed subset.');
+        }
         if (caps.some(c => !scenario.scope.allowed.includes(c)) ||
             (caps.length && scenario.scope.required.some(c => !caps.includes(c))) ||
             (!caps.length && (scenario.scope.required.length || scenario.scope.allowed.length < scenario.capabilities.length))) {
@@ -137,6 +145,9 @@ export function validateTrace(scenario, trace, { observed = false } = {}) {
           }
         }
         grounding ||= event.args.strategy === 'grounding';
+      }
+      if (event.tool === 'fetch' && scenario.calendarWindow) {
+        for (const problem of calendarWindowProblems(event.args, scenario.calendarWindow)) fail('calendar-window', problem);
       }
       if (event.tool === 'list_agents') {
         if (!selectedDelegation) fail('implicit-ask', 'Agent discovery requires explicit delegation.');

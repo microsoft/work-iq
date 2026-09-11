@@ -87,6 +87,15 @@ Calendar ordering and exchanged-mail membership are computed from returned recor
 Retry delays start after the corresponding observed response; waiting while a call
 is pending does not satisfy a subsequently returned backoff.
 
+Focused source-filter cases reject guessed allow-lists for unspecified sources
+while retaining explicit source constraints and evidence-justified targeted
+escalation. Calendar-window cases use trusted local boundaries and a named IANA
+zone: `time-window.mjs` checks the actual query instants by timezone round-trip,
+including spring/fall transitions and equivalent UTC encodings. These are
+second-precision fixture assertions, not a production date-conversion tool or
+proof that an agent follows the guidance. Repeated/ambiguous local times still
+need an explicit intended instant; this helper is not a general ambiguity resolver.
+
 The assertion runner returns `{ok, violations: [{code, message}]}`. Final output carries
 a terminal status, answer text, citations, disclosed limitations and observable claims.
 Claims are checked against tool evidence; they are not authorization. Unsupported

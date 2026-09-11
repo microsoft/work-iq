@@ -81,6 +81,14 @@ for (const [id, req, prompt] of [
     e => { firstCall(e).args.strategy = 'copilot'; }, 'initial-strategy');
 }
 {
+  const s = base('source-filter-default', 'Find the synthetic project decisions and issue owners; source locations are unspecified.', {
+    operations: [semanticOp('ground', 'grounding')], requiredOperations: ['ground']
+  });
+  add(s.id, ['G07', 'G08', 'G25'], s, [{ op: 'ground', args: gArgs }], { citations: [cite] },
+    e => { firstCall(e).args.capabilities = ['OneDriveAndSharePoint', 'Email', 'TeamsMessages', 'Meetings'].map(name => ({ name })); },
+    'source-scope');
+}
+{
   const s = base('indexed-scope', 'Find synthetic SharePoint and Teams evidence.', {
     scope: { allowed: ['OneDriveAndSharePoint', 'TeamsMessages'], required: ['OneDriveAndSharePoint', 'TeamsMessages'] },
     operations: [semanticOp('ground', 'grounding')]
@@ -450,6 +458,25 @@ for (const [id, tool, args] of [
     final: { status: 'blocked', limitations: ['denied'], diagnostic: 'Synthetic operation not permitted.' },
     corrupt: e => appendCall(e, tool, args), violation: 'denial-bypass'
   });
+}
+for (const [id, startLocal, endLocal, startOffset, endOffset, wrongBoundary, wrongOffset] of [
+  ['date-specific-offset', '2030-11-04T00:00:00', '2030-11-09T00:00:00', '-08:00', '-08:00', 'startDateTime', '-07:00'],
+  ['fall-dst-window', '2030-11-02T00:00:00', '2030-11-04T00:00:00', '-07:00', '-08:00', 'endDateTime', '-07:00'],
+  ['spring-dst-window', '2030-03-10T00:00:00', '2030-03-11T00:00:00', '-08:00', '-07:00', 'endDateTime', '-08:00']
+]) {
+  const query = new URLSearchParams({ startDateTime: startLocal + startOffset, endDateTime: endLocal + endOffset });
+  const s = base(id, `Read the synthetic calendar window ${startLocal} through ${endLocal} in America/Los_Angeles.`, {
+    mode: 'exact',
+    calendarWindow: { path: '/me/calendarView', timeZone: 'America/Los_Angeles', startLocal, endLocal },
+    operations: [read('window', 'fetch', {}, result(), { flexible: ['entityUrls'] })],
+    requiredOperations: ['window']
+  });
+  add(id, ['R.C5', 'G24'], s, [{ op: 'window', args: { entityUrls: [`/me/calendarView?${query}`] } }], {},
+    e => {
+      const wrong = new URLSearchParams(query);
+      wrong.set(wrongBoundary, (wrongBoundary === 'startDateTime' ? startLocal : endLocal) + wrongOffset);
+      firstCall(e).args.entityUrls = [`/me/calendarView?${wrong}`];
+    }, 'calendar-window');
 }
 for (const [id, args, corrupt] of [
   ['channel-members', { entityUrls: ['/teams/synthetic-team/channels/synthetic-channel/members'] },

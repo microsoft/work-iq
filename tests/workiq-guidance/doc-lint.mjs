@@ -134,6 +134,8 @@ export function exampleProblems(text, isRetrieveReference = false) {
 export const policies = [
   ['G07', 'SKILL.md', /(?:grounding.{0,35}default|default.{0,45}grounding)/is, 'advertise the Grounding skill default'],
   ['G08', 'references/retrieve-work-iq.md', /(?:unknown|unspecified)[\s\S]{0,180}grounding/i, 'unknown/unspecified locations use Grounding'],
+  ['G25', 'SKILL.md', /unspecified source families[\s\S]{0,50}omit[\s\S]{0,30}capabilities/i, 'advertise omitted capability filters for unspecified sources'],
+  ['G25', 'references/retrieve-work-iq.md', /source families are unspecified[\s\S]{0,50}omit[\s\S]{0,30}capabilities/i, 'do not guess a source-family allow-list'],
   ['G22', 'references/retrieve-work-iq.md', /(?:explicit|user|select|permission)[\s\S]{0,100}(?:delegat|alternative)|(?:delegat|alternative)[\s\S]{0,100}(?:explicit|user|select)/i, 'delegation alternative requires user selection'],
   ['G19', 'references/retrieve-work-iq.md', /(?:one|once|1)[\s\S]{0,150}(?:objective|bounded.{0,20}goal)/i, 'bound escalation per objective'],
   ['G20', 'references/retrieve-work-iq.md', /(?:capp?ed|truncat)[\s\S]{0,200}(?:saved|read|inspect)/i, 'inspect available saved capped results'],
@@ -145,6 +147,8 @@ export const policies = [
   ['R.C2', 'references/files-work-iq.md', /parentReference\.driveId|driveId[\s\S]{0,100}parentReference/i, 'retain authoritative drive identity'],
   ['R.C3', 'references/files-work-iq.md', /(?:session|upload)[\s\S]{0,100}(?:bytes|replac)/i, 'separate session creation from uploaded bytes'],
   ['R.C5', 'references/calendar-work-iq.md', /(?:time.?zone|timeZone)/i, 'resolve timezone and window'],
+  ['R.C5', 'references/calendar-work-iq.md', /each boundary[\s\S]{0,100}date/i, 'resolve each boundary using its requested date'],
+  ['R.C5', 'references/calendar-work-iq.md', /round.trip/i, 'verify timezone conversion by round-trip'],
   ['R.C5', 'references/calendar-work-iq.md', /reminderView|reminder/i, 'state reminder scope'],
   ['R.C5', 'references/calendar-work-iq.md', /(?:instance|series|recurr)/i, 'preserve instance/series intent'],
   ['R.C3', 'references/mail-work-iq.md', /createReply/, 'persist reply drafts with reply linkage'],

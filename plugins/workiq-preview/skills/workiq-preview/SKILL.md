@@ -62,6 +62,10 @@ Both strategies return evidence, not an `ask` answer. Preserve source restrictio
 capabilities are live-schema objects such as `{"name":"Email"}`. Do not promise
 complete coverage, freshness, or performance.
 
+**Unspecified source families: omit `capabilities`.** Do not guess a narrower
+allow-list from the topic. Restrict only for explicit source requirements or a
+concrete, justified source need; never silently exclude another required family.
+
 **Availability is tenant-dependent.** A plugin install does not enable preview
 retrieval. If unavailable or unable to select Grounding, disclose the limitation;
 never omit the strategy, invent a tool, or automatically substitute `ask`.
@@ -121,6 +125,10 @@ Replace all `{id}` placeholders with actual returned IDs.
 URL-encode query values: `$orderby=receivedDateTime%20desc`, not a literal space;
 quotes become `%27`. Preserve OData navigation separators such as `start/dateTime`.
 Do not shorten, reconstruct, or double-encode opaque IDs.
+
+For calendar windows, resolve **each boundary's offset for its requested date
+and timezone**, not today's offset. See the [date-specific boundary rules](references/calendar-work-iq.md#date-specific-window-boundaries);
+named-zone action bodies and offset-bearing URL timestamps are different formats.
 
 For tools accepting `jsonBody`, both a JSON object and a JSON-encoded string work:
 `{"subject":"Hello"}` or `"{\"subject\":\"Hello\"}"`. Follow the live schema for

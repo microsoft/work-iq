@@ -97,6 +97,9 @@ Use Copilot retrieval directly for required broader sources or `Dataverse`/
 delegation, with exact IDs from `list_agents` when a named agent is unresolved.
 No automatic retrieval-to-ask fallback, no broader retry for an empty result or
 cap alone, and at most one justified targeted broader escalation per objective.
+When source families are unspecified, omit `capabilities`; do not guess a narrower
+allow-list from the topic. Restrict only for explicit source requirements or a
+concrete justified source need while preserving all required families.
 
 Keep shared routing and safety aligned across both packages. Public-only
 SharePoint/library-metadata and Business Applications references and dispatch links
@@ -123,6 +126,10 @@ library-column source truth, completeness, Business Applications paths, and priv
 boundaries. Ordinary calendar windows use `fetch`; explicit delta uses `call_function`
 and needs a checkpoint for historical change claims. Persisted reply drafts use
 `do_action` without sending; exchanged-mail reconstruction excludes unsent drafts.
+Calendar URL boundaries must use offsets for their requested dates and timezone,
+not today's offset. Resolve both boundaries independently and round-trip them
+through the named zone; use schema-defined local `dateTime`/`timeZone` pairs only
+where the action supports them. Keep these rules consistent in both packages.
 
 - **microsoft-365-agents-toolkit** — Toolkit for building M365 Copilot declarative agents. Bundles:
   - `install-atk` skill — Install or update the M365 Agents Toolkit CLI and VS Code extension

@@ -7,6 +7,7 @@ import { parseDocument } from 'yaml';
 import { cases } from './fixtures.mjs';
 import { requirements } from './contract.mjs';
 import { validateTrace } from './trace-oracle.mjs';
+import { calendarWindowProblems } from './time-window.mjs';
 import { frontmatterProblems, parseMarkdown, exampleProblems, policyProblems } from './doc-lint.mjs';
 import { validateObserved, hash, scenarioHash, catalogHash, packageHash } from './trace-cli.mjs';
 
@@ -30,6 +31,31 @@ test('every requirement has synthetic positive and invalid negative coverage', (
     assert.ok(mapped.length, `Unmapped requirement ${id}`);
     assert.ok(mapped.every(c => c.positive && c.negatives.length), `Missing both polarities for ${id}`);
   }
+});
+test('calendar window checks accept equivalent UTC instants and reject ambiguous URL inputs', () => {
+  for (const fixture of cases.filter(c => c.scenario.calendarWindow)) {
+    const trace = structuredClone(fixture.positive);
+    const call = trace.events.find(event => event.type === 'call');
+    const url = new URL(call.args.entityUrls[0], 'https://fixture.invalid');
+    for (const parameter of ['startDateTime', 'endDateTime']) {
+      url.searchParams.set(parameter, new Date(url.searchParams.get(parameter)).toISOString());
+    }
+    call.args.entityUrls = [url.pathname + url.search];
+    assert.deepEqual(validateTrace(fixture.scenario, trace), { ok: true, violations: [] });
+  }
+  const fixture = cases.find(c => c.id === 'date-specific-offset');
+  const window = fixture.scenario.calendarWindow;
+  for (const entityUrls of [
+    [],
+    ['/me/calendarView?startDateTime=2030-11-04T00:00:00&endDateTime=2030-11-09T00:00:00'],
+    ['/me/calendarView?startDateTime=2030-11-04T08:00:00Z&startDateTime=2030-11-04T09:00:00Z&endDateTime=2030-11-09T08:00:00Z'],
+    ['/me/calendarView?startDateTime=2030-11-04T08:00:00.001Z&endDateTime=2030-11-09T08:00:00Z'],
+    ['/me/messages?startDateTime=2030-11-04T08:00:00Z&endDateTime=2030-11-09T08:00:00Z']
+  ]) {
+    assert.ok(calendarWindowProblems({ entityUrls }, window).length);
+  }
+  assert.ok(calendarWindowProblems({ entityUrls: [] }, { ...window, timeZone: '' }).length);
+  assert.ok(calendarWindowProblems(fixture.positive.events[0].args, { ...window, timeZone: 'Not/AZone' }).length);
 });
 test('observed mode refuses synthetic fixtures and missing evidence', () => {
   const fixture = cases[0];
