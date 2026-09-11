@@ -1,6 +1,6 @@
 {
   "name": "workiq",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "WorkIQ for Microsoft 365: retrieve-first context with explicit Grounding when available, intentional Copilot or named-agent delegation via ask, and exact entity reads, writes, and downloads.",
   "skills": "./skills/"
 }

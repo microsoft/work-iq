@@ -1,8 +1,16 @@
 # Work IQ Plugin
 
-Full WorkIQ tool surface for GitHub Copilot CLI: caller-owned work context via available `retrieve` with explicit Grounding by default, intentional agent delegation via `ask`, and direct, structured Microsoft 365 reads and writes.
+Agent-host-neutral WorkIQ tools for compatible AI agents: caller-owned context
+via available `retrieve` with explicit Grounding by default, intentional agent
+delegation via `ask`, and exact Microsoft 365 reads and writes.
 
 ## Installation
+
+Use the selected host's plugin/skill loader and MCP connection mechanism. This
+package includes `.github/plugin/plugin.json`, `.claude-plugin/plugin.json`, and
+`.codex-plugin/plugin.json`; see [installation by host](../../PLUGINS.md#installation-by-host).
+The shared skill policy is the same across hosts. Connecting MCP tools alone
+does not automatically load the bundled instructions.
 
 ### Via GitHub Copilot CLI Plugin Marketplace
 
@@ -10,9 +18,11 @@ Full WorkIQ tool surface for GitHub Copilot CLI: caller-owned work context via a
 /plugin install workiq@work-iq
 ```
 
-### Via MCP Configuration
+### Bundled hosted MCP configuration
 
-Add to your `.mcp.json` or IDE MCP settings:
+The bundled `.mcp.json` uses the configuration below. Apply it through your host's
+supported remote-MCP connector; configuration wrappers and OAuth fields are
+host-specific and should not be copied blindly between clients.
 
 ```json
 {
@@ -35,6 +45,9 @@ The plugin connects to the hosted WorkIQ MCP prod endpoint. It does **not** laun
 ## Updating
 
 The MCP tool surface is served by the hosted WorkIQ endpoint above, so updating a local package is not required for MCP tool calls.
+To update skill policy, reinstall/reload the plugin using the selected host's
+mechanism and start a fresh session where required. Record loading and behavioral
+validation per host; a Copilot CLI check does not validate other agents.
 
 ## Usage
 

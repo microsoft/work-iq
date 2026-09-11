@@ -1,6 +1,10 @@
 # Work IQ
 
-Work IQ is a **Copilot CLI plugin marketplace** for managing AI agent plugins for GitHub Copilot CLI. It provides MCP servers, skills, and tools that connect AI assistants to Microsoft 365 data.
+Work IQ is an **agent-host-neutral plugin collection**. Its MCP servers, skills,
+and tools connect compatible AI agents to Microsoft 365 data; it is not specific
+to GitHub Copilot CLI. This repository includes plugin metadata for GitHub Copilot,
+Claude, and Codex. Shared routing and safety policy applies in every host; packaging,
+authentication, tool discovery, and skill loading follow each host's capabilities.
 
 ## Repository Structure
 
@@ -24,9 +28,17 @@ work-iq/
 
 ## Installing Plugins
 
-This repo is a [Copilot CLI plugin marketplace](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/plugins-marketplace). Install plugins using the marketplace workflow below.
+Use the selected agent host's plugin installer and reload mechanism. Each package
+contains `.github/plugin/plugin.json`, `.claude-plugin/plugin.json`, and
+`.codex-plugin/plugin.json`; root marketplace manifests serve the corresponding
+hosts. These are distribution adapters, not different Work IQ policies.
+See [installation by host](PLUGINS.md#installation-by-host).
 
-### Quick install (copy-paste ready)
+### GitHub Copilot CLI example
+
+The following commands are specific to
+[Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/plugins-marketplace),
+not prerequisites for other agents:
 
 ```bash
 copilot plugin install ./plugins/workiq
@@ -35,15 +47,16 @@ copilot plugin install ./plugins/microsoft-365-agents-toolkit
 copilot plugin install ./plugins/workiq-productivity
 ```
 
-> **Important:** After installing, restart your Copilot CLI session for new skills to become available.
+> **Important:** Reload skills or restart the selected host after installation.
+> An MCP-only connection does not automatically load the bundled skill policy.
 
-### Check what's installed
+### Check what's installed in Copilot CLI
 
 ```bash
 copilot plugin list
 ```
 
-### Removing a plugin
+### Removing a plugin in Copilot CLI
 
 ```bash
 copilot plugin uninstall workiq
@@ -92,6 +105,11 @@ has one canonical owner: `files-work-iq.md`, `calendar-work-iq.md`, `mail-work-i
 `teams-work-iq.md`, or `tasks-work-iq.md`; `agents-work-iq.md` owns agent discovery.
 `workflows-work-iq.md` is the index, setup, people, and cross-domain guide.
 `troubleshooting.md` owns operation-aware recovery. Read only the relevant contract.
+The current release policy requires `workiq-preview` and `workiq` to carry the
+same plugin/skill version. Use the `workiq` entry in root `marketplace.json` as
+the version reference; synchronize preview, the mirrored marketplace, and each
+package's GitHub/Claude/Codex manifests. Availability differences do not imply
+different skill versions. The guidance gate checks this policy.
 
 Confirmation and denial stops override happy-path call budgets. Classify effects
 by operation, not tool name: `do_action` can be read-only. Never replay ambiguous
@@ -137,10 +155,14 @@ Static checks and synthetic oracle inputs are not observed agent behavior. Host/
 traces, captured endpoint schemas/responses, and matched live coverage evaluation
 remain separate evidence gates; do not claim gains or launch large live evaluations
 from an offline pass. Keep private evidence out of public fixtures.
+Record the host and adapter version for every behavioral/loading result. A Copilot
+CLI loading check is evidence for that host only, not validation of Claude, Codex,
+or another agent. Use the same logical contracts with each host's actual catalog.
 
 ## Prerequisites
 
-- **Node.js 18+** — Required for the workiq MCP server (`npx`)
+- **Compatible agent host** — Skill/plugin loading and the selected MCP connection/authentication mechanism.
+- **Node.js 18+** — Required only for the local WorkIQ CLI/stdio server (`npx`), not hosted MCP calls; guidance tests use Node 22+.
 - **Admin consent** — The WorkIQ MCP server requires tenant admin consent on first use. See the [Tenant Administrator Enablement Guide](./ADMIN-INSTRUCTIONS.md) for details.
 
 ## Creating a New Plugin
@@ -183,7 +205,7 @@ Skill instructions here...
 
 After creating a plugin:
 1. Register it in `marketplace.json` and mirror the entry in `.claude-plugin/marketplace.json`
-2. Install it with `copilot plugin install ./plugins/my-plugin`
+2. Install it with the selected host's plugin installer; for Copilot CLI, `copilot plugin install ./plugins/my-plugin`
 
 ---
 
@@ -195,7 +217,7 @@ After creating a plugin:
 > - Register new plugins in `marketplace.json` and `.claude-plugin/marketplace.json`; keep host plugin descriptions aligned
 > - Update "Getting Started" if new setup steps are required
 > - Update "Repository Structure" if top-level directories change
-> - **After editing any skill or plugin content**, reinstall the affected plugin so the running session picks up the changes:
+> - **After editing any skill or plugin content**, reinstall/reload the affected plugin using the selected host's supported mechanism. Confirm the new skill/reference content is loaded in a fresh session. For Copilot CLI:
 >   ```bash
 >   copilot plugin uninstall <plugin-name>
 >   copilot plugin install ./plugins/<plugin-name>

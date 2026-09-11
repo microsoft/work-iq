@@ -26,13 +26,25 @@ for (const file of ['AGENTS.md', 'PLUGINS.md', 'CONTRIBUTING.md', 'README.md']) 
 test('shared policy, reference graph and retrieval example parity', () =>
   check(parityProblems(skillRoot('workiq'), skillRoot('workiq-preview'))));
 
+for (const file of ['AGENTS.md', 'README.md', 'PLUGINS.md', 'CONTRIBUTING.md',
+  ...packages.flatMap(name => [`plugins/${name}/README.md`, `plugins/${name}/skills/${name}/SKILL.md`])]) {
+  test(`${file}: shared product guidance is agent-host-neutral`, () => {
+    const text = fs.readFileSync(path.join(root, file), 'utf8');
+    assert.match(text, /agent-host-neutral/i);
+    assert.doesNotMatch(text, /Full WorkIQ tool surface for GitHub Copilot CLI|Copilot CLI plugin marketplace\*\* for managing/);
+  });
+}
+
 test('affected plugin metadata agrees across host and marketplace manifests', () => {
   const json = file => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
   const registries = ['marketplace.json', '.claude-plugin/marketplace.json'].map(json);
+  const sharedVersion = registries[0].plugins.find(plugin => plugin.name === 'workiq')?.version;
+  assert.match(sharedVersion ?? '', /^\d+\.\d+\.\d+$/);
   for (const name of packages) {
     const entries = registries.map(registry => registry.plugins.find(plugin => plugin.name === name));
     assert.ok(entries.every(Boolean), `Missing marketplace entry for ${name}`);
     const canonical = entries[0];
+    assert.equal(canonical.version, sharedVersion, `${name}: current policy requires matching WorkIQ skill versions`);
     for (const manifest of [
       entries[1], ...['.github/plugin', '.claude-plugin', '.codex-plugin']
         .map(host => json(`plugins/${name}/${host}/plugin.json`))

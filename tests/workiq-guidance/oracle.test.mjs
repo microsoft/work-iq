@@ -154,6 +154,11 @@ test('host adapter envelope and raw receipts are checked (synthetic adapter unit
   };
   trace.instrumentation = { skillAvailable: 'unknown', skillActivated: 'unknown', referenceReads: 'unknown' };
   assert.deepEqual(validateObserved(fixture.scenario, trace, rawBytes), { ok: true, violations: [] });
+  for (const host of ['synthetic-copilot-cli', 'synthetic-claude', 'synthetic-codex', 'synthetic-other-agent']) {
+    const otherHost = structuredClone(trace);
+    otherHost.provenance.host = host;
+    assert.deepEqual(validateObserved(fixture.scenario, otherHost, rawBytes), { ok: true, violations: [] });
+  }
   assert.equal(validateObserved(fixture.scenario, trace).ok, false);
   for (const edit of [
     t => { t.provenance.scenarioHash = 'synthetic-wrong-hash'; },

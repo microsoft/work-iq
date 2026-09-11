@@ -8,13 +8,13 @@
     {
       "name": "workiq",
       "description": "WorkIQ for Microsoft 365: retrieve-first context with explicit Grounding when available, intentional Copilot or named-agent delegation via ask, and exact entity reads, writes, and downloads.",
-      "version": "2.0.2",
+      "version": "2.1.0",
       "source": "./plugins/workiq"
     },
     {
       "name": "workiq-preview",
       "description": "Preview WorkIQ for Microsoft 365: retrieve-first context with explicit Grounding when available, intentional Copilot or named-agent delegation via ask, and exact entity reads, writes, and downloads.",
-      "version": "0.5.1",
+      "version": "2.1.0",
       "source": "./plugins/workiq-preview"
     },
     {

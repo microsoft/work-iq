@@ -1,7 +1,7 @@
 # Tasks (Planner)
 
 Use the WorkIQ **entity tools** for task/follow-up requests whose data lives in
-Microsoft 365 — **not** the CLI's local task files, the session SQL `todos` table, or any
+Microsoft 365 — **not** the agent host's local task files, an internal task database, or any
 other on-disk task tracker. If the user says "add a task", "remind me to…", "follow up
 with…", "mark … done", or "list my tasks", that is M365 data: route it to WorkIQ.
 

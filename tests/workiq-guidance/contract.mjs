@@ -35,7 +35,8 @@ export const requirements = {
   'R.C7': 'Exact routes, explicit delegation, continuity, citations and limitations are preserved.',
   'R.schema': 'Explicit schema and path discovery requests cannot be optimized away.',
   'R.sharepoint': 'Library columns use authoritative fields with completeness and per-result checks.',
-  'R.businessapps': 'Business Applications preserve discovery, returned paths and privilege boundaries.'
+  'R.businessapps': 'Business Applications preserve discovery, returned paths and privilege boundaries.',
+  'R.host': 'Shared guidance and logical tool contracts are agent-host-neutral; loading and behavioral evidence is attributed to its actual host.'
 };
 
 export const capabilities = [

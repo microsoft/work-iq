@@ -77,7 +77,7 @@ for (const [id, req, prompt] of [
   ['unknown-location', 'G08', 'I do not know where the synthetic file is.']
 ]) {
   const s = base(id, prompt, { operations: [semanticOp('ground', 'grounding')] });
-  add(id, [req, 'G16', 'G25'], s, [{ op: 'ground', args: gArgs }], { citations: [cite] },
+  add(id, [req, 'G16', 'G25', 'R.host'], s, [{ op: 'ground', args: gArgs }], { citations: [cite] },
     e => { firstCall(e).args.strategy = 'copilot'; }, 'initial-strategy');
 }
 {

@@ -1,5 +1,10 @@
 # WorkIQ guidance contract checks
 
+The contract is **agent-host-neutral**. Logical tool behavior is shared across
+compatible agents; host adapters normalize actual tool names and event formats
+without changing policy. The CLI below is a Node-based trace validator, not a
+requirement to use GitHub Copilot CLI as the agent.
+
 Run from the repository root with Node 22+:
 
 ```sh
@@ -20,7 +25,7 @@ causes. It is historical offline evidence, not an assertion about the current ch
 ## Canonical contract and evidence layers
 
 - [`contract.mjs`](contract.mjs) defines stable **G01–G25** ownership/retrieval
-  requirements and **R.C1–R.C7**, schema-discovery, SharePoint and Business Applications
+  requirements and **R.C1–R.C7**, schema-discovery, SharePoint, Business Applications, and host-neutral
   requirements. G governs semantic routing; exact entity workflows remain separate.
 - [`fixtures.mjs`](fixtures.mjs) maps every requirement to synthetic positive and
   deliberately invalid negative traces. These are **oracle unit inputs**, not observed
@@ -32,12 +37,30 @@ causes. It is historical offline evidence, not an assertion about the current ch
   links have explicit reasons in the contract; their safety policy is still linted.
   Prose paraphrases need not match a paragraph snapshot. Affected plugin names,
   versions, and descriptions must agree across both marketplaces and all host
-  plugin manifests.
+  plugin manifests. Under the current release policy, preview and public WorkIQ
+  skill versions must also match the root marketplace's public WorkIQ version.
 - **Oracle tests** prove that the assertion runner accepts/rejects specified trace
   structures, including wrong actual calls, missing approval, replay and false outcomes.
 - **Observed host/mock tests** require a separately instrumented host to load the
   candidate package and produce calls against the scripted tool catalog/responses.
   None have been run by this suite. Static or oracle passes do not establish LLM compliance.
+
+## Host coverage and evidence
+
+Use the same logical cases for each host, recording that host's version, tool
+catalog, adapter version, loaded package hash, and observable activation events.
+The synthetic adapter tests accept different host provenance labels; they do not
+run those products or establish cross-host behavioral equivalence.
+
+| Surface | What the suite establishes | Separate runtime evidence needed |
+| --- | --- | --- |
+| GitHub Copilot, Claude, Codex manifests | Shared package metadata consistency | Installation, skill activation, tool-name normalization, and behavior in each actual host/version |
+| Other compatible agents | Host-neutral logical contracts and adapter envelope | A supported loader/MCP integration and instrumented host adapter |
+| Copilot CLI-only installation checks performed outside this suite | Evidence limited to the recorded CLI version and package hashes | No inference about Claude, Codex, or another host |
+
+Classify untested host adapters as coverage gaps, not failures of the shared
+skill and not proof of support. An MCP connection alone is not evidence that
+the host loaded or followed the skill instructions.
 
 ## Scenario input and output
 

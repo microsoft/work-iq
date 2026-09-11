@@ -1,8 +1,11 @@
 # 🔌 Work IQ — Plugin Catalog
 
-> Browse, install, and discover skills from the Work IQ plugin marketplace for GitHub Copilot CLI.
+> Browse, install, and discover Work IQ plugins for compatible AI agent hosts.
 
-This page is the central reference for every plugin published in the **Work IQ** marketplace. Each plugin bundles one or more **skills** (AI-guided workflows) and may include an **MCP server** that exposes tools to your Copilot session.
+This is the catalog for the **agent-host-neutral Work IQ plugin collection**.
+Each plugin bundles skills and may include an MCP server that exposes tools to
+your agent. GitHub Copilot, Claude, and Codex metadata are included; other
+compatible hosts can consume the skills and MCP tools through their own mechanisms.
 
 ---
 
@@ -10,15 +13,30 @@ This page is the central reference for every plugin published in the **Work IQ**
 
 | Requirement | Details |
 |-------------|---------|
-| **GitHub Copilot CLI** | [Getting started guide](https://docs.github.com/en/copilot/how-tos/copilot-cli) |
-| **Node.js 18+** | [Download from nodejs.org](https://nodejs.org/) — includes NPM and NPX |
+| **Compatible agent host** | Support for the selected plugin/skill-loading and MCP authentication mechanisms |
+| **Node.js 18+**, only for local CLI/stdio use | [Download from nodejs.org](https://nodejs.org/); hosted WorkIQ calls do not require a local Node package |
 | **Admin consent** | The WorkIQ MCP server requires tenant admin consent on first use. See the [Tenant Administrator Enablement Guide](./ADMIN-INSTRUCTIONS.md). |
 
 ---
 
-## 🏪 Installing the Marketplace
+## Installation by host
 
-Before installing any plugin you need to register the **work-iq** marketplace in your Copilot CLI session (one-time setup):
+| Host/package adapter | Included metadata | Installation |
+| --- | --- | --- |
+| GitHub Copilot | `marketplace.json`; each plugin's `.github/plugin/plugin.json` | Copilot CLI example below |
+| Claude | `.claude-plugin/marketplace.json`; each plugin's `.claude-plugin/plugin.json` | Use the host's supported marketplace/plugin installer |
+| Codex | Each plugin's `.codex-plugin/plugin.json` | Use the host's supported plugin installer |
+| Other compatible agents | Shared `skills/` content and MCP tools | Load skills/instructions and configure MCP with that host's supported mechanisms |
+
+Host metadata does not establish that every client/version has been validated.
+Resolve actual tool names and schemas from the connected host; do not copy another
+host's prefixes, OAuth wrappers, or install commands. An MCP-only connection
+does not automatically load the skill policy. Reload the selected host after
+installation as required.
+
+## 🏪 GitHub Copilot CLI marketplace example
+
+For GitHub Copilot CLI, register the **work-iq** marketplace once:
 
 ```bash
 # Open GitHub Copilot CLI
@@ -42,7 +60,7 @@ copilot
 
 ---
 
-## 🚀 Installing Plugins
+## 🚀 Installing plugins in Copilot CLI
 
 Once the marketplace is registered, install any plugin with a single command:
 
@@ -86,9 +104,9 @@ copilot plugin uninstall workiq-productivity
 
 ## workiq
 
-> Full WorkIQ tool surface for GitHub Copilot CLI: available `retrieve` with explicit Grounding for caller-owned context, `ask` for intentional agent delegation, and exact M365 reads and writes.
+> Agent-host-neutral WorkIQ tools: available `retrieve` with explicit Grounding for caller-owned context, `ask` for intentional agent delegation, and exact M365 reads and writes.
 
-**Install:** `/plugin install workiq@work-iq`
+**Install:** Use your host's plugin installer; Copilot CLI example: `/plugin install workiq@work-iq`.
 **Source:** [`plugins/workiq/`](./plugins/workiq/)
 
 ### MCP Servers
@@ -135,7 +153,7 @@ never silently substitute Copilot. Follow-ups retain the same agent's returned
 
 > **Preview plugin.** Same work-context retrieval, Copilot-answer, and structured entity workflows as `workiq`. Installing this plugin does not enable tenant-gated tools such as preview `retrieve`.
 
-**Install:** `/plugin install workiq-preview@work-iq`
+**Install:** Use your host's plugin installer; Copilot CLI example: `/plugin install workiq-preview@work-iq`.
 **Source:** [`plugins/workiq-preview/`](./plugins/workiq-preview/)
 
 ### MCP Servers

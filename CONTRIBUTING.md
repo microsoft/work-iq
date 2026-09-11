@@ -2,6 +2,10 @@
 
 Thank you for your interest in contributing to the Work IQ plugin collection! This document provides guidelines for adding new plugins and improving existing ones.
 
+Work IQ is agent-host-neutral. Write skills against logical tools and live
+schemas, not one host's tool prefixes or local APIs. Keep host-specific install
+instructions and plugin manifests labeled separately from shared behavior.
+
 ## 🔌 Plugin Structure
 
 Each plugin lives in `plugins/{plugin-name}/` and follows this structure:
@@ -38,6 +42,11 @@ All plugins must be registered in `marketplace.json`, with a matching entry in
   "skills": ["./plugins/your-plugin/skills/your-skill"]
 }
 ```
+
+For the current WorkIQ release policy, `workiq` and `workiq-preview` ship the same
+plugin/skill version. Synchronize the public version from root `marketplace.json`
+across both entries, the mirrored marketplace, and all host manifests. Other
+plugins retain their own versions.
 
 ## 🚀 Adding a New Plugin
 
@@ -100,7 +109,11 @@ and approved live evaluation are separate gates, with private evidence kept out
 of this repository. Do not publish benchmark-specific recipes or unverified gains.
 
 After editing plugin content, reinstall each affected plugin and restart a fresh
-host session to check loading. A plugin install does not enable tenant-gated tools.
+host session using that host's supported mechanism. A plugin install does not
+enable tenant-gated tools. Record host/version and adapter provenance for loading
+and behavioral results; repeat the shared contract cases across the host support
+matrix. A successful Copilot CLI install does not validate Claude, Codex, or other
+agents. Unsupported/unavailable host adapters remain explicit coverage gaps.
 
 ## 📋 Pull Request Checklist
 

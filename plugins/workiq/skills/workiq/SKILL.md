@@ -10,6 +10,8 @@ compatibility: >
 
 Use WorkIQ for workplace data: mail, calendar, Teams, files, people, and Planner.
 Tools use WorkIQ entity paths, not arbitrary Microsoft Graph URLs.
+This policy is agent-host-neutral; use the current host's tool catalog, skill
+loading, confirmation, and result-handling mechanisms.
 
 **Resolve tool names first.** These are logical names. Discover the exact names
 and live schemas in the connected `workiq` MCP catalog; load deferred definitions
