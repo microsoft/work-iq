@@ -577,6 +577,30 @@ mutationCase('planner-precondition', ['R.C4'], 'update_entity',
     e => { e.filter(x => x.type === 'call')[1].args.entityUrls = ['/me/synthetic-crm-records']; }, 'unsupported-operation');
 }
 {
+  const site = '/sites/synthetic-site', library = `${site}/lists/synthetic-pages`;
+  const item = `${library}/items/synthetic-list-item`;
+  const s = base('site-page-download', 'Download the exact synthetic.aspx file from the named page library.', {
+    mode: 'exact', operations: [
+      read('group', 'fetch', { entityUrls: ["/groups?$filter=displayName%20eq%20'Synthetic'&$select=id,displayName&$top=1"] },
+        result('ok', { id: 'synthetic-group' })),
+      read('drive', 'fetch', { entityUrls: ['/groups/synthetic-group/drive?$select=id,webUrl,sharePointIds'] },
+        result('ok', { sharePointIds: { siteId: 'synthetic-site' } }), { requires: ['group'] }),
+      read('library', 'fetch', { entityUrls: [`${site}/lists?$filter=displayName%20eq%20'Pages'&$select=id,displayName,webUrl,list&$top=10`] },
+        result('ok', { id: 'synthetic-pages' }), { requires: ['drive'] }),
+      read('item', 'fetch', { entityUrls: [`${library}/items?$select=id,webUrl&$expand=fields($select=FileLeafRef,Title)&$top=50`] },
+        result('ok', { id: 'synthetic-list-item', fields: { FileLeafRef: 'synthetic.aspx' } }), { requires: ['library'] }),
+      read('drive-item', 'fetch', { entityUrls: [`${item}/driveItem?$select=id,name,webUrl,parentReference,file,size`] },
+        result('ok', { id: 'synthetic-drive-item', parentReference: { driveId: 'synthetic-drive' }, file: {} }),
+        { requires: ['item'] }),
+      read('download', 'fetch_blob', { path: '/drives/synthetic-drive/items/synthetic-drive-item/content' },
+        result('ok', { base64Content: 'cGFnZQ==' }), { requires: ['drive-item'] })
+    ], requiredOperations: ['group', 'drive', 'library', 'item', 'drive-item', 'download']
+  });
+  add(s.id, ['R.sharepoint', 'G24', 'R.C2'], s, s.requiredOperations.map(op => ({ op })), {},
+    e => { e.filter(x => x.type === 'call').at(-1).args.path = '/drives/synthetic-drive/items/synthetic-list-item/content'; },
+    'unsupported-operation');
+}
+{
   const s = base('businessapps-privilege', 'Discover a permitted synthetic business operation.', {
     mode: 'exact', operations: [read('discover', 'do_action', { actionUrl: '/businessapps/me', jsonBody: { query: 'synthetic-update-record' } },
       result('denied', { diagnostic: 'Synthetic application privilege denied.' }))]

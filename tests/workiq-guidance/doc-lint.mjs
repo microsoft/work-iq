@@ -159,6 +159,8 @@ export const policies = [
   ['R.sharepoint', 'references/sharepoint-library-metadata.md', /fields[\s\S]{0,200}(?:column|identity)/i, 'retain authoritative library field identity'],
   ['R.sharepoint', 'references/sharepoint-library-metadata.md', /per.result|individual.{0,30}status/i, 'check each result status rather than only batch status'],
   ['R.sharepoint', 'references/sharepoint-library-metadata.md', /(?:completeness|denominator|partial)/i, 'qualify incomplete library coverage'],
+  ['R.sharepoint', 'references/sharepoint-work-iq.md', /\/items\/\{itemId\}\/driveItem/, 'preserve the exact site-page list-item to driveItem resolution route'],
+  ['R.sharepoint', 'references/sharepoint-work-iq.md', /driveItem\.id.{0,30}not the list.item ID/is, 'download site pages using the driveItem identity rather than the list-item ID'],
   ['R.businessapps', 'references/business-applications.md', /\/businessapps\/me/, 'preserve application intent discovery'],
   ['R.businessapps', 'references/business-applications.md', /privilege/i, 'preserve application privilege boundaries']
 ];

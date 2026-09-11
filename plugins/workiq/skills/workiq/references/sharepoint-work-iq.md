@@ -61,6 +61,35 @@ drive root alias or item path is explicitly denied, stop that workflow and repor
 the actual diagnostic; do not switch addressing modes to bypass the denial.
 An error is not evidence that the root folder is empty.
 
+## Download an explicitly requested site-page file
+
+For an exact `.aspx` filename in a named page library on a named group-backed
+site, use this inherited resolution sequence rather than document search:
+
+1. Resolve the backing group by the complete exact site name using the
+   [named group-backed route](#named-group-backed-team-sites).
+2. Fetch `/groups/{groupId}/drive?$select=id,webUrl,sharePointIds`.
+3. Use the returned site identity to fetch
+   `/sites/{sharePointIds.siteId}/lists?$filter=displayName%20eq%20'{odataEscapedAndUrlEncodedLibraryName}'&$select=id,displayName,webUrl,list&$top=10`.
+4. Fetch `/sites/{siteId}/lists/{listId}/items?$select=id,webUrl&$expand=fields($select=FileLeafRef,Title)&$top=50`
+   and select the exact requested filename.
+5. Fetch `/sites/{siteId}/lists/{listId}/items/{itemId}/driveItem?$select=id,name,webUrl,parentReference,file,size`.
+6. Download with `fetch_blob` at `/drives/{parentReference.driveId}/items/{driveItemId}/content`.
+
+Use **`driveItem.id`, not the list-item ID**, in the download path. Preserve every
+returned identifier verbatim and check the path segments against the structured
+source fields before the download. The inherited `sharePointIds` spelling above
+is not a license to invent a missing field: require an authoritative site identity
+from the actual response, and pause if the mapping is unavailable.
+
+Six calls is the unambiguous happy path, not a completeness guarantee. Resolve
+ambiguous names and qualify capped/unfollowed pages. Do not substitute site
+search, `/sites/{id}/drives`, root-children guesses, Microsoft Search, or speculative
+download paths for this exact workflow. On denial, stop; do not change routes.
+This sequence has not been newly live-validated here. Follow the actual schema
+for unfamiliar fields and [download guidance](fetch-blob-work-iq.md) for bytes and
+honest completion reporting.
+
 ## Search SharePoint documents across sites
 
 Use the read-only Microsoft Search action for bounded structured cross-site
