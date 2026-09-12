@@ -1,142 +1,101 @@
 # fetch
 
-Fetch one or more WorkIQ entities by path using HTTP GET. Use this for precise, structured retrieval of M365 data when `ask` isn't specific enough — for example, to get a list of items with specific fields, apply filters, or read a single entity by ID.
+Read precise structured entities/collections with HTTP GET. Known URLs/IDs,
+exact named entities, complete lists, and exact-thread summaries use entity
+reads directly, without retrieval preflight. Ordinary caller-owned semantic
+context instead uses [retrieve](retrieve-work-iq.md); [ask](ask-work-iq.md)
+requires intentional delegation, not merely a request to summarize.
 
-## Parameters
+## Parameters and effects
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `entityUrls` | string[] | Yes | One or more entity paths to fetch. Must be relative to the domain root (start with `/`, no scheme or authority). Supports OData query parameters (`$filter`, `$select`, `$top`, `$orderby`, `$expand`). All query parameter values must be URL-encoded. |
+| Parameter | Contract |
+|---|---|
+| `entityUrls` | Required array of supported server-relative entity paths, starting with `/`, without scheme, authority, or API-version prefix |
 
-## When to Use
+`fetch` reads JSON; it does not send, mark read, draft, update, or download file
+bytes. Resolve authoritative IDs here before mutations, then prepare and obtain
+required confirmation under the domain contract. Reading a target is not
+completion of a requested write, nor authorization for it.
 
-- When you need a structured list of entities (messages, events, files, etc.)
-- When you need to apply specific OData filters or select specific fields
-- When you already have an entity ID and want its full details
-- For multi-fetch: pass multiple URLs to retrieve several entities in one call
+Use [call_function](call-function-work-iq.md) for named drive search, reminders,
+and explicit delta. Ordinary `/me/calendarView` belongs to `fetch`; its
+`/me/calendarView/delta` variant does not. Use [fetch_blob](fetch-blob-work-iq.md)
+for `/content` or `/$value` bytes, not JSON metadata envelopes.
 
-Prefer `ask` for open-ended questions. Use `fetch` when you need precise, filtered, or structured data.
+## Queries and identity
 
-Use `fetch` (not `ask`) to resolve exact targets before mutations — find an event ID before deleting/updating, a draft before adding recipients or sending, a Teams chat/channel/message before editing/reacting/posting, a mail thread before reply/forward/move/mark-read.
+Use `$select`, `$top`, `$filter`, `$orderby`, and `$expand` **only where the
+specific endpoint supports them**. A page size is not a completeness or
+uniqueness guarantee. Domain exceptions override generic query suggestions:
+[Teams](teams-work-iq.md) member endpoints restrict selected fields and paging
+options. Do not probe unsupported variants after a rejection.
 
-For exact reads ("show/list/get latest messages", "list members", "show my chats", "retrieve the event titled…"), prefer filtered `fetch` or a known function path. Do not answer from general knowledge, local SQL, or `ask` unless the prompt asks for synthesis.
+- Retain full opaque IDs from structured responses; do not fabricate, normalize,
+  or scrape semantic citations to construct mutation IDs.
+- Escape embedded apostrophes in OData literal values by doubling them, then
+  URL-encode the value once. Do not blindly double-encode.
+- Keep OData property paths (such as `start/dateTime`) and comma-separated
+  `$select` fields intact. A `/` inside a string-literal value is different
+  from a property-path separator.
+- Use [get_schema](get-schema-work-iq.md) for unknown supported fields/query
+  details or an explicit schema request, not as a mandatory preflight for every
+  inherited known read.
 
-> **⚠️ Not for delta queries.** Calling `/.../delta` or `/.../delta()` through `fetch`
-> fails — delta is an OData **function** and must go through `call_function`. See
-> `references/call-function-work-iq.md`.
+## Batches, paging, and host caps
 
-## Multi-fetch caveats
+1. Batch independent exact reads when useful. Check the **individual result
+   status** and payload for every URL; a batch-level success/error alone cannot
+   determine whether each source succeeded. Retain successful results.
+2. An `@odata.nextLink` means a partial collection. Follow returned continuations
+   when needed for the requested completeness, identity disambiguation, or
+   reliable ordering. Do not invent `$skip` or pagination tokens; many endpoints,
+   notably calendar views and member collections, restrict paging.
+3. Convert an absolute next link only for an expected supported service/path:
+   remove the verified authority and known API-version prefix, preserving the
+   rest of the path/query and opaque tokens exactly. Do not decode/re-encode,
+   follow unexpected hosts, or broaden the collection.
+4. For a host-truncated/capped response, inspect available saved output first
+   using a host file reader or bounded local parsing. A display cap is neither
+   zero results nor an API page boundary.
+5. Stop when the evidence satisfies the request. Happy-path call/page budgets
+   are efficiency guidance, not authority to omit requested "all/every/complete"
+   coverage. If a runtime/service limit prevents completion, report the searched
+   scope, partial coverage, and remaining continuation without exposing tokens.
 
-- The batch result can report an error when **any one** URL fails, even if the other URLs
-  returned data. If a multi-fetch errors, don't discard it — check for successful payloads
-  inside the response, and re-issue only the failing URL on its own to isolate the problem.
-  When a URL might fail (permissions, existence unknown), prefer small batches or single URLs.
-- Large URL lists also stack per-URL latency into a single tool-call window and raise the
-  odds of one failure poisoning the batch. Prefer focused batches over speculative bulk
-  fetches.
+A "latest" or "next" answer requires reliable chronological coverage; the first
+returned item/page is not necessarily latest/earliest. Do not enumerate unrelated
+collections just because the available page lacks the desired fact.
 
-## Pagination
+## Failure and recovery
 
-Collection responses are **pages**, not the full result set. When a response contains
-`@odata.nextLink`, more results exist:
+Apply the [central operation-aware recovery table](troubleshooting.md).
+Explicit authentication/access/policy denial stops the operation, including
+alternate entity paths, strategies, agents, or semantic fallbacks. Generic null
+or 403 does not establish a specific permission diagnosis.
 
-- To get the next page, call `fetch` again with the `@odata.nextLink` value converted to
-  a server-relative path (strip the scheme/authority/version prefix, keep the path and query
-  string — including the opaque `$skiptoken`).
-- **Do not paginate with `$skip`** — many collections (notably `/me/calendarView`) do not
-  support it and the call fails.
-- If you stop before exhausting pages, **tell the user the list is partial** ("first 25 of
-  more") — never present one page as the complete answer.
-- **Cap your paging.** For "latest/recent" questions one page is usually enough; otherwise stop
-  after 2–3 pages unless the user explicitly asked for the complete set. Do not follow
-  `@odata.nextLink` for dozens of pages to enumerate an entire mailbox or message history.
+For a supported read with transient failure or throttling, honor returned delay
+and bounded recovery. In a batch, reconsider only failed reads that qualify for
+safe recovery; never indiscriminately replay every failed URL or discard prior
+successes. A definitive invalid query may be corrected only when its diagnostic
+and supported schema establish the fix. Preserve errors and missing results in
+the final answer rather than converting them into "not found."
 
-## URL Format
+## Canonical read contracts
 
-Paths must:
-- Start with `/` (relative to the domain root)
-- **Not** include a scheme or authority — `https://graph.microsoft.com/v1.0/me/messages` ❌, `/me/messages` ✅
-- Have all query parameter values URL-encoded
+- [Files](files-work-iq.md): exact file/folder identity and listing.
+- [Calendar](calendar-work-iq.md): ordinary windows, next/latest meeting, people
+  comparisons, and reminder/free-busy distinctions.
+- [Mail](mail-work-iq.md): concrete filters, complete exact exchanges, attachments.
+- [Teams](teams-work-iq.md): exact chats/channels/messages and supported query limits.
+- [Tasks](tasks-work-iq.md): structured Planner discovery and task reads.
+- [People and setup](workflows-work-iq.md): directory/contact identities and photos.
 
-Common URL encodings for OData query values:
+### Read a supplied exact message
 
-| Character | Encoded | Example |
-|-----------|---------|---------|
-| Space | `%20` | `$filter=isRead%20eq%20false` |
-| Single quote `'` | `%27` | `$filter=subject%20eq%20%27Hello%27` |
-| `(` | `%28` | `$filter=startsWith%28subject%2C%27Re%3A%27%29` |
-| `)` | `%29` | (same as above) |
-| `:` | `%3A` | (in string literals) |
-| `/` *(only inside string-literal values)* | `%2F` | (e.g. inside a quoted `$filter` value) |
-| `,` *(only inside string-literal values)* | `%2C` | (in string literals; **not** in `$select=a,b,c` lists) |
-
-> **Important — what NOT to encode:**
-> - OData **property paths** like `start/dateTime`, `from/emailAddress/address`: leave the `/` raw. Use `$orderby=start/dateTime`, never `$orderby=start%2FdateTime`.
-> - **Comma-separated `$select` lists** like `$select=subject,from,receivedDateTime`: leave the `,` raw. Only encode commas that appear inside a quoted value.
-> - OData keywords and field names (`$filter=`, `isRead`, `eq`, `desc`): standard ASCII, no encoding needed.
-
-## OData Query Tips
-
-**Always include `$select`** with only the fields you need to reduce response size (e.g., `/me/messages?$select=id,subject,from`). For collection endpoints, include `$top` to bound results.
-
-| Parameter | Purpose | Example |
-|-----------|---------|---------|
-| `$top` | Limit result count (some APIs reject `$top` — e.g., `/me/chats/{id}/members`; omit it there) | `$top=10` |
-| `$filter` | Filter results | `$filter=isRead%20eq%20false` |
-| `$select` | Return only specified fields | `$select=subject,from,receivedDateTime` |
-| `$orderby` | Sort results | `$orderby=receivedDateTime%20desc` |
-| `$expand` | Include related entities inline | `$expand=attachments` |
-
-## Binary file content uses `fetch_blob`
-
-`fetch` returns JSON metadata and cannot return raw file bytes, attachment payloads, or profile photo bytes. Use `fetch_blob` for binary content.
-
-Do **not** call `fetch` against paths ending in `/content` or `$value` (e.g. `/me/drive/items/{id}/content`, `/me/messages/{id}/attachments/{id}/$value`) — `fetch` only returns JSON metadata envelopes, and it will not give you the raw bytes either.
-
-When the user asks for a file's content:
-
-1. Use `fetch` to resolve the item's ID when it is not already known.
-2. Call `fetch_blob` with the `/content` or `/$value` path.
-3. Check the in-band `statusCode` before using `base64Content`.
-4. On access denied, do not retry. Return the file's `webUrl` or the parent message's `webLink`; for profile photos, report the policy denial.
-5. If the payload exceeds the 4 MB download limit, use the same `webUrl` fallback.
-6. For other errors, report `error` and `requestId`.
-
-Never fabricate binary content or download URLs.
-
-## Examples
-
-### Get the signed-in user's profile
 ```json
-{ "entityUrls": ["/me"] }
+{"entityUrls": ["/me/messages/{messageId}"]}
 ```
 
-### Get unread emails (top 10)
-```json
-{ "entityUrls": ["/me/messages?$top=10&$filter=isRead%20eq%20false&$select=subject,from,receivedDateTime"] }
-```
-
-### Get upcoming calendar events
-```json
-{ "entityUrls": ["/me/events?$top=5&$orderby=start/dateTime&$select=subject,start,end,location"] }
-```
-
-### Get a specific message by ID
-```json
-{ "entityUrls": ["/me/messages/{id}"] }
-```
-
-### Fetch multiple entities in one call
-```json
-{ "entityUrls": ["/me", "/me/mailFolders/inbox"] }
-```
-
-### Get files from OneDrive
-```json
-{ "entityUrls": ["/me/drive/root/children?$select=name,size,lastModifiedDateTime"] }
-```
-
-### Get Teams channels for a group
-```json
-{ "entityUrls": ["/teams/{teamId}/channels"] }
-```
+Replace placeholders with authoritative IDs before invocation. For multiple
+supplied entities, include their supported exact paths in the same array and
+synthesize locally; do not start semantic retrieval merely to summarize them.

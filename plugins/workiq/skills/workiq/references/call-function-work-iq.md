@@ -1,64 +1,77 @@
 # call_function
 
-Call an OData function via HTTP GET. Functions are **side-effect-free** named operations that return computed results — for example, `delta` (change tracking on a collection) or `reminderView` (computed list of upcoming reminders).
+Invoke a documented, side-effect-free GET function. Function names need not
+contain parentheses: supported delta paths also belong here. Operations with
+a request body, such as `getSchedule`, use [do_action](do-action-work-iq.md);
+classify their effects separately rather than assuming every action is a write.
 
-**Use this tool only for true GET-shaped OData functions.** If the operation is invoked with a request body (e.g. `getSchedule`, `findMeetingTimes`, `sendMail`), it's an **action**, not a function — use `do_action` instead, even when the path looks function-like.
+## Parameters and routing
 
-## Parameters
+| Parameter | Contract |
+|---|---|
+| `functionUrl` | Required server-relative path, starting with `/`, without scheme, authority, or API-version prefix; include supported inline parameters and query |
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `functionUrl` | string | Yes | The function path including any required inline parameters (e.g., `/me/reminderView(startDateTime='...',endDateTime='...')`). Must be a server-relative path — start with `/`, no scheme or authority (`https://graph.microsoft.com` ❌, `/me/reminderView(...)` ✅). URL-encode any special characters in inline parameter values. |
+No `jsonBody` is needed for these GET functions. Resolve the exact tool and
+schema from the connected catalog. For an unknown function use
+[get_schema](get-schema-work-iq.md) with its supported read operation; do not
+probe alternative tool names or infer support from Graph documentation.
 
-## When to Use
+| Intent | Canonical owner |
+|---|---|
+| Exact named drive-item search | [Files](files-work-iq.md): exact facets, drive IDs, OData escaping and URL encoding |
+| Reminders with a resolved time window and explicit coverage | [Calendar](calendar-work-iq.md): verify live reminder syntax |
+| Explicit structured synchronization/change tracking | Delta contract below and domain owners |
+| Ordinary calendar window or exact entity/collection | [fetch](fetch-work-iq.md), not delta |
+| Open-ended "what's new?" or project catch-up | Caller-owned [retrieval](retrieve-work-iq.md), not keyword-triggered delta |
 
-- When you need a computed result that takes no request body (`delta`, `reminderView`)
-- Any time the OData path uses function call syntax `functionName(param=value)` and the operation is documented as GET
-- When resolving a OneDrive file by exact name with `/me/drive/root/search(q='...')`
-- **Any "what's new / what's changed / what was added or removed since X" question** — that is a
-  delta query, and this tool is the only correct route for it
+## Explicit delta and checkpoints
 
-If you're not sure whether something is a function or an action, run `get_schema` on the path with `operationType: "fetch"` first. If no `fetch` schema is returned but `action` is, route to `do_action`.
+**Intent/prerequisites:** use delta only for an explicit structured delta/change
+tracking request. Resolve the collection, authorized scope, and any required
+calendar window. Establish whether a compatible saved checkpoint exists.
+These paths are inherited guidance examples, not newly live-validated contracts:
 
-## Delta queries (change tracking)
+- [Mail](mail-work-iq.md): `/me/mailFolders/{folderId}/messages/delta`.
+- [Calendar](calendar-work-iq.md): `/me/calendarView/delta` with its required
+  resolved initial window.
+- Contacts: `/me/contacts/delta`, only when the connected surface exposes it.
+- [Teams](teams-work-iq.md): supported channel-message delta for the resolved
+  team/channel; preserve that domain's identity and query restrictions.
 
-Delta endpoints exist for mail (`/me/mailFolders/{id}/messages/delta`), calendar
-(`/me/calendarView/delta?startDateTime=...&endDateTime=...`), contacts (`/me/contacts/delta`),
-and more.
+**Operation/query:** invoke the supported delta path with `call_function`.
+Never call it through `fetch`, or approximate it with `lastModifiedDateTime`
+filtering that misses removals.
 
-- **Only via this tool.** Calling a delta path through `fetch` fails. Do not approximate
-  delta with `fetch` + a `lastModifiedDateTime` filter — that misses deletions and true change
-  semantics.
-- **First sync:** call the delta path with no token. Page through `@odata.nextLink` responses
-  (re-issue each link as a server-relative `functionUrl`) until you get `@odata.deltaLink`.
-- **Resume:** if the user has a saved delta token / deltaLink, call **that link's path and query
-  verbatim** (as a server-relative path) instead of starting over. The `$deltatoken` /
-  `$skiptoken` values are opaque — never invent or modify them.
-- Items in a delta response with an `@removed` annotation are deletions — report adds, changes,
-  and removals distinctly, and don't report counts the response doesn't support.
+1. **Initial sync:** no prior checkpoint means an initial synchronization.
+   Page through every returned `@odata.nextLink` until `@odata.deltaLink`
+   establishes the checkpoint for that scope. Initial results do not prove
+   what changed "since yesterday" or another past time.
+2. **Resume:** use the saved link for the same collection, identity, scope, and
+   original calendar window. Preserve its path and query exactly; do not append
+   new filters, change dates, invent `$deltatoken`/`$skiptoken`, or restart under
+   the guise of a historical resume.
+3. **Continuations:** follow the returned `@odata.nextLink` with this same tool;
+   when a final `@odata.deltaLink` is reached, retain it as the next checkpoint.
+   If interrupted, retain the continuation and report the sync incomplete, not
+   a complete change set.
 
-## Examples
+**Safe link conversion:** accept only links belonging to the expected supported
+WorkIQ/Graph service and collection. If the link is absolute and the tool
+requires a relative path, remove only the verified scheme/authority and known
+API-version prefix. Preserve the remainder byte-for-byte, including query order,
+encoding, and opaque tokens. Never decode/re-encode cursors, follow an unexpected
+host, or send a token to another service. If safe conversion is not established,
+report the limitation rather than guessing. Treat checkpoint links as sensitive.
 
-### Get upcoming meeting reminders
-```json
-{ "functionUrl": "/me/reminderView(startDateTime='2024-06-01T00:00:00Z',endDateTime='2024-06-30T23:59:59Z')" }
-```
+**Effects/completion:** read-only synchronization. Preserve returned removals
+(`@removed`) and their reason/identity alongside other changes. A removal from
+the tracked collection is not automatically permanent deletion everywhere.
+Distinguish additions from updates only when saved state and documented
+response semantics support that distinction; initial items are not automatically
+new additions. Do not invent counts, missing values, or item history.
 
-### Track changes to a mail folder (delta query)
-```json
-{ "functionUrl": "/me/mailFolders/inbox/messages/delta" }
-```
-
-### Get metadata for a named OneDrive file
-
-Use one function call. URL-encode the exact file name, select the metadata the
-user needs, and answer directly from the matching driveItem. Do not call
-`search_paths` or `get_schema`, and do not follow a successful search with
-`/me/drive/items/{id}`.
-
-```json
-{
-  "functionUrl": "/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,size,createdDateTime,lastModifiedDateTime,webUrl,file,folder,parentReference,createdBy,lastModifiedBy,fileSystemInfo,sharepointIds&$top=10"
-}
-```
-
+**Failures:** follow [operation-aware recovery](troubleshooting.md). Denials
+stop without alternate paths/strategies. Invalid/expired checkpoints cannot
+establish historical continuity: disclose the gap and establish an authorized
+new baseline if needed. A bounded transient retry must retain the exact cursor
+and successful prior pages, not start a new sweep.

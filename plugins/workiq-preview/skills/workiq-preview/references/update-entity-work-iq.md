@@ -1,85 +1,45 @@
 # update_entity
 
-PATCH an existing WorkIQ entity. Only fields in the body are changed; other fields are untouched.
+Update an existing WorkIQ entity. For a PATCH, send only changed fields; if the
+live operation replaces the resource, supply its required fields. Read-state,
+presence, categories, and metadata changes are mutations, even if not sent to others.
 
 ## Parameters
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `entityUrl` | string | Yes | Entity path including ID (`/me/events/{id}`). Get the ID from `fetch` or `create_entity`. Server-relative, starts with `/`, no scheme. URL-encode special characters. |
-| `jsonBody` | object \| string | Yes | Fields to update, supplied as a JSON object (`{"isRead":true}`) or a JSON-encoded string. Omit fields you don't want to change. |
-| `headers` | object | No | Optional HTTP request headers. If the operation's schema declares an `If-Match` header parameter, you MUST set it to the `@odata.etag` value from the latest read of the same entity. |
+| --- | --- | --- | --- |
+| `entityUrl` | string | Yes | Server-relative path identifying exactly one entity, not a collection/filter URL. |
+| `jsonBody` | object \| string | Yes | JSON object or JSON-encoded string: changed fields for PATCH; all required fields for a schema-defined replacement. |
+| `headers` | object | No | Use `If-Match` with the latest same-entity `@odata.etag` when required by the operation contract. |
 
-## When to Use
+## Workflow and constraints
 
-- Mark email read/unread
-- Update event subject, time, location
-- Change task status or due date
-- Update document metadata
-- Any partial update to an existing M365 entity
+1. Resolve the same entity type and exact ID from an authoritative structured
+   response. A directory ID is not a personal-contact ID; a citation is not an ID.
+2. Prepare changes from the domain contract; inspect
+   [get_schema](get-schema-work-iq.md) with `operationType: "update"` when unfamiliar.
+   A writable-looking schema does not establish permission or supported runtime behavior.
+3. Obtain required confirmation for the exact change, reusing only applicable
+   explicit prior confirmation. Execute once and report observed state.
+4. Apply [canonical recovery](troubleshooting.md): no ambiguous PATCH replay,
+   no denial bypass, and at most one safe correction of a demonstrated
+   pre-execution validation defect. A generic `400` is not proof of a field defect.
 
-## Gotchas
+For `412`, reread and reconcile concurrent state rather than merely replacing the
+etag and overwriting; reconfirm if the intended action changes. Planner-specific
+preconditions belong in [Tasks](tasks-work-iq.md).
 
-- **`entityUrl` must address exactly one entity by ID.** A collection or query URL (`/me/planner/tasks?$filter=startswith(title,'...')`) is rejected with "Write requests are only supported on contained entities" — resolve the ID with `fetch` first, then PATCH `/.../{id}`.
-- The ID must come from a real tool response for the **same entity type** — a directory user ID does not work on `/me/contacts/{id}`, and an ID scraped from a search-result URL is not an entity ID.
-- Updating one entity means one PATCH. If it fails, fix the request and retry once or twice — do not loop the same PATCH or fan it out across other entities.
-- **Planner writes need an `If-Match` etag** — fetch the task first; on a 412/precondition error, re-fetch and retry (see `references/tasks-work-iq.md`).
+Do not attribute generic forbidden profile, category, or message edits to consent
+or promise administrator remediation without the actual diagnostic. Presence uses
+the documented action, not a speculative PATCH based on parent-entity metadata.
 
-## Workflow
+## Canonical payload owners
 
-1. Get the entity's `id` from `fetch` or `create_entity`
-2. (Optional) `get_schema` with `operationType: "update"` to confirm updatable fields
-3. `update_entity` with only the fields to change
-
-## Examples
-
-### Mark a message as read
-```json
-{
-  "entityUrl": "/me/messages/{id}",
-  "jsonBody": "{\"isRead\":true}"
-}
-```
-
-### Update a calendar event's subject and location
-```json
-{
-  "entityUrl": "/me/events/{id}",
-  "jsonBody": "{\"subject\":\"Updated: Team Sync\",\"location\":{\"displayName\":\"Conference Room B\"}}"
-}
-```
-
-### Update a Planner task's due date
-```json
-{
-  "entityUrl": "/planner/tasks/{taskId}",
-  "jsonBody": "{\"dueDateTime\":\"2024-06-10T17:00:00Z\"}"
-}
-```
-
-### Mark a Planner task as complete
-```json
-{
-  "entityUrl": "/planner/tasks/{taskId}",
-  "jsonBody": "{\"percentComplete\":100}"
-}
-```
-
-### Move a message to a different category
-```json
-{
-  "entityUrl": "/me/messages/{id}",
-  "jsonBody": "{\"categories\":[\"Project Alpha\"]}"
-}
-```
-
-## Common failures (do not retry)
-
-`update_entity` failures from Microsoft Graph are almost always permanent on the same payload. **Do not retry the same call** after any of these -- repeated identical PATCHes return the exact same error.
-
-| HTTP / code | Meaning | Action |
-|---|---|---|
-| `403` + `"Missing scope permissions"` | The signed-in user has not consented to the Graph scope this PATCH needs (e.g. `ChannelMessage.ReadWrite` for editing channel messages, `Mail.ReadWrite` for marking mail). | Stop. Tell the user the consent is missing and identify the missing scope from the error body. See [`troubleshooting.md`](troubleshooting.md#http-403-forbidden-on-an-entity-tool-call). |
-| `403` + `"Authorization_RequestDenied"` + `"Insufficient privileges"` on `/me` | Directory-managed property (`jobTitle`, `department`, `officeLocation`, `manager`, etc.) is read-only via delegated `/me` scopes. End users cannot change these even with extra consent. | Stop. Tell the user the property is directory-managed and an admin change is required. **Additional end-user consent will not help.** |
-| `400` with field name | The field is not in the PATCH-able set for that entity (e.g. computed/read-only) or value type is wrong. | Stop. Re-read [`get_schema`](get-schema-work-iq.md) for the writable-field list before reissuing. |
-| `404` | The entity ID is stale / wrong / from a different mailbox. | Stop. Re-`fetch` to get the current ID; do not retry the same URL. |
+| Change | Reference |
+| --- | --- |
+| Mail read state, categories, draft edits | [Mail](mail-work-iq.md) |
+| Event updates, reschedule and recurrence | [Calendar](calendar-work-iq.md) |
+| Rename/move files and drive identity | [Files](files-work-iq.md) |
+| Task completion and due dates | [Tasks](tasks-work-iq.md) |
+| Message edits and presence | [Teams](teams-work-iq.md) |
+| Directory versus personal contacts | [Workflows](workflows-work-iq.md) |

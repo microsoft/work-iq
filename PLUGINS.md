@@ -1,8 +1,11 @@
 # 🔌 Work IQ — Plugin Catalog
 
-> Browse, install, and discover skills from the Work IQ plugin marketplace for GitHub Copilot CLI.
+> Browse, install, and discover Work IQ plugins for compatible AI agent hosts.
 
-This page is the central reference for every plugin published in the **Work IQ** marketplace. Each plugin bundles one or more **skills** (AI-guided workflows) and may include an **MCP server** that exposes tools to your Copilot session.
+This is the catalog for the **agent-host-neutral Work IQ plugin collection**.
+Each plugin bundles skills and may include an MCP server that exposes tools to
+your agent. GitHub Copilot, Claude, and Codex metadata are included; other
+compatible hosts can consume the skills and MCP tools through their own mechanisms.
 
 ---
 
@@ -10,15 +13,30 @@ This page is the central reference for every plugin published in the **Work IQ**
 
 | Requirement | Details |
 |-------------|---------|
-| **GitHub Copilot CLI** | [Getting started guide](https://docs.github.com/en/copilot/how-tos/copilot-cli) |
-| **Node.js 18+** | [Download from nodejs.org](https://nodejs.org/) — includes NPM and NPX |
+| **Compatible agent host** | Support for the selected plugin/skill-loading and MCP authentication mechanisms |
+| **Node.js 18+**, only for local CLI/stdio use | [Download from nodejs.org](https://nodejs.org/); hosted WorkIQ calls do not require a local Node package |
 | **Admin consent** | The WorkIQ MCP server requires tenant admin consent on first use. See the [Tenant Administrator Enablement Guide](./ADMIN-INSTRUCTIONS.md). |
 
 ---
 
-## 🏪 Installing the Marketplace
+## Installation by host
 
-Before installing any plugin you need to register the **work-iq** marketplace in your Copilot CLI session (one-time setup):
+| Host/package adapter | Included metadata | Installation |
+| --- | --- | --- |
+| GitHub Copilot | `marketplace.json`; each plugin's `.github/plugin/plugin.json` | Copilot CLI example below |
+| Claude | `.claude-plugin/marketplace.json`; each plugin's `.claude-plugin/plugin.json` | Use the host's supported marketplace/plugin installer |
+| Codex | Each plugin's `.codex-plugin/plugin.json` | Use the host's supported plugin installer |
+| Other compatible agents | Shared `skills/` content and MCP tools | Load skills/instructions and configure MCP with that host's supported mechanisms |
+
+Host metadata does not establish that every client/version has been validated.
+Resolve actual tool names and schemas from the connected host; do not copy another
+host's prefixes, OAuth wrappers, or install commands. An MCP-only connection
+does not automatically load the skill policy. Reload the selected host after
+installation as required.
+
+## 🏪 GitHub Copilot CLI marketplace example
+
+For GitHub Copilot CLI, register the **work-iq** marketplace once:
 
 ```bash
 # Open GitHub Copilot CLI
@@ -42,7 +60,7 @@ copilot
 
 ---
 
-## 🚀 Installing Plugins
+## 🚀 Installing plugins in Copilot CLI
 
 Once the marketplace is registered, install any plugin with a single command:
 
@@ -77,8 +95,8 @@ copilot plugin uninstall workiq-productivity
 
 | # | Plugin | Skills | Description |
 |---|--------|--------|-------------|
-| 1 | [**workiq**](#workiq) | 1 | Full WorkIQ tool surface — agentic queries plus direct M365 reads and writes |
-| 2 | [**workiq-preview**](#workiq-preview) | 1 | Preview build with the full entity tool surface (read + write) |
+| 1 | [**workiq**](#workiq) | 1 | Retrieve-first Grounding context, intentional agent answers, and direct M365 reads/writes |
+| 2 | [**workiq-preview**](#workiq-preview) | 1 | Preview plugin with the same retrieve/ask/entity routing; tool availability depends on the tenant |
 | 3 | [**microsoft-365-agents-toolkit**](#microsoft-365-agents-toolkit) | 4 | Toolkit for building M365 Copilot declarative agents |
 | 4 | [**workiq-productivity**](#workiq-productivity) | 10 | Read-only productivity insights across M365 |
 
@@ -86,27 +104,42 @@ copilot plugin uninstall workiq-productivity
 
 ## workiq
 
-> Full WorkIQ tool surface for GitHub Copilot CLI: agentic semantic queries via `ask` **plus** direct, structured reads and writes against Microsoft 365 — emails, meetings, calendar, documents, Teams messages, OneDrive/SharePoint files, and people.
+> Agent-host-neutral WorkIQ tools: available `retrieve` with explicit Grounding for caller-owned context, `ask` for intentional agent delegation, and exact M365 reads and writes.
 
-**Install:** `/plugin install workiq@work-iq`
+**Install:** Use your host's plugin installer; Copilot CLI example: `/plugin install workiq@work-iq`.
 **Source:** [`plugins/workiq/`](./plugins/workiq/)
 
 ### MCP Servers
 
 | Server | Tools |
 |--------|-------|
-| `workiq` (hosted) | `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `get_debug_link` |
+| `workiq` (hosted) | `ask`, `list_agents`, `fetch`, `fetch_blob`, `get_schema`, `search_paths`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`; preview `retrieve` when available |
+
+These are logical names; discover the connected host's exact names and schemas.
+`retrieve` is tenant-dependent. The skill always sends an explicit strategy:
+`grounding` for ordinary/unknown-location context, `copilot` directly for required
+broader sources or an explicit broader request. The API default when omitted is
+still `copilot`. Preserve required `Dataverse`/`GraphConnectors` capabilities and
+source restrictions; both strategies return evidence, unlike `ask`. No automatic
+ask fallback when retrieval is unavailable, and no broader retry for empty/capped
+results alone. See the [retrieve reference](./plugins/workiq/skills/workiq/references/retrieve-work-iq.md).
 
 ### Skills
 
 | Skill | Description |
 |-------|-------------|
-| [**workiq**](./plugins/workiq/skills/workiq/SKILL.md) | Guides usage of the full WorkIQ tool surface — `ask` for semantic questions plus entity tools for fast, structured M365 reads and writes |
+| [**workiq**](./plugins/workiq/skills/workiq/SKILL.md) | Retrieve-first Grounding context, intentional default/named-agent delegation, and entity tools for exact reads/writes/downloads |
+
+Default "Ask Copilot" requests call `ask` directly. For a named agent, reuse a
+trusted ID or resolve it with [`list_agents`](./plugins/workiq/skills/workiq/references/agents-work-iq.md);
+never silently substitute Copilot. Follow-ups retain the same agent's returned
+`conversationId`. Ordinary questions and summaries do not imply delegation.
 
 ### Example prompts
 
 ```
 "What did John say about the proposal?"
+"Ask the release-readiness agent whether Project Aurora is ready to ship"
 "List my unread emails from Sarah this week"
 "Create a calendar event Friday at 3pm with the design team"
 "Accept the 2pm meeting from Rob"
@@ -118,22 +151,27 @@ copilot plugin uninstall workiq-productivity
 
 ## workiq-preview
 
-> **Preview build.** Same natural-language access as `workiq`, plus a broader set of entity tools for direct, structured M365 reads and writes — fetch, create, update, delete, do-action, call-function, schema discovery, and blob downloads.
+> **Preview plugin.** Same work-context retrieval, Copilot-answer, and structured entity workflows as `workiq`. Installing this plugin does not enable tenant-gated tools such as preview `retrieve`.
 
-**Install:** `/plugin install workiq-preview@work-iq`
+**Install:** Use your host's plugin installer; Copilot CLI example: `/plugin install workiq-preview@work-iq`.
 **Source:** [`plugins/workiq-preview/`](./plugins/workiq-preview/)
 
 ### MCP Servers
 
 | Server | Tools |
 |--------|-------|
-| `@microsoft/workiq@preview` | `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `get_debug_link` |
+| `workiq-preview` (hosted) | Discover the connected catalog for exact names and availability; uses the same logical tool names as `workiq`, including `retrieve` only where available |
 
 ### Skills
 
 | Skill | Description |
 |-------|-------------|
-| [**workiq-preview**](./plugins/workiq-preview/skills/workiq-preview/SKILL.md) | Guides usage of the full WorkIQ tool surface — `ask_work_iq` for semantic questions plus entity tools for fast, structured reads and writes |
+| [**workiq-preview**](./plugins/workiq-preview/skills/workiq-preview/SKILL.md) | Retrieve-first Grounding context, intentional default/named-agent delegation, and entity tools for exact reads/writes/downloads |
+
+The [preview retrieve reference](./plugins/workiq-preview/skills/workiq-preview/references/retrieve-work-iq.md)
+documents the same explicit Grounding policy, broader-source exceptions, capability
+restrictions, and honest availability handling. Both packages dispatch to canonical
+file/calendar/mail/Teams contracts and an operation-aware recovery policy.
 
 ### Example prompts
 
@@ -222,6 +260,6 @@ Want to add your own plugin? See [CONTRIBUTING.md](./CONTRIBUTING.md) for the fu
 
 1. Create your plugin under `plugins/{your-plugin}/`
 2. Add `.mcp.json`, `README.md`, and `skills/{name}/SKILL.md`
-3. Register it in [`.github/plugin/marketplace.json`](./.github/plugin/marketplace.json)
+3. Register it in [`marketplace.json`](./marketplace.json) and mirror the entry in [`.claude-plugin/marketplace.json`](./.claude-plugin/marketplace.json)
 4. Update this file (`PLUGINS.md`) with your plugin entry
 5. Submit a pull request
