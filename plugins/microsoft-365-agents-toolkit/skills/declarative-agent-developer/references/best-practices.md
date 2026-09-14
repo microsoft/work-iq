@@ -10,6 +10,7 @@ Follow these best practices for successful M365 Copilot agent development.
 - **PII Handling:** Follow data protection regulations when handling personal information
 - **Audit Logging:** Implement comprehensive audit trails for all agent actions
 - **Secret Storage:** Never hardcode credentials; use Azure Key Vault or environment variables
+- **Write Capability Confirmation:** Require clear user confirmation before sensitive `EmailActions` or `MeetingActions`, such as sending or deleting email and creating or changing calendar events
 
 ## Performance
 
@@ -18,6 +19,7 @@ Follow these best practices for successful M365 Copilot agent development.
 - **Caching Strategy:** Implement appropriate caching for frequently accessed data
 - **Response Time:** Keep operations under 30 seconds to avoid timeouts
 - **Batch Operations:** Use batch APIs when processing multiple items
+- **Response Mode Selection:** Use `Quick response` for latency-sensitive agents, `Think deeper` for complex analytical agents, and `Auto` for mixed workloads
 
 ## Error Handling
 
@@ -30,6 +32,8 @@ Follow these best practices for successful M365 Copilot agent development.
 ## Testing
 
 - **Test All Conversation Starters:** Verify each starter works as intended
+- **Test Write Actions:** Verify confirmation, permissions, cancellation, and failure behavior for `EmailActions` and `MeetingActions`
+- **Test Editorial Matching:** Check close paraphrases and unrelated questions against every `editorial_answers` entry
 - **Test Edge Cases:** Test with missing data, invalid inputs, and error conditions
 - **Security Testing:** Verify scoping and permission controls
 - **Cross-Environment Testing:** Test in dev, staging, and production environments
@@ -50,6 +54,7 @@ Follow these best practices for successful M365 Copilot agent development.
 - **Code Organization:** Separate concerns (capabilities, API plugins, models)
 - **Version Control:** Use semantic versioning for shared agents
 - **Change Management:** Document changes and maintain changelog
+- **Editorial Answer Governance:** Assign an owner and review cadence for approved answers so stale canonical content is removed promptly
 
 ## Conversation Design
 

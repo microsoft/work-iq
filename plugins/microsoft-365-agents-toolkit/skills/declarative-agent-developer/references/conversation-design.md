@@ -108,12 +108,14 @@ Describe the purpose and context for each data source the agent can use. You don
 - **Copilot connector knowledge**: Reference by connector name — "Use `ServiceNow KB` for help articles."
 - **SharePoint/OneDrive**: Describe the data source — "Search internal HR policy documents" or "Reference company documents in SharePoint."
 - **Email**: Describe the scenario — "Check user emails for relevant information."
+- **Email actions**: Describe when to send, archive, flag, move, delete, or organize email, and require confirmation before sensitive writes.
 - **Teams messages**: "Search Teams channels and chat messages." (messages only — NOT transcripts)
 - **Meetings**: "Check calendar events, attendees, and meeting transcripts." (transcripts come from `Meetings`, not `TeamsMessages`)
+- **Meeting actions**: Describe when to schedule or change calendar events, create time-finding polls, or surface time insights, and require confirmation before calendar writes.
 - **Code interpreter**: "Use code interpreter to generate charts."
 - **People knowledge**: "Look up people in the organization for contact info."
 
-> **Common mistake:** Assuming meeting transcripts are part of `TeamsMessages`. Transcripts are retrieved through the `Meetings` capability. `TeamsMessages` covers channel posts, DMs, and meeting chat messages only. See the [Capability Reference](instruction-review.md#capability-reference-v16) for the full mapping.
+> **Common mistake:** Assuming meeting transcripts are part of `TeamsMessages`. Transcripts are retrieved through the `Meetings` capability. `TeamsMessages` covers channel posts, DMs, and meeting chat messages only. See the [Capability Reference](instruction-review.md#capability-reference-v18) for the full mapping.
 
 ### 8. Provide Examples
 
@@ -160,6 +162,54 @@ Developing instructions is an iterative process:
    - Verify the agent acts according to instructions.
    - Confirm prompts outside conversation starters are handled appropriately.
 4. **Iterate** on instructions to further improve output.
+
+---
+
+## Manifest-Level Experience Controls
+
+Evaluate these options while designing a new agent; they are easy to miss if discovery focuses only on knowledge sources and plugins.
+
+### Editorial answers (v1.7+)
+
+Use `editorial_answers` for approved, stable answers that should be selected through semantic similarity, such as official support contacts or policy FAQs.
+
+- Use it for canonical content that changes infrequently.
+- Do not use it for personalized, permission-sensitive, or rapidly changing answers.
+- Keep each question and answer focused on one intent.
+- Review inline answers as governed content because they reduce normal generative variation.
+
+```json
+{
+  "editorial_answers": {
+    "answers": [
+      {
+        "question": "How do I contact the help desk?",
+        "answer": "Email helpdesk@contoso.com or call extension 5555."
+      }
+    ]
+  }
+}
+```
+
+### Default response mode (v1.7+)
+
+Choose `behavior_overrides.default_response_mode` from the dominant workload:
+
+| Mode | Use when |
+|------|----------|
+| `Auto` | Requests vary between simple lookups and complex analysis. This is the default. |
+| `Quick response` | Low latency matters more than deep reasoning, such as routing or short FAQ agents. |
+| `Think deeper` | The agent primarily performs complex analysis, planning, or multi-step decisions. |
+
+Users can override the default in the model selector. Do not rely on the setting as a hard enforcement mechanism.
+
+```json
+{
+  "behavior_overrides": {
+    "default_response_mode": "Think deeper"
+  }
+}
+```
 
 ---
 
@@ -369,14 +419,29 @@ Identify the top 3-5 tasks users will perform:
 }
 ```
 
-#### 4. Use Natural Language
+#### 4. Gate Capability-Specific Starters (v1.7+)
+
+Use `depends_on` when a starter only works with specific configured capabilities. Every dependency must be present before the starter is shown.
+
+```json
+{
+  "title": "Project Update",
+  "text": "Summarize internal email and public web updates for this project.",
+  "depends_on": [
+    { "name": "capabilities", "id": "Email" },
+    { "name": "capabilities", "id": "WebSearch" }
+  ]
+}
+```
+
+#### 5. Use Natural Language
 
 Write starters as users would naturally speak:
 
 ✅ Good: "What's the latest on Project Phoenix?"
 ❌ Bad: "Query project status for Phoenix"
 
-#### 5. Provide 3-6 Starters (Not Too Many)
+#### 6. Provide 3-6 Starters (Not Too Many)
 - **Too few** (<3): Users don't see the full capability range
 - **Just right** (3-6): Good variety without overwhelming
 - **Too many** (>6): Clutters UI, users won't read them all

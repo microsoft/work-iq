@@ -65,6 +65,9 @@ When you add, remove, or modify ANY capability or plugin, you MUST complete ALL 
 - Identify the agent's primary purpose and target users
 - Determine required data sources (M365 services, external APIs)
 - List necessary actions the agent must perform
+- Identify email and calendar **write** operations separately from read/search requirements
+- Identify approved, stable FAQ answers that should use canonical response content
+- Decide whether the default experience should favor automatic selection, low latency, or deeper reasoning
 - Identify security and compliance requirements
 
 ### Step 2: Design the Agent Architecture
@@ -75,6 +78,15 @@ When you add, remove, or modify ANY capability or plugin, you MUST complete ALL 
 - Design API plugin integrations if needed
 - Plan authentication and authorization strategy
 - Design conversation flow and instructions
+
+**Build-time feature discovery:**
+
+| User requirement | Manifest feature | Design rule |
+|------------------|------------------|-------------|
+| Email triage, supervised send, delete, rules, auto-reply, or folder management | `EmailActions` (v1.8+) | This is independent of read-only `Email`; its scopes do not carry over. Add confirmation guidance for sensitive writes. |
+| Meeting scheduling, calendar events, time-finding polls, or time insights | `MeetingActions` (v1.8+) | This is separate from read-only `Meetings`. Add confirmation guidance before creating or changing events. |
+| Canonical answers for semantically similar questions | `editorial_answers` (v1.7+) | Use for approved, stable Q&A. Do not use for dynamic or personalized data. |
+| A consistent default speed/reasoning experience | `behavior_overrides.default_response_mode` (v1.7+) | Choose `Auto`, `Quick response`, or `Think deeper` based on the dominant workload. |
 
 ### Step 3: Edit JSON Manifest Files
 
@@ -87,7 +99,7 @@ When you add, remove, or modify ANY capability or plugin, you MUST complete ALL 
    - Only after the user confirms, fix with surgical edits, then re-read the file
    - Then continue with the user's original request as a separate step
 
-2. **Check the schema version**: Read the `"version"` field in `declarativeAgent.json` (e.g., `"v1.4"`, `"v1.6"`). For EVERY feature you plan to add, verify it exists in that version using the [feature matrix](schema.md). If a requested feature requires a newer version → **STOP. Tell the user.** Offer to upgrade the version first.
+2. **Check the schema version**: Read the `"version"` field in `declarativeAgent.json` (e.g., `"v1.4"`, `"v1.8"`). For EVERY feature you plan to add, verify it exists in that version using the [feature matrix](schema.md). If a requested feature requires a newer version → **STOP. Tell the user.** Offer to upgrade the version first.
 
 3. **Run a proactive instruction review** (if the edit touches instructions or capabilities): Before modifying instructions or adding/removing capabilities, run [Instruction Review](instruction-review.md) **Phase 1 (Inventory)**, **Phase 2 (Comprehension Check)**, and **Phase 3 (Diagnose)** against the current instructions. This catches existing problems before you add to them. For Phase 2, use the brief confirmation shortcut ("I see this agent is designed to [purpose]…") since this is a proactive check. If the review finds high-severity issues (C1, C3, C11, D1-D8), inform the user and offer to fix them as part of the current edit.
 
