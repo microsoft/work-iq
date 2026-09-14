@@ -37,7 +37,7 @@ if ($NewUrl) {
     $BaseUrl = "https://$TunnelHost"
     Write-Host "Detected current tunnel URL -> $BaseUrl"
 } else {
-    Fail "No -NewUrl given and no DEVTUNNEL_NAME in env/.env.local — cannot detect the tunnel. Re-run /setup-sso-ui-widget instead."
+    Fail "No -NewUrl given and no DEVTUNNEL_NAME in env/.env.local — cannot detect the tunnel. Re-run /setup-sso instead."
 }
 
 $Domain = $BaseUrl -replace '^https?://', '' -replace '/.*', ''
