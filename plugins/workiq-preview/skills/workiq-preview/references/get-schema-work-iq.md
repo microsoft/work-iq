@@ -1,80 +1,86 @@
 # get_schema
 
-Retrieve the OpenAPI schema for a WorkIQ path or operation — fields available on an entity, query parameters, body shape for create/update/action.
-
-> **Routing rule:** call `get_schema` once with `path` set to the path of interest AND the right `operationType`:
->
-> - **Collection reads** (`/me/messages`, `/me/events`) → `operationType: "fetch"`
-> - **Creates** (POST to a collection, e.g. `/me/events`, `/me/messages`) → `operationType: "create"`
-> - **Updates** (PATCH on a specific item, e.g. `/me/messages/{id}`) → `operationType: "update"`
-> - **Action verbs** (camelCase/PascalCase verb at end of path: `/me/sendMail`, `/me/messages/{id}/forward`, `/me/events/{id}/{accept|decline|tentativelyAccept}`, `/copy`, `/move`, `/reply`, `/getSchedule`, `/findMeetingTimes`) → `operationType: "action"`
->
-> Each path supports only the values matching its real operations — wrong values return precise errors like `No 'create' operation for path: me/sendMail`. When that happens, **do not** retry blindly; the mapping above is correct. Do not fall back to a related entity path (e.g. `/me/messages`) for an action-verb schema — the wrapper shape differs.
+Inspect the live schema for an exact WorkIQ path/operation. Use it when the user
+explicitly asks for schema, or before an unfamiliar operation. Do not add discovery
+to a known documented route merely because the operation has a body.
 
 ## Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `path` | string | **Yes** | Entity path (`/me/messages`). Server-relative, starts with `/`. |
-| `operationType` | string | **Yes** | One of `fetch` (GET), `create` (POST to collection), `update` (PATCH), `action` (action verb body). Each path supports only the matching subset; wrong values error like `No 'create' operation for path: me/sendMail`. |
-| `format` | string | No | `jsonschema`, `typescript`, or `cddl`. Defaults to `cddl`. |
+| Parameter | Type | Usage |
+| --- | --- | --- |
+| `path` | string | Supply the exact path of interest, server-relative. |
+| `operationType` | string | Supply `fetch`, `create`, `update`, or `action`, matching the operation. |
+| `format` | string | Optional `jsonschema`, `typescript`, or `cddl`; catalog default is `cddl`. |
+| `agentId` | string | Only when advertised and an applicable exact agent ID is known; not an access-denial workaround. |
 
-> **⚠️ Parameter shape gotchas.**
-> - `operationType` is the **only** way to pick the operation flavor — no `httpMethod`, `method`, `verb`, `apiVersion`, `operationIds`, or `backend` param exists on `get_schema`. `fetch`→GET, `create`→POST to a collection, `update`→PATCH, `action`→action verb body.
+The connected catalog describes `path` and `operationType` as required even where
+its input schema marks them nullable/optional; supply both. There is no advertised
+`method`, `httpMethod`, `verb`, `apiVersion`, `backend`, or request/response selector.
 
-## When to Use
+## Choose the operation, not a related resource
 
-- Before `create_entity` / `update_entity` to confirm body shape
-- When `fetch` returns unfamiliar fields
-- To check supported OData query params (`$filter`, `$select`, `$orderby`)
-- To check `beta` fields not in `v1.0`
+| Operation | `operationType` | Example |
+| --- | --- | --- |
+| Entity/collection read | `fetch` | `/me/messages` |
+| Collection creation | `create` | `/me/messages` |
+| Existing entity update | `update` | `/me/messages/{id}` |
+| Named action | `action` | `/me/sendMail`, `/me/messages/{id}/createReply`, `/me/calendar/getSchedule` |
+
+An action may be read-only or mutating. Its effects, not `action` or POST alone,
+determine confirmation and recovery requirements. Do not substitute a parent
+entity schema for an action body; their wrappers differ.
+
+## Request schema vs response schema
+
+Inspect what the returned schema actually describes. The inherited action-schema
+contract is request-oriented: `create`, `update`, and `action` describe input fields,
+not proof of the operation's resulting resource. The current catalog's general
+description mentions inlined request/response schemas; that prose alone does not
+establish that a particular action exposes its response shape.
+
+For an action request, call once with the exact path and `operationType: "action"`.
+If only a request shape is returned, identify it as such and state that response
+fields were not exposed. Do not invent another selector, format retry, response
+endpoint, or related resource lookup to manufacture a response schema.
+
+For example, an upload-session action may return a request schema describing
+`item`/`driveItemUploadableProperties`. That does not confirm `uploadUrl`,
+`expirationDateTime`, or `nextExpectedRanges` as response properties. Actual
+returned response evidence must establish those fields. See
+[Files](files-work-iq.md) for the operation's outcome boundaries.
 
 ## Examples
 
-### Read schema for messages
 ```json
-{ "path": "/me/messages", "operationType": "fetch" }
+{"path":"/me/messages","operationType":"fetch"}
 ```
 
-### Create schema for a calendar event
 ```json
-{ "path": "/me/events", "operationType": "create" }
+{"path":"/me/events","operationType":"create"}
 ```
 
-### Update schema for a message
 ```json
-{ "path": "/me/messages/{id}", "operationType": "update" }
+{"path":"/me/messages/{id}","operationType":"update"}
 ```
 
-### TypeScript format
 ```json
-{ "path": "/me/messages", "operationType": "fetch", "format": "typescript" }
+{"path":"/me/sendMail","operationType":"action","format":"typescript"}
 ```
 
-### Action verb schema (sendMail)
-```json
-{ "path": "/me/sendMail", "operationType": "action" }
-```
-
-## Asking for the "schema" of an action
-
-For "schema for sending an email" / "what parameters does sendMail take?" / "body for accepting a meeting?", call `get_schema` **once** with `{ "path": "<action-path>", "operationType": "action" }`. This returns the request-body JSON Schema — for `/me/sendMail`, `Message` (a `microsoft.graph.message`) plus `SaveToSentItems` (boolean). Surface those properties directly.
-
-Do **not**:
-
-- Pass `create`/`fetch`/`update` on an action verb — errors with `No '<op>' operation for path: ...`.
-- Call `search_paths` first — action verbs are well-known.
-- Substitute a related entity's schema — `{Message, SaveToSentItems}` differs from a raw message.
-- Fall back to `web_fetch` against `learn.microsoft.com` — MCP or the action ref has the authoritative shape.
+For sendMail, preserve the exact wrapper and field casing returned by the schema;
+inherited examples can differ (`Message`/`SaveToSentItems` versus lower camel case).
+Do not change the live schema or normalize action bodies to fit an example.
 
 ## Schema availability ≠ operation allowed
 
-`get_schema` describes the OpenAPI shape the server **could** accept; it does NOT guarantee the operation is allowed at runtime. A successful schema response only means "if you POST/PATCH/GET this path with this body shape, the server will parse it" — the actual call may still 403 (missing scope, tenant policy) or 404 (path is action-only, or entity ID is stale).
+A schema is not a permission grant or proof that a payload will pass runtime
+policy/validation. Do not derive an executable update route from writable-looking
+parent metadata: for example, presence has its own documented actions in
+[Teams](teams-work-iq.md). Domain references own payloads:
+[Mail](mail-work-iq.md), [Calendar](calendar-work-iq.md), [Tasks](tasks-work-iq.md),
+and [Files](files-work-iq.md).
 
-**Common trap — action-only entities returning an update schema:**
-- `get_schema({ "path": "/me/presence", "operationType": "update" })` returns a `microsoft.graph.presence` JSON Schema with writable-looking fields (`availability`, `activity`).
-- Calling `update_entity` on `/me/presence` returns **404 NotFound** — presence state is mutated via the `setPresence` / `setUserPreferredPresence` **action verbs**, not via PATCH on the entity.
-- The same pattern applies to other state-driven entities surfaced primarily through action verbs.
-
-**Rule:** when `search_paths` reports an action verb (`/me/presence/setPresence`, `/me/messages/{id}/send`, `/me/events/{id}/accept`) for a state change, route to `do_action` against that verb. Do NOT use the schema for the parent entity as license to `update_entity` — schema availability for `update` is a Graph metadata artifact, not a permission grant.
-
+For a demonstrated pre-execution validation defect, follow the single safe
+correction limit in [recovery](troubleshooting.md). Generic `400` does not establish
+a cause. Explicit denial stops even when the schema looks permissive; no other
+tool, path, agent, or schema variant to bypass it.

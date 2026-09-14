@@ -1,8 +1,11 @@
 # Microsoft Work IQ — Plugin Marketplace
 
-> The official Microsoft Work IQ plugin collection for GitHub Copilot ✨
+> The official Microsoft Work IQ plugin collection for compatible AI agents ✨
 
-Extend the power of GitHub Copilot with Work IQ plugins — MCP servers, skills, and tools that connect AI assistants to your Microsoft 365 data.
+Work IQ is **agent-host-neutral**: its MCP servers, skills, and tools connect AI
+assistants to your Microsoft 365 data. The same routing and safety guidance applies
+across compatible agent hosts, not just GitHub Copilot CLI. This repository includes
+plugin metadata for GitHub Copilot, Claude, and Codex.
 
 > ⚠️ **Public Preview:** Features and APIs may change.
 
@@ -14,9 +17,12 @@ For more information, see Microsoft's [User and Admin Consent Overview](https://
 
 ## 📋 Prerequisites
 
-Before getting started, ensure you have **Node.js** (which includes NPM and NPX) installed:
+Choose a compatible agent host that supports the selected plugin/skill loading
+and MCP authentication mechanisms. Hosted Work IQ tool calls do not require a
+local Node.js package.
 
-- **Node.js 18+** — [Download from nodejs.org](https://nodejs.org/)
+For the optional local WorkIQ CLI or stdio MCP server, install
+**Node.js 18+** ([download](https://nodejs.org/)), which includes NPM and NPX.
 
 You can verify your installation by running:
 
@@ -25,11 +31,23 @@ node --version
 npm --version
 ```
 
-> 💡 **Why Node.js?** WorkIQ uses NPX to run the MCP server. NPX is included automatically with NPM, which comes bundled with Node.js.
+> 💡 **Why Node.js?** The local CLI/stdio option uses Node.js and NPX.
+> Hosted MCP connections use your host's remote-server and authentication support.
 
 ---
 
-## 🚀 Quick Start with GitHub Copilot CLI
+## 🚀 Choose Your Agent Host
+
+Use your host's plugin installer to load both the skills and the MCP connection.
+See [installation by host](./PLUGINS.md#installation-by-host) for the packaged
+manifest locations. Installation commands and configuration wrappers are
+host-specific; tool ownership, explicit Grounding defaults, and safety rules are not.
+
+A host that connects only to the MCP server does not automatically load the skill
+instructions. Load them through the host's supported skill/instruction mechanism
+if you want the plugin's routing policy as well as its tools.
+
+### GitHub Copilot CLI example
 
 ```bash
 # 1. Open GitHub Copilot CLI
@@ -45,7 +63,7 @@ copilot
 /plugin install workiq-productivity@work-iq
 ```
 
-**That's it!** Restart Copilot CLI and start using the plugin:
+For this host, restart Copilot CLI after installation, then use the plugin:
 
 ```
 You: What are my upcoming meetings this week?
@@ -55,12 +73,12 @@ You: Find documents I worked on yesterday
 
 ---
 
-## 📦 Alternative: Standalone MCP Installation
+## 📦 Optional Standalone MCP Installation
 
 [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=workiq&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40microsoft%2Fworkiq%22%2C%22mcp%22%5D%7D)
 [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=workiq&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40microsoft%2Fworkiq%22%2C%22mcp%22%5D%7D&quality=insiders)
 
-If you prefer to run WorkIQ as a standalone MCP server:
+If your host uses a local stdio MCP server, run WorkIQ standalone:
 
 ```bash
 # Install globally
@@ -166,8 +184,8 @@ workiq mcp
 
 | Plugin | Description |
 |--------|-------------|
-| [**workiq**](./plugins/workiq/) | Query Microsoft 365 data with natural language — emails, meetings, documents, Teams messages, and more. |
-| [**workiq-preview**](./plugins/workiq-preview/) | **Preview build.** Same natural-language access as `workiq`, plus a broader set of entity tools (fetch, create, update, delete, do-action, call-function, blob downloads, schema discovery) for direct, structured M365 reads and writes. |
+| [**workiq**](./plugins/workiq/) | Retrieve-first Microsoft 365 context with explicit Grounding when available, intentional agent delegation with `ask`, and exact entity reads/writes/downloads. |
+| [**workiq-preview**](./plugins/workiq-preview/) | **Preview build.** The same shared retrieval, delegation, and entity-operation policy; actual tool availability depends on the connected tenant. |
 | [**microsoft-365-agents-toolkit**](./plugins/microsoft-365-agents-toolkit/) | Toolkit for building and evaluating M365 Copilot declarative agents — scaffolding, manifest authoring, capability configuration, and eval workflows. |
 | [**workiq-productivity**](./plugins/workiq-productivity/) | Read-only WorkIQ productivity insights — email triage, meeting costs, org charts, channel audits, and more. |
 

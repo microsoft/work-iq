@@ -1,0 +1,47 @@
+name: WorkIQ guidance contracts
+
+on:
+  pull_request:
+    paths:
+      - 'plugins/workiq/**'
+      - 'plugins/workiq-preview/**'
+      - '*.md'
+      - 'marketplace.json'
+      - '.claude-plugin/marketplace.json'
+      - 'tests/workiq-guidance/**'
+      - '.github/workflows/workiq-guidance.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'plugins/workiq/**'
+      - 'plugins/workiq-preview/**'
+      - '*.md'
+      - 'marketplace.json'
+      - '.claude-plugin/marketplace.json'
+      - 'tests/workiq-guidance/**'
+      - '.github/workflows/workiq-guidance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install test-only parsers
+        run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: tests/workiq-guidance
+      - name: Trace-oracle unit tests (not observed agent behavior)
+        run: npm run test:oracle
+        working-directory: tests/workiq-guidance
+      - name: Static documentation and contract checks
+        run: npm run test:static
+        working-directory: tests/workiq-guidance

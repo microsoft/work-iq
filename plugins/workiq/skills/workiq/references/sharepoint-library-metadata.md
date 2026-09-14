@@ -5,8 +5,8 @@ files filtered, counted, grouped, sorted, or compared by metadata.
 
 ## Content search and library metadata are different
 
-`ask` and general SharePoint search tools retrieve information from document
-content and embedded file properties. SharePoint document-library columns are
+Semantic retrieval/delegated answers and general SharePoint search can supply
+document content and embedded file properties. SharePoint document-library columns are
 list-item fields and must be read through `fetch`.
 
 For example, document text may contain `Document Owner: Sofia Ricci` while the
@@ -21,8 +21,15 @@ Use this route whenever the user mentions:
 - earliest/latest by a date column; or
 - which documents have a specified column value.
 
-Do not use `ask` as the sole source for those claims. It may summarize file
-content only after `fetch` has identified the correct files structurally.
+Do not use semantic evidence as the source of truth for those column claims.
+Once exact files are identified, synthesize from their supported reads. Ordinary
+caller-owned semantic evidence follows [retrieval policy](retrieve-work-iq.md)
+with explicit Grounding; [ask](ask-work-iq.md) requires intentional delegation.
+
+The routes and endpoint limits below are inherited contracts, not new live
+schema/response validation. Preserve their source-truth and completeness rules.
+Use [canonical recovery](troubleshooting.md) for failures; explicit denial always
+stops, even where an alternative addressing mode is documented.
 
 ## Canonical resolution recipe
 
@@ -70,14 +77,16 @@ Build a mapping from the user-facing `displayName` to the internal `name`.
 | Review Date | `displayName: Review Date`, `name: Review_x0020_Date` | `fields.Review_x0020_Date` |
 | Document Type | `displayName: Document Type`, `name: DocumentType` | `fields.DocumentType` |
 
-Match names case-insensitively and ignore spaces/underscores when comparing.
+Use case-insensitive/space/underscore-normalized comparison only to find candidates;
+if multiple columns match, resolve the ambiguity rather than conflating them.
 Use the internal `name` exactly as `/columns` returns it — spaces and special
 characters are encoded (e.g. `Review_x0020_Date`). Never assume the internal
 name from the display label; read it from `/columns`, and disclose a surprising
 mapping such as: “The library's Review Date column is stored internally as
 `Review_x0020_Date`.”
 
-If no column matches, stop and say that the library has no requested column.
+If no column matches a complete successful columns response, stop and say that the
+library has no requested column. A partial or failed column read cannot establish absence.
 List the relevant available display names from `/columns`; do not guess,
 substitute, or relabel another field.
 
@@ -122,7 +131,8 @@ Before reporting each metadata value:
 
 ### Absent-field protocol
 
-Declare the requested property absent only when `/columns` does not contain it.
+Declare the requested property absent only when a complete, successful `/columns`
+read does not contain it.
 In that case:
 
 - state plainly, in the **first sentence**, that the library has no such column;
@@ -258,11 +268,10 @@ response or path, then fetch the corresponding list item with
 `?$expand=fields` before filtering, sorting, counting, or grouping metadata. Do
 not infer column values from drive-item properties. If the relationship cannot
 be resolved, disclose the limitation instead of claiming a complete metadata
-result. If
-`/drives/{driveId}/root/children` and `/drives/{driveId}/root:/{path}:/children`
-return “Access denied for GET path”, do **not** conclude the folder is empty —
-get the root folder item id from the list's drive metadata and enter the tree
-there.
+result. Resolve the root folder item ID from supported list-drive metadata before
+traversal. If a root alias or any other read returns “Access denied for GET path”,
+stop the affected workflow. Do not try a different addressing mode, and do not
+conclude that the folder is empty.
 
 ### 4. Targeted item read (single known item only)
 
@@ -315,35 +324,37 @@ SharePoint call failed. Inspect `structuredContent.results[].statusCode` for
 every entry in every response:
 
 - `200` — usable.
-- `404` — the item does not exist. Fine when probing; not fine for an item you
-  were told exists.
-- `500` — transient; the item was not read. Retry that single URL once, on its
-  own, before doing anything else.
-- `400` — the query shape is unsupported. Read the message; do not reword and
-  retry blindly.
+- `404` — not found at the requested path; do not assume why or count it as read.
+- `500` — the item was not successfully read. Follow the bounded read-only retry
+  policy, honoring the actual returned delay; preserve all successful batch entries.
+- `400` — rejected request; its specific diagnostic, not the code alone, determines
+  whether a supported query correction is possible.
+- `401` / `403` or explicit access/policy denial — stop the affected workflow.
+  A generic forbidden response does not identify an underlying cause.
 
 When you send N `entityUrls`, count the 200s. If fewer than N came back 200,
 your data set is short by the difference — recover the item or state how many
 could not be read. Before stating any total, reconcile: items counted == items
 requested == items returned 200. If those disagree, say so.
 
-## SharePoint error decoder and bounded retries
+## SharePoint error decoder and bounded recovery
 
 | Error text | Meaning | Correct response |
 |---|---|---|
-| `Access denied for GET path: /sites/{name}?...` | The site was addressed by name rather than composite id | Resolve `/sites/{host}:/sites/{name}`, then retry once with the returned id |
-| `Access denied for GET path: /drives/{id}/root:/X:/children` or `/drives/{id}/root/children` | The path-addressed template was rejected | Get the root folder item id from the list's drive metadata, then traverse `/drives/{id}/items/{itemId}/children`. Do not treat the denial as an empty folder |
-| `Access denied` on a SharePoint read | It does not prove the folder is empty or the user lacks permission | Try at most two materially different supported path shapes, then report `could not read` |
+| `Access denied for GET path: /sites/{name}?...` | Explicit access denial; the message alone does not prove a name/ID defect | Stop and report the observed denial; no addressing-mode bypass |
+| `Access denied for GET path: /drives/{id}/root:/X:/children` or `/drives/{id}/root/children` | Explicit access denial, not an empty folder | Stop; do not traverse a different path to recover the denied target |
+| `Access denied` on a SharePoint read | Explicit denial without evidence of its underlying cause | Stop the affected workflow; do not try another tool, strategy, agent, or path |
 | `Query parameter $skip is not permitted` on a continuation call | This continuation's `$skiptoken` was rejected | Stop that paging strategy; use folder traversal with list-item rehydration, and keep the result partial unless traversal produces the complete candidate set. Do not id-range page — `$filter=id gt` is also blocked (HTTP 500) |
 | `Field 'X' cannot be referenced in filter or orderby` | The column is not indexed | Enumerate fields and process client-side |
 | Error on a bare list-item `$select` of custom columns | List columns live under `fields` | Use `$expand=fields($select=...)` |
-| 403 from `call_function` for an ODSP path | The operation is unavailable with current tenant permissions | Stop using `call_function` for this conversation and use `fetch` where supported |
-| 500 or `assistant is busy, retry in 120 seconds` | Transient failure | Retry at most twice with backoff, then change strategy or report failure |
+| 403 from `call_function` for an ODSP path | Forbidden; cause unspecified unless the diagnostic says more | Stop the affected workflow; do not switch to `fetch` |
+| 500 or `assistant is busy, retry in 120 seconds` on a read | Read failure; the latter explicitly supplies a delay | Honor the actual delay (120 seconds in this diagnostic), retry the failed read at most once, then report failure |
 
-For one failing target, make at most three attempts total. Each attempt must
-change something material, such as the site addressing mode, folder addressing
-mode, or pagination strategy. After three attempts, mark the target
-unreachable, continue with other independent targets, and disclose the gap.
+For a demonstrated pre-execution query-validation defect, make at most one
+supported correction when safe. Unsupported query/paging correction is not
+authorization to bypass an access or policy denial. Do not use generic `400`/`500`
+as proof that another route is needed. Follow [recovery](troubleshooting.md);
+retain successful independent reads and disclose gaps without probing denied targets.
 
 An error is not an empty value. Never report “the folder is empty” or “there
 are no matching files” solely because a call failed.
@@ -352,5 +363,6 @@ are no matching files” solely because a call failed.
 
 `fetch` accepts at most 50 URLs in one `entityUrls` call. Split larger batches
 into chunks of 50 or fewer. Prefer batching related, known-good reads over
-sequential single-URL calls, but isolate a failing URL when one bad entry causes
-the whole batch to fail.
+sequential single-URL calls. Preserve successful entries and isolate only failed
+reads within the single bounded recovery budget; never retry a successful batch
+entry or replay mutations to recover a read.
