@@ -12,7 +12,12 @@ Full WorkIQ tool surface for GitHub Copilot CLI: agentic semantic queries via `a
 
 ### Via MCP Configuration
 
-Add to your `.mcp.json` or IDE MCP settings:
+The hosted WorkIQ endpoint can be configured in different MCP hosts with different JSON shapes. Use the schema supported by your client:
+
+- GitHub Copilot CLI: `.mcp.json` uses `mcpServers` / `oauthClientId` / `oauthPublicClient`
+- VS Code: `mcp.json` uses `servers` and an `oauth.clientId` object; `oauthPublicClient` and `auth.redirectPort` are not valid in the VS Code schema
+
+GitHub Copilot CLI example:
 
 ```json
 {
@@ -29,6 +34,24 @@ Add to your `.mcp.json` or IDE MCP settings:
   }
 }
 ```
+
+VS Code example:
+
+```json
+{
+  "servers": {
+    "workiq-preview": {
+      "type": "http",
+      "url": "https://workiq.svc.cloud.microsoft/mcp",
+      "oauth": {
+        "clientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87"
+      }
+    }
+  }
+}
+```
+
+> If VS Code shows a `platform_broker_error` loop or `401 InvalidAuthenticationToken` with an empty bearer token, remove any stale `oauthPublicClient` / `auth.redirectPort` entries and re-run the VS Code OAuth flow using the `servers` + `oauth.clientId` shape above.
 
 The plugin connects to the hosted WorkIQ MCP prod endpoint. It does **not** launch a local MCP server for tool calls.
 

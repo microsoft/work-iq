@@ -127,7 +127,9 @@ Common failure: fetching the entity and stopping, asking the user "did you want 
 
 ## Prerequisites
 
-WorkIQ MCP tool calls use the hosted prod endpoint configured in `.mcp.json`:
+WorkIQ MCP tool calls use the hosted prod endpoint configured in your MCP host settings. The schema differs by host:
+
+GitHub Copilot CLI example:
 
 ```json
 {
@@ -144,6 +146,24 @@ WorkIQ MCP tool calls use the hosted prod endpoint configured in `.mcp.json`:
   }
 }
 ```
+
+VS Code example:
+
+```json
+{
+  "servers": {
+    "workiq-preview": {
+      "type": "http",
+      "url": "https://workiq.svc.cloud.microsoft/mcp",
+      "oauth": {
+        "clientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87"
+      }
+    }
+  }
+}
+```
+
+> In VS Code, do not include `oauthPublicClient` or `auth.redirectPort` in the server definition. Using the CLI shape in VS Code can trigger the platform broker flow to fail with `401 InvalidAuthenticationToken` and an empty bearer token.
 
 No local package or runtime install is required for MCP tool calls. Do not block MCP tool usage on local machine prerequisites.
 
