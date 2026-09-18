@@ -204,6 +204,14 @@ The primary tool. Ask any workplace question in plain English. This is an **agen
 
 For detailed usage and examples, read `references/ask-work-iq.md`.
 
+### `retrieve` — Semantic search across M365
+
+Ranked semantic search over mail, files, meetings, Teams messages, people, and connected sources. Returns hits plus grounding markdown with `[^id]` citations. `retrieve` is the **finding** tool — it ranks documents, it does not read or reason over them, and one call is usually the whole answer.
+
+> **⚡ Anchor each query with a specific term** — a product, person, metric, or date. A query built only from generic topic words ("deck", "update", "latency") returns confident, well-formatted, *wrong* results with no error.
+
+For detailed usage and examples, read `references/retrieve-work-iq.md`.
+
 ---
 
 ## Entity Tools
