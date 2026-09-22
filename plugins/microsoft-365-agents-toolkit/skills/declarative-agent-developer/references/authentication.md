@@ -35,8 +35,8 @@ This guide covers two distinct patterns. Pick the one that matches your goal —
 
 Use this pattern when you want the agent to authenticate the **signed-in M365 user** and pass their verified identity (claims like `name`, `oid`, `tid`) to your plugin's backend — no separate login screen. This is **single sign-on against your own Entra tenant**, not a connection to a third-party OAuth service.
 
-> For a new MCP action, prefer `wiqd agent add action --mcp-auth-type entra-sso
-> --mcp-client-id "<client-id>"`. Use the detailed steps below to review or customize an existing
+> For a new MCP action, prefer `wiqd agent add action --mcp-server-url "<https-url>"
+> --mcp-auth-type entra-sso --mcp-client-id "<client-id>"`. Use the detailed steps below to review or customize an existing
 > action, then validate and provision through wiqd.
 
 > **Same config for API plugins and MCP servers.** The Entra app registration, the `oauth/register` step, and the `OAuthPluginVault` manifest reference are identical for both. Only the location of the `auth` block in the manifest differs.
