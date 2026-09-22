@@ -1,0 +1,56 @@
+{
+  "evidenceKind": "offline-red-before-guidance",
+  "guidanceRevision": "c422129434497cb57aaa671683308d23556754c3",
+  "guidanceModified": false,
+  "requirements": 35,
+  "syntheticScenarios": 113,
+  "deliberatelyInvalidTraces": 121,
+  "runs": [
+    {
+      "command": "npm --prefix tests/workiq-guidance run test:oracle",
+      "tests": 244,
+      "passed": 244,
+      "failed": 0,
+      "exitCode": 0,
+      "meaning": "Synthetic oracle and adapter self-tests only; not observed host-agent compliance."
+    },
+    {
+      "command": "npm --prefix tests/workiq-guidance run test:static",
+      "tests": 132,
+      "passed": 108,
+      "failed": 24,
+      "exitCode": 1,
+      "meaning": "Expected contract failures against unchanged older guidance."
+    },
+    {
+      "command": "npm --prefix tests/workiq-guidance test",
+      "tests": 376,
+      "passed": 352,
+      "failed": 24,
+      "exitCode": 1
+    }
+  ],
+  "documentationFailureCauses": [
+    "Both packages lack direct links and canonical agents, files and calendar references.",
+    "Both entry skills lack the new explicit Grounding-default policy.",
+    "Retrieve examples still select Copilot for unknown sources; implicit ask fallback remains.",
+    "Retrieve guidance lacks objective-scoped escalation, user-selected delegation and saved-cap inspection coverage.",
+    "Function references lack initial-sync versus saved-checkpoint coverage.",
+    "Planner and Teams retain implicit ask as a structured-lookup fallback.",
+    "Shared recovery guidance lacks accepted/pending and precondition reconciliation coverage.",
+    "Planner and preview update guidance contain unconditional retry after precondition reread.",
+    "Public SharePoint references prescribe alternate paths after explicit denial.",
+    "Preview Teams guidance lacks required member tenant identity coverage.",
+    "Workflow references retain old routing or unconditional mutation language; preview retains the non-drive-scoped copy recipe.",
+    "Preview troubleshooting has a broken administrator-guide relative link.",
+    "PLUGINS.md links to the obsolete .github/plugin/marketplace.json location.",
+    "Shared policy/reference parity differs in Teams, troubleshooting, update and workflow references."
+  ],
+  "observedHostAgentTraces": 0,
+  "liveEvaluations": 0,
+  "pendingEvidence": [
+    "Deployed tool-schema captures and accepted responses for endpoint validation.",
+    "A real host adapter, fresh installed-package loading and activation evidence.",
+    "Matched correctness/coverage evaluation and any historical adjudication."
+  ]
+}

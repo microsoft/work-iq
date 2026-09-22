@@ -1,58 +1,20 @@
 # upload_blob
 
-> ⚠️ **Not released yet.** `upload_blob` is documented here for future reference but is **not part of the current WorkIQ MCP surface**. Calling it today returns `tool does not exist`. When a user asks to upload a local file, tell them WorkIQ can't accept raw byte payloads yet and ask them to upload through the OneDrive / SharePoint web UI — see the [Binary downloads and uploads](../SKILL.md) section in `SKILL.md`.
+**Not released for Graph binary content.** Do not call `upload_blob`, invent an
+upload alias, or treat a future parameter example as an available tool. WorkIQ
+cannot accept raw OneDrive/SharePoint byte payloads through this surface.
 
-Upload a local file to a WorkIQ path via HTTP PUT. Use this to upload files to OneDrive or SharePoint.
+The canonical [Files](files-work-iq.md) reference owns upload-session creation,
+drive/item resolution, and byte-transfer limitations. A created session is not an
+uploaded or replaced file. Report the operation actually completed and any remaining
+limitation; do not claim content replacement from session metadata.
 
-## Parameters
+Treat an upload-session URL as a temporary preauthenticated credential: never
+quote, cite, log, or expose it in the answer. For an unavailable byte-upload
+request, explain the limitation and offer the known destination's ordinary
+OneDrive/SharePoint `webUrl` for user-driven upload when available, not the session
+URL. Do not create a session merely to hide that bytes cannot be transferred.
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `targetUrl` | string | Yes | The target path for the upload (e.g., `/me/drive/root:/{filename}:/content`). Must be a relative path — do not include a base URL. |
-| `filePath` | string | Yes | The absolute local file path to upload. |
-
-## When to Use
-
-- Uploading a file to OneDrive
-- Uploading a file to a SharePoint document library
-- Replacing the content of an existing file
-
-## Path Conventions
-
-| Action | Path pattern |
-|--------|-------------|
-| Upload to OneDrive root by filename | `/me/drive/root:/{filename}:/content` |
-| Upload to a specific folder | `/me/drive/root:/{folder}/{filename}:/content` |
-| Replace a file by item ID | `/me/drive/items/{id}/content` |
-| Upload to SharePoint | `/drives/{driveId}/root:/{filename}:/content` |
-
-## Gotchas
-
-- **File size limit**: Simple PUT uploads via this tool work for files up to 4MB. For larger files, initiate an upload session via `do_action` with `actionUrl: "/me/drive/root:/{path}:/createUploadSession"` and PUT chunks to the returned `uploadUrl`. See the `createUploadSession` example in `do-action-work-iq.md`.
-- The URL uses the Graph path-based format `root:/{path}:/content` — include the leading `/` before the filename.
-
-## Examples
-
-### Upload a file to OneDrive root
-```json
-{
-  "targetUrl": "/me/drive/root:/report.pdf:/content",
-  "filePath": "C:\\Users\\user\\Documents\\report.pdf"
-}
-```
-
-### Upload a file to a subfolder in OneDrive
-```json
-{
-  "targetUrl": "/me/drive/root:/Projects/Alpha/spec.docx:/content",
-  "filePath": "C:\\Users\\user\\Documents\\spec.docx"
-}
-```
-
-### Replace an existing file by ID
-```json
-{
-  "targetUrl": "/me/drive/items/{id}/content",
-  "filePath": "C:\\Users\\user\\Documents\\updated-report.pdf"
-}
-```
+Apply [confirmation and recovery](troubleshooting.md) to session mutations:
+required exact confirmation, no ambiguous replay, and no alternate route after
+denial. Downloads have a separate [fetch_blob](fetch-blob-work-iq.md) contract.

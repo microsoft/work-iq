@@ -1,0 +1,20 @@
+{
+  "name": "workiq-guidance-contract",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test *.test.mjs",
+    "test:static": "node --test static.test.mjs",
+    "test:oracle": "node --test oracle.test.mjs",
+    "trace": "node trace-cli.mjs"
+  },
+  "devDependencies": {
+    "github-slugger": "2.0.0",
+    "mdast-util-to-string": "4.0.0",
+    "remark-parse": "11.0.0",
+    "unified": "11.0.5",
+    "yaml": "2.8.1"
+  }
+}
