@@ -167,7 +167,7 @@ workiq mcp
 | Plugin | Description |
 |--------|-------------|
 | [**workiq**](./plugins/workiq/) | Query Microsoft 365 data with natural language — emails, meetings, documents, Teams messages, and more. |
-| [**workiq-preview**](./plugins/workiq-preview/) | **Preview build.** Agent-host-neutral, retrieve-first context with explicit Grounding when available, intentional delegation via `ask`, and exact entity reads, writes, and downloads. This preview policy does not change the public `workiq` skill. |
+| [**workiq-preview**](./plugins/workiq-preview/) | **Preview build.** Agent-host-neutral, retrieve-first context with explicit Grounding when available, intentional delegation via `ask`, and exact entity reads, writes, and downloads. This preview policy does not change the public `workiq` routing policy. |
 | [**microsoft-365-agents-toolkit**](./plugins/microsoft-365-agents-toolkit/) | Toolkit for building and evaluating M365 Copilot declarative agents — scaffolding, manifest authoring, capability configuration, and eval workflows. |
 | [**workiq-productivity**](./plugins/workiq-productivity/) | Read-only WorkIQ productivity insights — email triage, meeting costs, org charts, channel audits, and more. |
 

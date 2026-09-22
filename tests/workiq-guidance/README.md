@@ -1,8 +1,9 @@
 # WorkIQ preview guidance contract checks
 
-This contract covers **`workiq-preview` only**. The public `workiq` skill,
-references, metadata, and version remain unchanged by this preview release;
-cross-package policy parity is not required.
+This contract covers **`workiq-preview` only**. The public `workiq` routing
+policy, metadata, and version remain unchanged. Its SharePoint metadata guidance
+is consolidated into the existing reference as a separate documentation cleanup,
+not an adoption of preview policy; cross-package policy parity is not required.
 
 The preview contract is **agent-host-neutral**. Logical tool behavior is shared across
 compatible agents; host adapters normalize actual tool names and event formats

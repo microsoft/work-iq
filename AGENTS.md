@@ -71,11 +71,12 @@ plugins/<plugin-name>/
 - **workiq** — Full WorkIQ tool surface for Microsoft 365 (read + write). Bundles:
   - `workiq` skill — Guides usage of `ask` for semantic questions plus the entity tools for fast, structured M365 and Business Applications reads and writes
   - Hosted MCP server (`workiq`) with tools: `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `get_debug_link`
+  - SharePoint library-metadata requests dispatch to `references/sharepoint-library-metadata.md`; read it before the workflow. Detailed procedures and safeguards live there rather than being duplicated in `SKILL.md`.
 
 - **workiq-preview** — Preview build with agent-host-neutral, retrieve-first guidance (read + write). Bundles:
   - `workiq-preview` skill — Retrieve caller-owned context with explicit Grounding when available; use `ask` only for intentional delegation, and entity tools for exact reads, writes, and downloads. Load the skill before using WorkIQ tools.
   - Hosted MCP server (`workiq-preview`): discover exact tool names and schemas in the connected host catalog. Preview retrieval is tenant-dependent; installation does not enable it, and missing `retrieve` never silently falls back to `ask`.
-  - Preview-only offline checks: `npm ci --prefix tests/workiq-guidance --ignore-scripts --no-audit --no-fund` then `npm --prefix tests/workiq-guidance test` (Node 22+). CI does not run models or live M365 operations. The public `workiq` package retains its existing guidance and version.
+  - Preview-only offline checks: `npm ci --prefix tests/workiq-guidance --ignore-scripts --no-audit --no-fund` then `npm --prefix tests/workiq-guidance test` (Node 22+). CI does not run models or live M365 operations. The public `workiq` package retains its existing routing policy and version; its SharePoint metadata documentation is consolidated separately.
 
 - **microsoft-365-agents-toolkit** — Toolkit for building M365 Copilot declarative agents. Bundles:
   - `install-atk` skill — Install or update the M365 Agents Toolkit CLI and VS Code extension
