@@ -78,7 +78,7 @@ copilot plugin uninstall workiq-productivity
 | # | Plugin | Skills | Description |
 |---|--------|--------|-------------|
 | 1 | [**workiq**](#workiq) | 1 | Full WorkIQ tool surface — agentic queries plus direct M365 reads and writes |
-| 2 | [**workiq-preview**](#workiq-preview) | 1 | Preview build with the full entity tool surface (read + write) |
+| 2 | [**workiq-preview**](#workiq-preview) | 1 | Preview retrieve-first context, intentional delegation, and exact M365 reads and writes |
 | 3 | [**microsoft-365-agents-toolkit**](#microsoft-365-agents-toolkit) | 4 | Toolkit for building M365 Copilot declarative agents |
 | 4 | [**workiq-productivity**](#workiq-productivity) | 10 | Read-only productivity insights across M365 |
 
@@ -118,22 +118,34 @@ copilot plugin uninstall workiq-productivity
 
 ## workiq-preview
 
-> **Preview build.** Same natural-language access as `workiq`, plus a broader set of entity tools for direct, structured M365 reads and writes — fetch, create, update, delete, do-action, call-function, schema discovery, and blob downloads.
+> **Preview build.** Agent-host-neutral guidance for retrieve-first context with explicit Grounding when available, intentional agent delegation via `ask`, and exact entity reads, writes, and downloads. The public `workiq` skill retains its existing policy.
 
 **Install:** `/plugin install workiq-preview@work-iq`
 **Source:** [`plugins/workiq-preview/`](./plugins/workiq-preview/)
+
+### Installation by host
+
+Use the selected host's plugin/skill loader and MCP connection mechanism. The
+preview package provides `.github/plugin/plugin.json`, `.claude-plugin/plugin.json`,
+and `.codex-plugin/plugin.json`; commands and authentication wrappers are
+host-specific. Connecting MCP tools alone does not load the skill instructions.
+Reinstall/reload changed skills and start a fresh session where the host requires it.
+
+The preview package is versioned independently of `workiq`. Its own version and
+description must agree across host manifests and both marketplace registries.
+Installing the plugin does not enable tenant-gated retrieval.
 
 ### MCP Servers
 
 | Server | Tools |
 |--------|-------|
-| `@microsoft/workiq@preview` | `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `get_debug_link` |
+| `workiq-preview` (hosted) | Discover actual names and schemas in the connected catalog. Logical operations include available `retrieve`, `ask`, `list_agents`, entity reads/writes, actions, functions, downloads, and path/schema discovery. |
 
 ### Skills
 
 | Skill | Description |
 |-------|-------------|
-| [**workiq-preview**](./plugins/workiq-preview/skills/workiq-preview/SKILL.md) | Guides usage of the full WorkIQ tool surface — `ask_work_iq` for semantic questions plus entity tools for fast, structured reads and writes |
+| [**workiq-preview**](./plugins/workiq-preview/skills/workiq-preview/SKILL.md) | Load before using WorkIQ tools. Retrieve context with explicit Grounding; delegate only intentionally; keep exact operations on entity tools. Missing retrieval requires disclosure and user-selected delegation, never automatic `ask` fallback. |
 
 ### Example prompts
 

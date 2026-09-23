@@ -3,6 +3,23 @@
 Use this reference when a user asks about SharePoint library columns or wants
 files filtered, counted, grouped, sorted, or compared by metadata.
 
+## Routing boundary
+
+**OOB-first routing rule:** preserve the OOB 0817 workflow unless the user
+explicitly asks about a SharePoint document-library column or metadata
+attribute, or asks to filter, count, group, sort, find earliest/latest, or
+otherwise compare files by one. Only for those explicit metadata requests, use
+`fetch` on SharePoint list items.
+Typical triggers include Owner, Status, City, State, Region, Classification,
+Document Type, Review Date, Department, Category, and custom columns.
+
+The OOB semantic-owner workflow remains authoritative by default, including
+when "owner" is part of an exact technical-spec content-summary request. Use
+the structured metadata route only when the user explicitly asks for the
+library `Owner` column, library metadata, or filtering/counting/grouping/
+sorting/comparison by Owner. If both are explicitly requested, fetch the
+library Owner field first and then use `ask` only for the content summary.
+
 ## Content search and library metadata are different
 
 `ask` and general SharePoint search tools retrieve information from document
@@ -13,7 +30,7 @@ For example, document text may contain `Document Owner: Sofia Ricci` while the
 library's `Owner` column contains `HR Team`. A question about the library column
 must use the latter.
 
-Use this route whenever the user mentions:
+Within an explicit library-metadata request, triggers include:
 
 - metadata, column, field, or property;
 - `Owner =`, `Status =`, `City =`, or another named attribute;
@@ -23,6 +40,9 @@ Use this route whenever the user mentions:
 
 Do not use `ask` as the sole source for those claims. It may summarize file
 content only after `fetch` has identified the correct files structurally.
+
+Never decline a metadata question because a general SharePoint search found
+nothing: that is evidence the wrong tool was used, not that the data is absent.
 
 ## Canonical resolution recipe
 
@@ -101,6 +121,9 @@ Selected fields:
 Columns on a `listItem` live below `fields`. A bare list-item
 `$select=Owner,Status` is invalid.
 
+Reuse the site id, list id, and column map for the rest of the conversation.
+Do not repeatedly rediscover them.
+
 ## Grounding contract
 
 `/columns` is authoritative for what the library carries. GET it before
@@ -155,7 +178,8 @@ the values read from SharePoint.
 ## Scope and denominator
 
 This kind of library often holds two populations, and merging them yields wrong
-denominators:
+denominators. State which one you are counting every time you give a count or a
+percentage:
 
 - **GOVERNED** — in-scope items that participate in the library's relevant
   metadata scheme, as shown by one or more of its applicable columns.
@@ -354,3 +378,28 @@ are no matching files” solely because a call failed.
 into chunks of 50 or fewer. Prefer batching related, known-good reads over
 sequential single-URL calls, but isolate a failing URL when one bad entry causes
 the whole batch to fail.
+
+## Deliver the answer in the message
+
+The chat message is the deliverable. A file in `/app/created/` is a convenience
+copy, never the answer itself.
+
+- If the user asks for a list, inventory, breakdown, or "all X", the complete
+  table goes in the message body. Do not truncate to a sample or write "see the
+  attached spreadsheet".
+- Only if the result exceeds ~150 rows may you show the first 50 plus every
+  aggregate the user asked for and attach the remainder — and you must say
+  exactly how many rows were omitted and where.
+- Never answer by pointing at an earlier turn. If a follow-up needs a table you
+  already produced, reproduce it. Counts, groupings, and conclusions are always
+  inline; an attachment never substitutes for them.
+
+## Check your own arithmetic
+
+Before sending any answer that contains both a breakdown and a total: re-derive
+each group count from the final table (not from earlier notes), confirm the
+group counts sum to the stated total, and confirm the total matches the number
+of items you actually retrieved. If they disagree, the table wins — recount and
+correct the summary. For any breakdown over ~20 rows, prefer using an available
+code-writing or calculation tool to compute the tallies instead of counting in
+prose.

@@ -1,6 +1,6 @@
 {
   "name": "workiq-preview",
-  "version": "0.5.1",
-  "description": "Preview build: full WorkIQ tool surface — agentic queries via ask plus direct reads and writes (create, update, delete, send) across emails, meetings, calendar, Planner tasks, documents, Teams, people and contacts, OneDrive, and SharePoint.",
+  "version": "2.1.0",
+  "description": "Preview WorkIQ for Microsoft 365 email, calendars, meetings, Teams messages, SharePoint and OneDrive files, people and contacts, and Planner tasks. Search, summarize, read, create, update, delete, send, and download using supported tools, with confirmation for mutations. Use retrieve-first context with explicit Grounding when available, intentional Copilot or named-agent delegation via ask, and entity tools for exact operations.",
   "skills": "./skills/"
 }

@@ -1,48 +1,49 @@
 # search_paths
 
-Discover available WorkIQ API paths by regex. Use as the first step before entity tools when the path is unknown.
+Discover entity paths and supported operations when the route is unknown or the
+user explicitly requests path discovery. Known exact workflows need no discovery
+preflight. This tool does not discover MCP tool names; use the connected catalog.
 
-## Parameters
+## Live argument contract
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `filter` | string | Yes | Regex pattern (e.g., `messages`, `.*calendar.*`). Empty or missing filter is rejected by the current server — pass `.*` to enumerate everything. |
+The connected catalog inspected for this guidance exposes required `query`
+(string): a natural-language resource/action description or a path prefix.
+Older catalogs may expose a regex `filter` instead. Inspect the actual advertised
+schema and send only its accepted fields; do not translate examples into guessed
+arguments or try both interfaces after rejection.
 
-> **⚠️ One catalog only.** `search_paths` enumerates the single WorkIQ path catalog (Microsoft Graph paths). There is no `backend` / `source` / `provider` parameter — do not pass one, do not fabricate one from general knowledge. If the user asks about SharePoint REST, Dataverse, or any other API surface, say WorkIQ surfaces Graph paths through `search_paths` and report that the other surface is not available here.
+There is no basis for inventing `backend`, `source`, or `provider` selectors.
+Nor does path discovery imply that the entire catalog is Graph-only: retain
+exact returned resource families and their domain contracts.
 
 ## Workflow
 
-1. `search_paths` with a broad filter to find candidate paths
-2. `get_schema` on the chosen path
-3. `fetch` or the appropriate write tool (`create_entity` / `update_entity` / `delete_entity` / `do_action` / `call_function`)
+1. Make one focused discovery call for the requested resource and operation.
+2. Inspect [get_schema](get-schema-work-iq.md) on the selected returned path when
+   the operation's body or query shape is unfamiliar.
+3. If the user also requested execution, resolve identities, prepare the action,
+   obtain required confirmation for mutations, and execute once. Discovery alone
+   is not execution, but discovering a path never grants authorization.
 
-If the user asks to discover paths AND read or mutate, continue to the mutation tool after picking the path — discovery alone is incomplete.
+Use [recovery](troubleshooting.md) for failures. Explicit denial stops; no route,
+agent, or tool substitution. An empty result means no matching path was confirmed
+in that search, not that the entire service lacks the capability.
 
-Never answer API/path questions from general Graph knowledge, local SQL, filesystem search, or built-in tools. Summarize paths from `search_paths`; if none matched, say WorkIQ did not confirm one.
+When asked for all available matching paths, summarize every returned family and
+operation, not just common examples. Inspect an available saved capped result
+before claiming coverage; if the response is truncated, qualify completeness.
+Do not invent paths absent from the result.
 
-## Examples
+## Examples for the `query` catalog
 
-### Find all message-related paths
 ```json
-{ "filter": "messages" }
+{"query":"recent email messages and supported reply actions"}
 ```
 
-### Find calendar paths
 ```json
-{ "filter": ".*calendar.*" }
+{"query":"/me/people"}
 ```
 
-### Enumerate every path
 ```json
-{ "filter": ".*" }
-```
-
-### Find Planner paths
-```json
-{ "filter": "planner" }
-```
-
-### Find OneDrive/files paths
-```json
-{ "filter": "drive" }
+{"query":"Planner plans and tasks"}
 ```
