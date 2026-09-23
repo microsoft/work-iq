@@ -325,12 +325,21 @@ for (const [id, tool, args] of [
     }
   });
 }
-mutationCase('upload-session', ['R.C2', 'R.C3'], 'do_action',
-  { actionUrl: `${source}/createUploadSession`, jsonBody: { item: { name: exactFile.name } } }, {
+{
+  const fixture = mutationCase('upload-session', ['R.C2', 'R.C3'], 'do_action',
+    { actionUrl: `${source}/createUploadSession`, jsonBody: {} }, {
     output: result('ok', { completion: 'session-created', bytesUploaded: false }),
     final: { claims: { sessionCreated: true, bytesUploaded: false }, limitations: ['no-bytes-uploaded'] },
     corrupt: e => { last(e).claims.bytesUploaded = true; }, violation: 'false-completion'
   });
+  fixture.negatives.push({
+    name: `${fixture.id}-unsupported-item-wrapper`,
+    violation: 'unsupported-operation',
+    trace: alter(fixture.positive, e => {
+      e.filter(x => x.type === 'call').at(-1).args.jsonBody = { item: { name: exactFile.name } };
+    })
+  });
+}
 for (const [id, limitation] of [
   ['duplicate-file-names', 'ambiguous-identity'],
   ['missing-drive-identity', 'missing-identity'],
@@ -676,21 +685,45 @@ for (const [id, tool, args, code] of [
     e => appendCall(e, 'do_action', { actionUrl: '/me/messages/synthetic-message/forward', jsonBody: {} }), 'unsupported-operation');
 }
 {
-  const original = { entityUrl: '/planner/tasks/synthetic-task', jsonBody: { percentComplete: 100 } };
-  const changed = { entityUrl: '/planner/tasks/synthetic-task', jsonBody: { percentComplete: 50 } };
+  const initialEtag = 'W/"synthetic-planner-etag-1"';
+  const currentEtag = 'W/"synthetic-planner-etag-2"';
+  const original = {
+    entityUrl: '/planner/tasks/synthetic-task',
+    headers: { 'If-Match': initialEtag },
+    jsonBody: { percentComplete: 100 }
+  };
+  const changed = {
+    entityUrl: '/planner/tasks/synthetic-task',
+    headers: { 'If-Match': currentEtag },
+    jsonBody: { percentComplete: 50 }
+  };
   const s = base('planner-reconciled-confirmation', 'Reconcile concurrent state and confirm a revised synthetic task change.', {
     mode: 'exact', operations: [
-      write('original', 'update_entity', original, result('precondition')),
-      read('reread', 'fetch', { entityUrls: ['/planner/tasks/synthetic-task'] }, result('ok', { percentComplete: 25 })),
-      write('changed', 'update_entity', changed, result(), { reconciles: 'reread' })
+      read('initial', 'fetch', { entityUrls: ['/planner/tasks/synthetic-task'] },
+        result('ok', { percentComplete: 0, '@odata.etag': initialEtag })),
+      write('original', 'update_entity', original, result('precondition'), { requires: ['initial'] }),
+      read('reread', 'fetch', { entityUrls: ['/planner/tasks/synthetic-task'] },
+        result('ok', { percentComplete: 25, '@odata.etag': currentEtag })),
+      write('changed', 'update_entity', changed, result(), { requires: ['reread'], reconciles: 'reread' })
     ], confirmations: {
       'synthetic-confirm-original': { kind: 'mutation', operationId: 'original', args: original },
       'synthetic-confirm-revised': { kind: 'mutation', operationId: 'changed', args: changed }
-    }, requiredOperations: ['original', 'reread', 'changed']
+    }, requiredOperations: ['initial', 'original', 'reread', 'changed']
   });
-  add(s.id, ['R.C4', 'R.C3'], s,
-    ['confirm:synthetic-confirm-original', { op: 'original' }, { op: 'reread' }, 'confirm:synthetic-confirm-revised', { op: 'changed' }],
+  const fixture = add(s.id, ['R.C4', 'R.C3'], s,
+    [{ op: 'initial' }, 'confirm:synthetic-confirm-original', { op: 'original' }, { op: 'reread' },
+      'confirm:synthetic-confirm-revised', { op: 'changed' }],
     {}, e => { e.splice(e.findIndex(x => x.type === 'user' && x.eventId === 'synthetic-confirm-revised'), 1); }, 'unconfirmed-mutation');
+  for (const [label, edit] of [
+    ['missing-if-match', args => { delete args.headers; }],
+    ['stale-if-match', args => { args.headers['If-Match'] = initialEtag; }]
+  ]) {
+    fixture.negatives.push({
+      name: `${fixture.id}-${label}`,
+      violation: 'unsupported-operation',
+      trace: alter(fixture.positive, e => edit(e.filter(x => x.type === 'call' && x.tool === 'update_entity').at(-1).args))
+    });
+  }
 }
 {
   const args = { actionUrl: `${source}/copy`, jsonBody: { parentReference: destination } };
