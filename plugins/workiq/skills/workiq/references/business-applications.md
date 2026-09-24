@@ -6,21 +6,26 @@ substitute a separate endpoint, another MCP server, or an invented REST URL.
 
 ## Discovery and path grounding
 
-1. Start intent-driven discovery with `do_action` on `/businessapps/me` and
-   `{"query":"<business record, workflow, or app intent>","environmentId":"<optional>","limit":10}`. The `query`
-   is required. Results include grounded paths plus environment and application IDs. For example, use
-   `{"query":"qualify a lead"}` to discover the relevant sales application and operations.
+1. Start intent-driven discovery with `search_paths` and a natural-language description of the business record,
+   workflow, app, or operation. Use the search parameter named in the current tool schema's `required` array:
+   `query` or `filter`. Pass the natural-language description through that one required parameter and never send
+   both. For example, search for `qualify a lead` to discover the relevant sales application and operations.
 2. Use `fetch` on `/businessapps/environments/` when the user explicitly asks to list environments or identify the
    default environment. Do not guess an environment ID.
-3. Use `search_paths` with a natural-language description of the business task when broader semantic discovery is
-   useful. For Business Applications, prefer a natural language `query` for path discovery. Returned paths can be
+3. Discovery is read-only: use `search_paths`, not `do_action`. `do_action` is a POST action and may be denied based
+   on the calling client's trust classification and the tenant's effective mutation policy. Returned paths can be
    passed directly to `fetch`, `get_schema`, or a write tool.
-5. Discover **every** Business Applications resource this way — environments, apps, tables, records, skills, APIs,
-   and operations. Take each identifier from the returned paths. Do not guess an ID or name, and do not assume a
-   default environment.
-6. Use `get_schema` on the returned concrete path before an unfamiliar mutation or operation. Never fill in
+4. For an unknown path or identifier, discover the Business Applications resource this way — apps, tables, records,
+   skills, APIs, and operations. Take each identifier from the returned paths. Do not guess an ID or name. Known
+   structural inventory is the exception: use its direct `fetch` path, especially `/businessapps/environments/`.
+5. Use `get_schema` on the returned concrete path before an unfamiliar mutation or operation. Never fill in
    `{environmentId}`, `{tableName}`, `{recordId}`, `{appName}`, `{apiName}`, `{skillName}`, or operation names
    from memory.
+
+Do not use `do_action` on `/businessapps/me` for discovery even if that route is
+exposed; use `search_paths` instead. The old route is POST-shaped and can be
+policy-denied before any grounded path is returned, ending the workflow before
+`search_paths` or `fetch` can run.
 
 ## Exact path and tool selection
 
@@ -67,14 +72,19 @@ its `references/*.md` files.
   and `update_entity` or `delete_entity` on the concrete `skills/{skillName}` path.
 - Call `get_schema` on the skill or collection path before a create or update, and send only schema-confirmed
   fields. Do not infer a skill's payload shape from a record or table payload.
-- Resolve `{skillName}` from discovery (`do_action` on `/businessapps/me` or `search_paths`) and preserve the
-  exact returned casing. Do not invent skill names.
+- Resolve `{skillName}` from `search_paths` and preserve the exact returned casing. Do not invent skill names.
 
 ## Approval and privilege boundaries
 
 Business Applications writes execute immediately. Apply the general WorkIQ
 write-confirmation rule before calling `create_entity`, `update_entity`,
 `delete_entity`, or a mutating `do_action`.
+
+WorkIQ may deny mutations and POST actions based on the calling client's trust classification and the tenant's
+effective policy. This does not block read-only discovery with `search_paths` or structural reads with `fetch`. If a
+genuine write or action is policy-denied, stop and report the observed diagnostic. Surface only its stated
+remediation; do not assert that a particular setting, consent, or administrator action will fix it unless the
+diagnostic says so, and do not retry through another path.
 
 - If the user explicitly says a preview or deletion is **not approved**, use
   discovery and reads only. Do not call the write tool merely to let the
@@ -140,7 +150,8 @@ App-scoped paths intentionally differ from environment table paths:
 
 ## Grounding rules
 
-- WorkIQ's top-level `ask` can also answer questions about Business Applications requests, though some applications may not be included in `ask`, so use `/businessapps/me` or `search_paths` for authoritative path discovery.
+- WorkIQ's top-level `ask` can also answer questions about Business Applications requests, though some applications
+  may not be included in `ask`, so use `search_paths` for authoritative semantic path discovery.
 - Do not invent `/businessapps` REST shapes, append OData syntax to an undiscovered Business Applications path, or
   move `/records/` into an app-scoped path.
 - Preserve exact casing and IDs returned by tools in subsequent calls, although structural path segments are
@@ -148,5 +159,6 @@ App-scoped paths intentionally differ from environment table paths:
 - A write is complete only when the tool response confirms it. For a multi-turn delegated workflow, preserve and
   reuse the returned/provided `sessionId`; drafting and sending are separate turns when the workflow requires
   confirmation.
-- For metadata-only questions, prefer `search_paths` or `/businessapps/me`, then fetch the returned resource. For
-  exact data reads/writes, use the environment/table/app paths directly after discovery.
+- For metadata-only questions with an unknown path, use `search_paths`, then fetch the returned resource. For known
+  structural inventory, use its direct `fetch` path instead, especially `/businessapps/environments/` for environment
+  listing. For exact data reads/writes, use the environment/table/app paths directly after discovery.

@@ -32,6 +32,7 @@ before calling. Never guess aliases or derive prefixes from a skill folder.
 | Call an OData function (delta, reminderView, named-file search) | `call_function` |
 | Download file or attachment bytes | `fetch_blob` |
 | Discover entity paths / inspect operation fields and body shape | `search_paths` / `get_schema` |
+| Discover or use structured records and workflows in CRM, ERP, or Power Apps | `search_paths` for unknown paths; then the exact entity or action tool — read [Business Applications](references/business-applications.md) first |
 
 Semantic does not automatically mean `retrieve` or `ask`: exact entity URLs,
 bounded listings, and known workflows stay on entity tools, with local synthesis.
@@ -95,6 +96,7 @@ for exact IDs, attribution, and same-agent `conversationId` continuation.
 | People | `/me`, `/users/{id}`, `/me/manager`, `/me/contacts` | profile, org chart, personal contacts; directory and contact IDs are not interchangeable |
 | Files | `/me/drive`, `/drives/{id}`, `/sites/{id}` | metadata via entity tools; bytes via `fetch_blob`; named OneDrive search via `call_function` |
 | Planner | `/me/planner/plans`, `/planner/tasks` | list/create/update/complete/delete |
+| Business Applications | `/businessapps/environments/` and discovered `/businessapps/...` paths | direct `fetch` for environment inventory; `search_paths` for unknown records, apps, skills, APIs, and operations |
 | Change tracking | `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta`, `/me/contacts/delta` | `call_function` only, never `fetch` |
 
 ## Required Workflow Order
@@ -161,6 +163,7 @@ inline wording or a new message for a requested persisted reply.
 | Copy/move/rename/delete files; upload sessions | [Files](references/files-work-iq.md) |
 | Cancel/delete/reschedule/forward meetings; reminders/free-busy | [Calendar](references/calendar-work-iq.md) |
 | Mail / Teams / Planner | [Mail](references/mail-work-iq.md) / [Teams](references/teams-work-iq.md) / [Tasks](references/tasks-work-iq.md) |
+| CRM, ERP, Power Apps, Dataverse records and workflows | [Business Applications](references/business-applications.md) |
 | Reads, paging / binary downloads / delta and functions | [fetch](references/fetch-work-iq.md) / [fetch_blob](references/fetch-blob-work-iq.md) / [call_function](references/call-function-work-iq.md) |
 | Paths / schemas | [search_paths](references/search-paths-work-iq.md) / [get_schema](references/get-schema-work-iq.md) |
 | Create / update / delete / actions | [create_entity](references/create-entity-work-iq.md) / [update_entity](references/update-entity-work-iq.md) / [delete_entity](references/delete-entity-work-iq.md) / [do_action](references/do-action-work-iq.md) |

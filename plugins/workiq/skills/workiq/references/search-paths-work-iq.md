@@ -1,18 +1,25 @@
 # search_paths
 
-Discover available WorkIQ API paths by regex. Use as the first step before entity tools when the path is unknown.
+Discover available WorkIQ entity paths and supported operations. Use as the first step before entity tools when the
+path is unknown.
 
 ## Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `filter` | string | Yes | Regex pattern (e.g., `messages`, `.*calendar.*`). Empty or missing filter is rejected by the current server — pass `.*` to enumerate everything. |
+| `filter` | string | When named in `inputSchema.required` | Legacy regex/path-keyword search. Business Applications also accepts natural-language discovery through this parameter. |
+| `query` | string | When named in `inputSchema.required` | Natural-language description of the resource or action to discover. |
 
-> **⚠️ One catalog only.** `search_paths` enumerates the single WorkIQ path catalog (Microsoft Graph paths). There is no `backend` / `source` / `provider` parameter — do not pass one, do not fabricate one from general knowledge. If the user asks about SharePoint REST, Dataverse, or any other API surface, say WorkIQ surfaces Graph paths through `search_paths` and report that the other surface is not available here.
+Inspect the current tool schema and send exactly the parameter listed in `inputSchema.required`: `filter` or `query`.
+Never send both. The visible schema can vary by caller or rollout, so do not hard-code one form.
+
+There is no `backend`, `source`, or `provider` argument. WorkIQ automatically searches every enabled catalog and
+provider available to the current tenant and caller, including Business Applications when enabled. Do not invent a
+catalog selector or claim that an absent provider is available.
 
 ## Workflow
 
-1. `search_paths` with a broad filter to find candidate paths
+1. `search_paths` with the required `filter` or `query` input to find candidate paths
 2. `get_schema` on the chosen path
 3. `fetch` or the appropriate write tool (`create_entity` / `update_entity` / `delete_entity` / `do_action` / `call_function`)
 
@@ -23,8 +30,17 @@ Never answer API/path questions from general Graph knowledge, local SQL, filesys
 ## Examples
 
 ### Find all message-related paths
+
+When the schema requires `filter`:
+
 ```json
 { "filter": "messages" }
+```
+
+When the schema requires `query`:
+
+```json
+{ "query": "message resources and actions" }
 ```
 
 When the user asks what paths are available, enumerate every confirmed path
@@ -35,21 +51,32 @@ messages, by-ID routes, and hosted content. Do not invent paths absent from the
 result, but do not omit less common confirmed variants.
 
 ### Find calendar paths
+
+Legacy `filter` form:
+
 ```json
 { "filter": ".*calendar.*" }
 ```
 
-### Enumerate every path
+Natural-language `query` form:
+
 ```json
-{ "filter": ".*" }
+{ "query": "calendar resources and actions" }
 ```
 
-### Find Planner paths
+### Discover Business Applications paths
+
+Use natural language in whichever parameter is required:
+
 ```json
-{ "filter": "planner" }
+{ "filter": "qualify a lead" }
 ```
 
-### Find OneDrive/files paths
+or:
+
 ```json
-{ "filter": "drive" }
+{ "query": "qualify a lead" }
 ```
+
+For known structural inventory, skip discovery and use the exact read path. For example, list Business Applications
+environments with `fetch` on `/businessapps/environments/`.
