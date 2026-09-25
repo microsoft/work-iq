@@ -48,11 +48,16 @@ See the **URL Format Rules** section of `SKILL.md` for full examples.
 
 ## `search_paths` rejects a `backend` / `source` / `provider` argument
 
-**Symptom:** `search_paths` returns a tool input validation error, or silently ignores extra arguments like `backend: "sharepoint-rest"` / `provider: "dataverse"`.
+**Symptom:** `search_paths` returns a tool input validation error, or silently ignores extra arguments such as
+`backend`, `source`, or `provider`.
 
-**Cause:** `search_paths` only accepts `filter` (regex, required) and `agentId` (optional). There is no `backend` parameter and no equivalent — WorkIQ exposes a single catalog of Microsoft Graph paths.
+**Cause:** `search_paths` exposes exactly one required search input in the current tool schema: legacy `filter` or
+natural-language `query`. It does not accept a caller-selected catalog argument. WorkIQ searches the enabled catalogs
+and providers automatically.
 
-**Fix:** Drop the extra argument and retry with `filter` only. If the user explicitly asked for SharePoint REST, Dataverse, or any other API surface, report honestly that WorkIQ surfaces Graph paths through `search_paths` and the other surface is not available here. Do not invent a tool variant or alternate backend.
+**Fix:** Drop the extra argument, inspect `inputSchema.required`, and retry with exactly the required `filter` or
+`query` parameter. Do not send both and do not invent a tool variant or alternate backend. If no path is returned,
+report that WorkIQ did not confirm an enabled path for the request.
 
 ## `fetch_blob` returns "tool does not exist"
 

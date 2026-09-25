@@ -100,23 +100,34 @@ export function exampleProblems(text, isRetrieveReference = false) {
     if (code.language !== 'json') continue;
     let value;
     try { value = JSON.parse(code.value); } catch {
-      if (isRetrieveReference || /"query"\s*:/.test(code.value)) errors.push(`invalid retrieval JSON under ${code.heading}`);
+      if (isPathDiscovery) errors.push(`invalid search_paths JSON under ${code.heading}`);
+      else if (isRetrieveReference || /"query"\s*:/.test(code.value)) errors.push(`invalid retrieval JSON under ${code.heading}`);
       continue;
     }
     const check = object => {
+      if (isPathDiscovery && (!object || typeof object !== 'object' || Array.isArray(object))) {
+        errors.push(`${code.heading}: search_paths arguments must be a JSON object`);
+        return;
+      }
       if (!object || typeof object !== 'object') return;
+      if (isPathDiscovery) {
+        const searchInputs = ['query', 'filter'].filter(parameter => Object.hasOwn(object, parameter));
+        if (searchInputs.length !== 1) {
+          errors.push(`${code.heading}: search_paths requires exactly one query or filter input`);
+          return;
+        }
+        const [parameter] = searchInputs;
+        if (typeof object[parameter] !== 'string' || !object[parameter].trim()) {
+          errors.push(`${code.heading}: search_paths ${parameter} must be a nonblank string`);
+        }
+        if (Object.keys(object).some(key => key !== parameter)) {
+          errors.push(`${code.heading}: unsupported search_paths argument`);
+        }
+        return;
+      }
       if (Object.hasOwn(object, 'actionUrl') || Object.hasOwn(object, 'entityUrls') ||
           Object.hasOwn(object, 'functionUrl')) return;
       if (Object.hasOwn(object, 'query')) {
-        if (isPathDiscovery) {
-          if (typeof object.query !== 'string' || !object.query.trim()) {
-            errors.push(`${code.heading}: search_paths query must be a nonblank string`);
-          }
-          if (Object.keys(object).some(key => key !== 'query')) {
-            errors.push(`${code.heading}: unsupported current search_paths argument`);
-          }
-          return;
-        }
         errors.push(...retrievalProblems(object).map(p => `${code.heading}: ${p}`));
         if (/unknown|unspecified/i.test(code.heading) && !/external|broader|conflict/i.test(code.heading) && object.strategy !== 'grounding') {
           errors.push(`${code.heading}: unknown source must explicitly select Grounding`);

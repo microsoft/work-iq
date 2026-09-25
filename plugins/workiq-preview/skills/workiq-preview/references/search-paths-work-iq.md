@@ -12,9 +12,11 @@ Older catalogs may expose a regex `filter` instead. Inspect the actual advertise
 schema and send only its accepted fields; do not translate examples into guessed
 arguments or try both interfaces after rejection.
 
-There is no basis for inventing `backend`, `source`, or `provider` selectors.
-Nor does path discovery imply that the entire catalog is Graph-only: retain
-exact returned resource families and their domain contracts.
+There is no `backend`, `source`, or `provider` argument. WorkIQ automatically
+searches every enabled catalog and provider available to the current tenant and
+caller. Path discovery is not Graph-only: retain exact returned resource
+families and their domain contracts, and do not claim an unavailable provider
+is enabled.
 
 ## Workflow
 
@@ -33,6 +35,11 @@ When asked for all available matching paths, summarize every returned family and
 operation, not just common examples. Inspect an available saved capped result
 before claiming coverage; if the response is truncated, qualify completeness.
 Do not invent paths absent from the result.
+
+For structured CRM, ERP, Power Apps, or Dataverse resources and workflows, read
+[Business Applications](business-applications.md). Use natural-language
+`search_paths` for unknown paths, but use direct
+`fetch("/businessapps/environments/")` for environment inventory.
 
 ## Examples for the `query` catalog
 

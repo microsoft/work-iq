@@ -28,6 +28,11 @@ POST a WorkIQ action — a named operation that performs a task (send mail, copy
 
 Vs. `create_entity`: use `do_action` for verbs (send, copy, move, accept, reply, getSchedule); use `create_entity` to create a new stored resource. Function-shaped names that still take a JSON body (`getSchedule`, `findMeetingTimes`) are actions — POST them here.
 
+For Business Applications, use `search_paths`, not `do_action` on
+`/businessapps/me`, for semantic discovery. Use `do_action` only after discovery
+identifies a genuine action such as an environment SQL query, Custom API, app
+operation, in-app MCP tool, or delegated environment work.
+
 ## Examples
 
 ### Send an email immediately

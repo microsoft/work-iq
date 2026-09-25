@@ -59,7 +59,7 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 | Listing files in a OneDrive/SharePoint folder | "List files in my OneDrive 'Specs' folder" | `fetch` |
 | Listing tasks/plans/buckets in Planner | "List my Planner tasks due this week" | `fetch` — see `references/tasks-work-iq.md` avoid `ask` |
 | Listing / creating / completing Planner tasks | "Add a task to follow up with finance", "Mark my task done", "List my Planner tasks" | entity tools on `/planner/...` — see `references/tasks-work-iq.md` |
-| Structured records or workflows in CRM, ERP, or Power Apps | "Qualify a lead", "Update the open service case" | start with `do_action` `/businessapps/me` and `{"query":"qualify a lead"}`, then follow the returned app and operation paths — read `references/business-applications.md` first |
+| Structured records or workflows in CRM, ERP, or Power Apps | "Qualify a lead", "Update the open service case" | start with `search_paths` using a natural-language description in the parameter named in `inputSchema.required` (`query` or `filter`), then follow the returned app and operation paths — read `references/business-applications.md` first |
 | Get a personal contact by name | "Get the contact card for Morgan Avery" | `fetch` (`/me/contacts?$filter=...`) — subject to server policy |
 | List or manage Outlook categories | "What Outlook categories do I have?" | `fetch` (`/me/outlook/masterCategories`); writes subject to server policy |
 | Org chart / direct reports / manager lookup | "Who are Rob's direct reports?" | `fetch` (`/users/{id}/directReports`) |
@@ -126,7 +126,7 @@ When the user asks to delete, update, send, forward, copy, move, or react to som
 | "Delete" any entity | `fetch` to find it | `delete_entity` on the entity URL |
 | "Update/rename/change" any entity | `fetch` to find it | `update_entity` on the entity URL |
 | "Create draft and send" | `create_entity` to draft | `do_action` `/me/messages/{id}/send` |
-| "Qualify a lead" | `do_action` `/businessapps/me` with `{"query":"qualify a lead"}` to resolve the app, environment, and operation path | `get_schema`, then `do_action` on the exact returned app-scoped operation |
+| "Qualify a lead" | `search_paths` with `qualify a lead` in the `query` or `filter` parameter named in `inputSchema.required` to resolve the app, environment, and operation path | `get_schema`, then `do_action` on the exact returned app-scoped operation |
 
 Common failure: fetching the entity and stopping, asking the user "did you want me to do anything else?", or saying "I found it." The user asked you to do something — finish it.
 
@@ -292,7 +292,7 @@ per-result error handling, answer delivery, and arithmetic checks.
 | Calendar | `/me/events`, `/me/calendarView` | list/get/create/update/delete; accept/decline via `/me/events/{id}/{action}` |
 | Planner | `/me/planner/plans`, `/planner/tasks` | list/create/update/complete/delete — see `references/tasks-work-iq.md` |
 | Teams | `/me/chats`, `/chats/{chatId}/messages`, `/me/joinedTeams`, `/teams/{teamId}/channels/{channelId}/messages`, `/me/presence` | chats vs channels are different surfaces — see `references/teams-work-iq.md` |
-| Business Applications | `/businessapps/me` | semantic discovery of business apps, records, and workflows via `do_action` with a `query`; follow the returned paths — see `references/business-applications.md` |
+| Business Applications | `/businessapps/` | use `fetch` for known structural paths and `search_paths` with natural language for semantic discovery; follow the returned paths — see `references/business-applications.md` |
 | People | `/me`, `/users/{id}`, `/users/{id}/directReports`, `/me/manager`, `/me/contacts` | profile, org, contacts — see directory-vs-contacts warning below |
 | Outlook categories | `/me/outlook/masterCategories` | list/get/create/update/delete — writes commonly policy-denied |
 | Files | `/me/drive`, `/drives/{id}`, `/sites/{id}` | for named-file metadata, call `call_function` once with `/me/drive/root/search(q='{urlEncodedExactName}')` and do not follow with `/me/drive/items/{id}`; use `fetch_blob` for binary content after resolving the item ID — see `references/fetch-blob-work-iq.md`; uploads are not released yet |
@@ -356,7 +356,9 @@ unreliable for SharePoint-hosted items, not invalid everywhere.
 
 **Anything else — discover, never guess.** For a `/sites/` or `/drives/` path not covered
 above, or on any `Access denied` this section does not cover, call `search_paths` once
-(`filter` is a required regex, e.g. `sites|drives`) and use only a `uriTemplate` it returned.
+with the parameter named in `inputSchema.required`: use a path-keyword pattern such as
+`sites|drives` for `filter`, or an equivalent natural-language description for `query`.
+Use only a `uriTemplate` it returned.
 Re-sending a denied shape with a different folder, `$select`, or casing fails identically.
 Cache the templates and reuse them.
 
@@ -506,7 +508,7 @@ body, not the resource returned after the action succeeds.
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `search_paths` | Discover available API paths | `filter` (regex, **required**) |
+| `search_paths` | Discover available API paths | exactly one required search input from the current schema: `filter` or `query` |
 | `get_schema` | Inspect an operation schema: fetch entity/response shape, or create/update/action request body | `path`, `operationType` (`fetch`/`create`/`update`/`action`), `format` |
 | `fetch` | Fetch entities by path (GET) | `entityUrls[]` — supports OData (`$filter`, `$select`, `$top`) |
 | `call_function` | Call named OData functions — GET-shaped, side-effect-free, parenthesised inline params (e.g. `delta`, `reminderView`) | `functionUrl` with inline function params |
@@ -541,10 +543,14 @@ structured operational data and workflows, such as customer and sales records in
 records in ERP, and line-of-business data in Power Apps. Route intent tied to records or workflows in a business
 system to `/businessapps`; use Graph for Microsoft 365 collaboration and directory content such as mail, Teams,
 calendars, files, and people. Read `references/business-applications.md` before handling a Business Applications
-request. Start intent-driven discovery with `do_action` on `/businessapps/me` and a concise `query` describing the
-needed record, workflow, or app; use the returned paths, environment, and application IDs. Example:
-`actionUrl: "/businessapps/me"` with `jsonBody: {"query":"qualify a lead"}`. Every Business Applications resource —
-environments, apps, tables, records, skills, and APIs — is discovered this way or with `search_paths`; take each
-identifier from the returned paths. Business skills are addressed as resources under
+request. Start intent-driven discovery with `search_paths` and a concise natural-language description of the needed
+record, workflow, or app. Use the parameter named in the current tool schema's `required` array (`query` or `filter`);
+never send both. Use the returned paths, environment IDs, and application IDs. For known structural inventory, such
+as listing environments, call `fetch` directly on `/businessapps/environments/`. Do not use `do_action` for
+discovery: it is a POST action and may be denied based on the calling client's trust classification and the tenant's
+effective mutation policy.
+Every Business Applications resource — environments, apps, tables, records, skills, and APIs — is discovered with
+`search_paths` or read from a known structural path; take each identifier from the returned paths. Business skills
+are addressed as resources under
 `/businessapps/environments/{environmentId}/skills/{skillName}` and are readable with `fetch` and writable with
 `create_entity`, `update_entity`, and `delete_entity`.
