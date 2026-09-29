@@ -15,12 +15,47 @@ substitute a separate endpoint, another MCP server, or an invented REST URL.
 3. Use `search_paths` with a natural-language description of the business task when broader semantic discovery is
    useful. For Business Applications, prefer a natural language `query` for path discovery. Returned paths can be
    passed directly to `fetch`, `get_schema`, or a write tool.
-5. Discover **every** Business Applications resource this way — environments, apps, tables, records, skills, APIs,
-   and operations. Take each identifier from the returned paths. Do not guess an ID or name, and do not assume a
-   default environment.
-6. Use `get_schema` on the returned concrete path before an unfamiliar mutation or operation. Never fill in
+4. Discover only the resources needed for the requested outcome. Do not enumerate every environment, app, table,
+   record, skill, API, or operation after `/businessapps/me` has returned a grounded route. Take each identifier from
+   the returned paths. Do not guess an ID or name, and do not assume a default environment.
+5. Use `get_schema` on the returned concrete path before an unfamiliar mutation or operation. Never fill in
    `{environmentId}`, `{tableName}`, `{recordId}`, `{appName}`, `{apiName}`, `{skillName}`, or operation names
    from memory.
+
+## Bounded route plan
+
+1. Call `/businessapps/me` once for the requested outcome. If it returns every required path, do not call
+  `search_paths` or repeat discovery. Use one `search_paths` call only when a required resource type is missing.
+2. When discovery returns a skill or glossary path that directly governs the requested outcome or term, fetch that
+  exact resource before reading table schemas or records. Apply its body, including filters, projection, ordering,
+  default count, and safety conditions. A catalog description or similarly named column is not a substitute.
+3. For a request naming an app or environment, require an exact returned match. If none is returned, report that no
+  accessible exact match was found and stop. Do not list or probe other apps or environments unless the user asked
+  for an inventory or for every enabled environment.
+  Treat the first `/businessapps/me` result as conclusive for the caller-visible surface: when it has no exact path
+  for a specifically named environment, app, skill, or operation, do not fetch its collection, call `search_paths`,
+  disclose nearby alternatives, or continue to data access.
+4. Use `get_schema` only for an unfamiliar mutation or operation, or when the selected governing definition leaves a
+  required field unresolved. Do not inspect schemas before fetching a returned governing skill or glossary.
+5. For an environment query, `jsonBody.querytext` must contain one SQL `SELECT`, never natural language, multiple
+  statements, `sys.*`, or unresolved path placeholders. After a successful read, answer without alternate-route
+  exploration.
+6. For an approved write, read back only the created or updated resource and verify the approved fields. Stop after
+  that verification. An authorization or privilege failure is terminal.
+
+### Governed terms and skills
+
+- If a requested term has no governed definition, state that it is undefined and ask for criteria. Do not map it to
+  a similarly named field or category and do not query data using an inferred definition.
+  If discovery or the governing glossary explicitly says the term is absent or undefined, stop immediately without
+  inspecting schemas, querying candidate fields, or enumerating existing values.
+- If a requested named skill or operation does not exist, abstain. Do not run a nearby capability unless the user
+  explicitly selects it.
+
+### Multiple environments and scopes
+
+- A logical scope does not require a persisted `/scopes` resource unless discovery explicitly returns one. Build the
+  requested logical view from grounded per-environment capabilities; never invent `/scopes` or `/operations` paths.
 
 ## Exact path and tool selection
 
