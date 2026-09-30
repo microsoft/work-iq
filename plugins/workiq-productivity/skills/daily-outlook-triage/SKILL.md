@@ -16,27 +16,43 @@ This skill provides a comprehensive overview of your day by analyzing your inbox
 
 ## Instructions
 
-### Step 1: Get User Profile and Time Zone
+### Step 1: Fetch Profile, Inbox, and Calendar in One Batch
 
-```
-workiq-ask (
-  question: "What is my profile information including display name, email address, and time zone settings?"
+Use the runtime's current date, time, and UTC offset to calculate:
+
+- `<lookback-start>`: the current instant minus the requested email lookback (24 hours by default)
+- `<day-start>` and `<day-end>`: the start and end of the requested local calendar day, expressed as ISO 8601 timestamps with the runtime's UTC offset
+
+Fetch all source data in one structured call. Keep the requests in a single
+`entityUrls` array so WorkIQ can execute them as a batch:
+
+```text
+fetch_work_iq (
+  entityUrls: [
+    "/me?$select=id,displayName,mail",
+    "/me/mailboxSettings?$select=timeZone",
+    "/me/mailFolders/inbox/messages?$filter=receivedDateTime ge <lookback-start>&$select=id,subject,from,receivedDateTime,isRead,importance,hasAttachments,bodyPreview&$orderby=receivedDateTime desc&$top=50",
+    "/me/calendarView?startDateTime=<day-start>&endDateTime=<day-end>&$select=id,subject,start,end,location,attendees,organizer,isOrganizer,responseStatus,isAllDay,isCancelled,showAs&$orderby=start/dateTime"
+  ]
 )
 ```
 
-Extract the user's **displayName**, **email**, and **timeZone** from the response. This provides:
-- User identity for personalized greeting
-- Time zone for accurate meeting times
+Do not call `ask` for this structured lookup. A single batched `fetch` avoids
+three sequential semantic requests and returns the exact fields needed for local
+triage. Do not follow `@odata.nextLink`; this is intentionally a bounded daily
+summary. If more than 50 messages match, state that the inbox section covers the
+50 most recent messages in the lookback window.
 
-### Step 2: Pull Inbox Emails
+Extract the user's **displayName**, **mail**, and mailbox **timeZone** for the
+personalized greeting and meeting-time labels. The runtime offset remains
+authoritative for calculating the requested day's boundaries; if the mailbox
+time zone differs, note which zone is used in the output.
 
-Search for recent emails in the inbox:
+### Step 2: Analyze Inbox Emails
 
-```
-workiq-ask (
-  question: "Show me my unread and recent inbox emails from the last 24 hours. For each email include the sender name and email, subject line, received time, importance level, and whether it has attachments."
-)
-```
+From the returned inbox messages, prioritize unread and high-importance mail.
+Use `bodyPreview` only to identify likely requests or action items; do not make
+another call to retrieve full message bodies.
 
 For each relevant email, note:
 - Sender name and email
@@ -45,15 +61,10 @@ For each relevant email, note:
 - Importance flag (high priority emails)
 - Whether it has attachments
 
-### Step 3: Get Today's Calendar
+### Step 3: Analyze Today's Calendar
 
-Retrieve all meetings for today:
-
-```
-workiq-ask (
-  question: "List all my calendar events for today with subject, start time, end time, location, attendees, whether I'm the organizer, and my response status for each."
-)
-```
+Use the calendar events returned by the same batch. Exclude cancelled events
+from meeting counts, but mention a cancellation when it is useful context.
 
 For each meeting, capture:
 - Subject/title
@@ -152,7 +163,7 @@ The skill will:
 
 | MCP Server | Tool | Purpose |
 |---|---|---|
-| workiq (Local WorkIQ CLI) | `ask` | User profile, inbox email retrieval, and calendar/meeting retrieval |
+| workiq | `fetch` | Retrieve profile, mailbox time zone, recent inbox messages, and calendar events in one batch |
 
 ## Tips for Effective Triage
 
@@ -167,30 +178,30 @@ The skill will:
 ### Common Failure Modes
 
 #### Authentication or Permission Errors
-- **Symptom**: `ask` returns an authentication or permission error.
+- **Symptom**: `fetch` returns an authentication or permission error.
 - **Cause**: The user's session token is expired or the required Microsoft Graph permissions (Mail.Read, Calendars.Read, User.Read) have not been granted.
 - **Resolution**: Prompt the user to re-authenticate with their Microsoft 365 account and confirm the necessary API permissions are enabled.
 
-#### WorkIQ CLI Unavailable
-- **Symptom**: `ask` fails to respond or returns a connection error.
-- **Cause**: The local WorkIQ CLI MCP server is not running or misconfigured.
-- **Resolution**: Notify the user that the WorkIQ CLI is unreachable. Suggest verifying the server configuration and retrying.
+#### WorkIQ Unavailable
+- **Symptom**: `fetch` fails to respond or returns a connection error.
+- **Cause**: The WorkIQ MCP server is unavailable or misconfigured.
+- **Resolution**: Notify the user that WorkIQ is unreachable. Suggest verifying the server configuration and retrying.
 
 #### No Emails Returned
-- **Symptom**: `ask` returns no email results for the requested period.
-- **Cause**: No emails were received in the specified lookback window, or the question did not match any messages.
-- **Resolution**: Inform the user that no recent inbox emails were found. Retry with a broader time window (e.g., "last 48 hours") before concluding the inbox is empty.
+- **Symptom**: The inbox result is empty for the requested period.
+- **Cause**: No emails were received in the specified lookback window.
+- **Resolution**: Report that no recent inbox emails were found. Do not retry automatically with a broader time window.
 
 #### No Calendar Events Found
-- **Symptom**: `ask` returns no calendar events for today.
-- **Cause**: The user genuinely has no meetings, or the date context was ambiguous.
-- **Resolution**: Rephrase the question with an explicit date. If the response confirms no events, report that the calendar is clear for today.
+- **Symptom**: The calendar result contains no events for the requested day.
+- **Cause**: The user has no events in the explicit `calendarView` range.
+- **Resolution**: Report that the calendar is clear for that day. Do not make a semantic retry.
 
 #### Incorrect or Missing Time Zone
 - **Symptom**: Meeting times appear in UTC or are offset by several hours.
-- **Cause**: The profile query did not return time zone information, or the calendar question did not specify a time zone.
-- **Resolution**: Fall back to UTC and explicitly note in the summary that times are shown in UTC. Prompt the user to confirm their preferred time zone.
+- **Cause**: Mailbox settings did not return time zone information.
+- **Resolution**: Use the runtime's UTC offset and explicitly label the displayed time zone.
 
 #### Partial Data Retrieved
-- **Symptom**: One `ask` call succeeds but another returns an error or incomplete data.
+- **Symptom**: One entity in the batched `fetch` succeeds but another returns an error or incomplete data.
 - **Resolution**: Present the sections that did complete successfully. Clearly label any missing section (e.g., "⚠️ Calendar unavailable — could not retrieve today's meetings") so the user knows the summary is incomplete and can take manual action.
