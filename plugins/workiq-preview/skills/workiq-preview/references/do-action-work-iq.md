@@ -2,8 +2,9 @@
 
 Invoke a named WorkIQ action. An action can read, mutate, or create a resource;
 POST and the tool name alone do not establish its effects. Read-only free/busy,
-structured search, and Business Applications discovery do not require mutation
-confirmation just because they use this tool.
+and structured search do not require mutation confirmation just because they
+use this tool. Use `search_paths`, not `do_action`, for Business Applications
+discovery.
 
 ## Parameters
 
@@ -42,6 +43,7 @@ mutations even if they do not send a message.
 | Accept/decline, cancellation, forwarding, free/busy | [Calendar](calendar-work-iq.md) |
 | Drive-scoped copy and upload-session creation | [Files](files-work-iq.md) |
 | Read/unread, reactions, presence | [Teams](teams-work-iq.md) |
+| Environment SQL, Custom APIs, app operations, and delegated environment work | [Business Applications](business-applications.md) |
 
 Use [create_entity](create-entity-work-iq.md) for collection creation such as a
 fresh draft; `createReply`/`createReplyAll`/`createForward` remain actions.

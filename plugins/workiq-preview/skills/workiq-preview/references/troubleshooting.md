@@ -6,8 +6,8 @@ may impose tighter bounds; a happy-path call budget never overrides safety.
 ## Classify effects before recovery
 
 Classify the operation by its documented effects, not the tool name or HTTP verb.
-`do_action` can perform read-only `getSchedule`, `/search/query`, or Business
-Applications discovery. Persisting a draft, changing read state or presence,
+`do_action` can perform read-only `getSchedule` or `/search/query` operations.
+Persisting a draft, changing read state or presence,
 creating an upload session, and sending, updating, or deleting are mutations.
 If effects are unknown, inspect the live contract before execution.
 
@@ -78,8 +78,10 @@ Use WorkIQ server-relative paths without scheme, authority, or API version.
 Encode query values and preserve opaque IDs; do not guess missing identifiers.
 Only attribute a `400` to formatting when the diagnostic demonstrates it.
 See [path discovery](search-paths-work-iq.md) and [schemas](get-schema-work-iq.md).
-Do not invent `backend`, `provider`, or response-schema selectors. Schema presence
-does not grant runtime permission or prove a request was accepted.
+For `search_paths`, inspect the live schema and send only its accepted `query`
+or legacy `filter` input; never try both interfaces after rejection. Do not
+invent `backend`, `provider`, or response-schema selectors. Schema presence does
+not grant runtime permission or prove a request was accepted.
 
 ## `fetch_blob` or `upload_blob` unavailable
 
