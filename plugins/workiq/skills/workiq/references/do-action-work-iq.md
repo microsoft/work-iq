@@ -1,10 +1,10 @@
 # do_action
 
-POST a WorkIQ action — a named operation that performs a task (send mail, copy/move messages, accept/decline a meeting, compute free/busy) rather than creating a resource.
+POST a WorkIQ action — a named operation that performs a task (send mail, copy/move messages, accept/decline a meeting, compute free/busy, look up Microsoft IQ guidance on how this organization does a task) rather than creating a resource.
 
 > **📘 Action body shapes live here.** This file is the source of truth for action `jsonBody` shapes. You can also call `get_schema` with `operationType: "action"` to retrieve the request-body schema directly; it does not return the action's response resource schema.
 
-> **⚠️ Writes execute immediately.** `/me/sendMail`, `/forward`, `/accept`, `/decline`, `/permanentDelete`, and similar verbs are immediate and visible to others (or unrecoverable). **Summarize the action (recipients, subject, body, target) and get explicit user confirmation before invoking.** Never auto-send drafts or auto-respond to meeting invites.
+> **⚠️ Writes execute immediately.** `/me/sendMail`, `/forward`, `/accept`, `/decline`, `/permanentDelete`, and similar verbs are immediate and visible to others (or unrecoverable). **Summarize the action (recipients, subject, body, target) and get explicit user confirmation before invoking.** Never auto-send drafts or auto-respond to meeting invites. `/MicrosoftIQ/retrieve` is read-only and needs no confirmation; any write that follows from its guidance still does.
 
 ## Parameters
 
@@ -27,6 +27,7 @@ POST a WorkIQ action — a named operation that performs a task (send mail, copy
 - Set the user's Teams presence — `/me/presence/setUserPreferredPresence`
 - Initiate a large file upload session — `/me/drive/.../createUploadSession`
 - Subscribe to change notifications
+- Look up the organization's standard operating procedure or other Microsoft IQ guidance for a task (steps, approvals, policy limits) — `/MicrosoftIQ/retrieve` (read-only)
 
 Vs. `create_entity`: use `do_action` for verbs (send, copy, move, accept, reply, getSchedule); use `create_entity` to create a new stored resource. Function-shaped names that still take a JSON body (`getSchedule`, `findMeetingTimes`) are actions — POST them here.
 
@@ -241,6 +242,17 @@ This is a known action contract. Do not call `ask`, `search_paths`, or
 `get_schema` first. See `references/sharepoint-work-iq.md` for the full
 SharePoint route.
 
+### Look up how this organization does a task (Microsoft IQ)
+
+Use `/MicrosoftIQ/retrieve` when the task depends on how this organization does it: its standard operating procedure, approvals, owners, required systems, or policy limits. Describe the actual task in `query.text`, keeping the outcome, audience, and relevant context. This is a known action contract; do not call `search_paths` or `get_schema` first. The action is read-only, so it needs no confirmation; writes that follow from the guidance still do. See `references/iq-playbooks.md` for routing and grounding rules.
+
+```json
+{
+  "actionUrl": "/MicrosoftIQ/retrieve",
+  "jsonBody": {"query": {"text": "Onboard a new vendor for a consulting engagement; the user wants this organization's procedure, approvals, and required systems"}}
+}
+```
+
 ### Set my Teams presence to Busy
 ```json
 {
@@ -353,5 +365,6 @@ session, report only non-secret metadata such as `expirationDateTime` and
 | `403` + empty / generic `Forbidden` | Tenant policy or admin-controlled action (e.g. presence write in a managed tenant, send-as another mailbox). The body has no scope hint because the directory denied the call before scope evaluation. | Stop. Tell the user the operation is policy-denied. Do NOT iterate through sibling action verbs (`setUserPreferredPresence` ↔ `setPresence`) — they share the same policy gate. |
 | `400` / `BadRequest` on the body | The `jsonBody` wrapper shape is wrong (e.g. `sendMail` expects `{Message, SaveToSentItems}`, not a raw `Message`). | Stop. Re-read this file's JSON sample for that action; do not re-send the same body. |
 | `404` on `actionUrl` | The entity ID embedded in the path is stale, or the action verb does not exist on this resource family. | Stop. Re-`fetch` to get the current ID, OR re-check `search_paths` for the right action verb. |
+| `200` with empty `data.results` on `/MicrosoftIQ/retrieve` | No Microsoft IQ guidance matched the task. This is not a failure. | Tell the user no organization guidance was found. Do not invent a procedure or retry with keyword variants. |
 
 **Especially for `/me/presence/*`:** if the first `setPresence` or `setUserPreferredPresence` POST returns 403, the second will too. Both verbs share the `Presence.ReadWrite[.All]` scope gate. Stop after one 403, surface the failure, and identify the missing consent scope if the error body names one.
