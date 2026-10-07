@@ -5,6 +5,7 @@
       "url": "https://workiq.svc.cloud.microsoft/mcp",
       "oauthClientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87",
       "oauthPublicClient": true,
+      "timeout": 300000,
       "auth": {
         "redirectPort": 12798
       }
