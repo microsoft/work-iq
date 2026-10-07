@@ -1,9 +1,38 @@
-# WorkIQ preview guidance contract checks
+# WorkIQ guidance contract checks
 
-This contract covers **`workiq-preview` only**. The public `workiq` routing
-policy, metadata, and version remain unchanged. Its SharePoint metadata guidance
-is consolidated into the existing reference as a separate documentation cleanup,
-not an adoption of preview policy; cross-package policy parity is not required.
+The observed-trace adapter covers **`workiq-preview` only**. Cross-package static
+checks cover the intentionally different policies below; they do not apply
+preview routing to public `workiq` or require equal package versions.
+
+## Skill alignment requirements
+
+Baseline: `7fde3f8e6477fc75c79a7d8386e8501105b2d9bd`. Scope: the two WorkIQ skills,
+their references, metadata and existing offline checks. No endpoint, permission,
+host activation gate, model execution, deployment or release change is implied.
+
+| ID | Normative contract and positive / negative acceptance |
+| --- | --- |
+| A1 | Resolve exact tool names in the selected configured server. Current `search_paths.query` and `retrieve.query` must be nonblank strings, not arrays; unsupported selectors must not be guessed. Legacy `filter` is permitted only when advertised. Missing catalog/tool must be disclosed without alias guessing. |
+| A2 | When both plugins are installed, `workiq-preview` must take precedence over `workiq` for overlapping requests: load preview's skill and use its configured tools and routing. Standalone public semantic synthesis/discovery must prefer `ask`; preview caller-owned evidence must prefer `retrieve` with explicit Grounding by default. Missing preview retrieval must not trigger public ask-first fallback. Exact entities, known-date calendar, complete collections, library columns and downloads must use entity tools. Preview broader sources and delegation retain G01-G25. This is skill-selection guidance, not a claim of host-enforced activation. |
+| A3 | Both descriptions must require loading before use; prose must not claim a host-enforced gate. Public entry must dispatch to canonical recipes without losing endpoint query restrictions, payloads or opaque-ID handling. |
+| A4 | Read-only finding and each comparison source must verify requested identity/name, type, location/time and relevant content. A near-match must not silently substitute. A concrete missing fact permits bounded supported in-scope refinement/exact read, not unconditional download, recursive enumeration or denial bypass. |
+| A5 | Call counts must be happy-path goals subordinate to identity, confirmation, supported paging and complete exchanged history. A first page or search size 500 must not prove completeness. Exhausted runtime/user budgets must produce explicit partial coverage. |
+| A6 | Generic 400/null/timeout/Unknown error must not establish a cause. Preserve batch successes and bound failed-read recovery with actual backoff shared across the objective. No timeout fan-out, budget reset, explicit-denial bypass, ambiguous mutation replay/substitute, or completed claim from 202 alone. |
+| A7 | Establish read/write intent before resolving then acting. Search-like reply/message/draft/date-range phrases must remain read-only pending clarification. Suggested wording, persisted reply draft and send are distinct effects. Failed createReply must not become a fresh message; absent user is not approval. |
+| A8 | Before synthesis check actual targets/referents, required facts, suitable comparator and source coverage. Missing context must not be invented. Distinguish absent/not retrieved/outside scope/deliberately excluded; preserve citations and uncertainty without requiring longer answers or more calls when evidence suffices. |
+| T1 | Chats are flat, channels threaded; exact topic/directory identity and required member userId/tenantId must be preserved. Authorized oneOnOne create/reuse must not be used as a read-only lookup. No fuzzy People IDs, opaque member-ID substitution or guessed tenant. |
+| T2 | Teams joinedTeams and message reads must omit unsupported `$top`; members use documented bare endpoints. Marker reads must filter locally; supplied message URLs must batch exact reads without broader history. Paging must be supported or coverage partial. |
+| T3 | Hide-from-my-list must use hideForUser, not chat deletion. Read/unread use signed-in member identity and unread uses returned message createdDateTime, not chat lastUpdatedDateTime. Sends/replies/edits/reactions/presence require exact intent/confirmation and non-replay recovery. Reaction uses literal Unicode, not `like`. |
+| T4 | Explicit chat/channel inventory uses the requested exact path prefix and reports all confirmed operations, not invented categories. Channel-message create schema must not imply every resource property is writable. |
+
+`alignment.test.mjs` binds A1-A8/T1-T4 to source guards and current-schema unit
+checks; `fixtures.mjs` adds synthetic positive/invalid operation sequences to the
+existing oracle. Existing cases cover missing tools, caps, paging, budgets,
+denials, draft/send, referents and recovery. Static presence/contradiction checks
+are not executions of instructions; synthetic traces are not model compliance.
+Natural-language identity, comparator suitability and evidence sufficiency still
+need separately authorized host/model or human evaluation. No quality uplift is
+claimed. Rollback is a package-specific guidance revert, not a server rollback.
 
 The preview contract is **agent-host-neutral**. Logical tool behavior is shared across
 compatible agents; host adapters normalize actual tool names and event formats
@@ -39,11 +68,11 @@ preview only. Its counts are not the current suite's scope or results.
 - **Static checks** parse YAML descriptions, Markdown links/anchors (including
   unambiguous code references), domain dispatch, retrieval JSON, preview policy concepts
   and contradictions. They also preserve the description's requirement to load the
-  skill before tool use. Public-only SharePoint/Business Applications references
-  and cross-package parity are outside this preview contract.
-  Prose paraphrases need not match a paragraph snapshot. The preview plugin's name,
-  version, and description must agree across both marketplaces and all its host
-  plugin manifests. The public package is not subject to preview metadata policy.
+  skill before tool use. `alignment.test.mjs` additionally checks both packages'
+  source/intent/recovery and Teams contracts, plus public links and schema examples.
+  Prose paraphrases need not match a paragraph snapshot. Each plugin's name,
+  version and description must agree across its marketplaces and host manifests;
+  the packages need not share a version or semantic routing policy.
   Metadata also retains explicit workloads and actions ahead of routing policy,
   guarding discovery coverage without claiming a measured agent-quality effect.
 - **Oracle tests** prove that the assertion runner accepts/rejects specified trace
@@ -61,7 +90,7 @@ run those products or establish cross-host behavioral equivalence.
 
 | Surface | What the suite establishes | Separate runtime evidence needed |
 | --- | --- | --- |
-| GitHub Copilot, Claude, Codex manifests | Preview package metadata consistency | Installation, skill activation, tool-name normalization, and behavior in each actual host/version |
+| GitHub Copilot, Claude, Codex manifests | Per-package metadata consistency | Installation, skill activation, tool-name normalization, and behavior in each actual host/version |
 | Other compatible agents | Host-neutral logical contracts and adapter envelope | A supported loader/MCP integration and instrumented host adapter |
 | Copilot CLI-only installation checks performed outside this suite | Evidence limited to the recorded CLI version and package hashes | No inference about Claude, Codex, or another host |
 
@@ -78,6 +107,11 @@ people, dates and addresses are synthetic. No production upload URLs or transcri
 belong in this directory.
 
 Each operation declares `tool`, `match`, `effect`, `output`, and optional prerequisites.
+An optional trusted `recoveryOf` links a changed read to the failed objective;
+interleaving or rephrasing does not reset its retry budget or returned delay.
+Synthetic `sourceTargets` compare returned identity/type/location/time/content
+against independently authored target constraints. They do not classify natural
+language or infer sufficiency. `messageMarker` checks exact local filtering.
 An explicit trusted `resolves` list names partial-result operations that a successful
 repair completes; an unrelated successful read never clears another source's gap.
 `match` constrains supported arguments, not a pre-authored answer. Equivalent object
@@ -89,6 +123,11 @@ sends, persisted drafts and read-state changes remain mutations. Tool outputs, n
 agent `approved`, `safe`, or `broadeningJustified` fields, establish facts. Confirmation
 must be a preceding scenario-authored user event for that exact operation and payload.
 Calendar ordering and exchanged-mail membership are computed from returned records.
+Records from `ok`, `partial`, and `capped` reads remain usable evidence for
+calendar, mail-thread, marker, and exact-source claims; failed reads contribute
+no records. Capped evidence still requires `partial-data` disclosure and cannot
+establish complete coverage. Regression checks accept faithful capped claims
+and reject discarded or substituted records.
 Retry delays start after the corresponding observed response; waiting while a call
 is pending does not satisfy a subsequently returned backoff.
 
@@ -107,6 +146,71 @@ Claims are checked against tool evidence; they are not authorization. Unsupporte
 schemas, absent results and missing final evidence fail closed.
 An authoritative `currentState` is compared whenever the returned property exists,
 including `false`, `0`, `null`, and `""`; an absent property requires no state claim.
+
+## Progressive loading contract
+
+Both packages now keep universal routing, intent, source, denial, completion and
+URL/opaque-ID rules in `SKILL.md`, then select package-local operation leaves.
+`## Routes` tables select a contract; `## Required before use` linked bullet
+lists declare mandatory dependencies. Other links are conditional help, not
+instructions to load the entire library. Mutation prerequisites apply before
+writes even in mixed read/write recipes; recovery applies before retry or
+reconciliation. Missing guidance stops the affected action. Reuse requires
+available exact text; summaries or uncertain freshness require rereading.
+
+`loading-contract.mjs` parses those Markdown declarations, rather than trusting
+a second test-only dependency graph. Its independent scenario catalog asserts
+expected rule-owning leaves and prerequisites for both packages. Checks reject
+missing files, required edges, cycles, escapes and budget overruns. Operative-rule
+negatives preserve topic labels or put the rule in an unrelated loaded file;
+neither can satisfy the required owner. Existing observed traces remain
+preview-only and do not establish actual reference-read ordering.
+
+Preview's first-call retrieval contract retains sufficiency-stop, source
+restrictions, cap/empty/error non-broadening and objective-budget rules.
+Before any same-objective retrieval follow-up, including after successful but
+insufficient evidence, load the repair route. Saved capped output and concrete
+authorized external-source gaps are not the same as generic failure recovery.
+The public package retains its separate ask-first semantic policy.
+
+Reproduce static load-plan costs with:
+
+```sh
+npm --prefix tests/workiq-guidance run context
+```
+
+The report includes exact file sets, unique UTF-8 byte totals, and approximate
+bytes/4 tokens. It excludes tool schemas, tool output, host framing and history.
+`loading-baseline.json` fixes equivalent full-file comparators at
+`eff05fb49c0d40043e3f5d596b00bef8bfd6a4ca`: the entrypoint plus the named canonical
+semantic/calendar/mail/Teams reference, not a claim that every host actually
+read those files. The after sets include all parsed selected-index and mandatory
+prerequisite files. Loaded guidance is not unloaded; cross-domain tasks accumulate
+the unique union.
+
+| Static plan | Public bytes before → after | Preview bytes before → after |
+| --- | --- | --- |
+| Entrypoint, including metadata | 11,688 → 5,296 | 15,629 → 5,330 |
+| Semantic first call | 17,659 → 9,698 | 28,498 → 10,400 |
+| Ordinary calendar read | 15,872 → 8,377 | 32,337 → 11,623 |
+| Mail thread read | 19,096 → 10,130 | 24,021 → 9,556 |
+| Teams read/list plan with identity prerequisites | 27,448 → 17,595 | 26,373 → 13,547 |
+
+The entry target was 4,400 bytes; the reviewed implementation ceiling is 5,400
+to retain workload triggers, all universal gates and explicit loading routes.
+The routine target was 10,000 bytes. Semantic/mail ceilings are 11,000,
+calendar 12,000, and Teams 18,500 because typed identity and member/topic/marker
+prerequisites must not be dropped. These measured exceptions prioritize safety.
+The report also includes mail/calendar/Planner/presence/contact/Business
+Applications mutations, explicit reminder/delta prerequisites, retrieval follow-up,
+mail-action recovery and cross-domain unions; only the four comparable read
+plans have a shrinkage gate. No claim that every mutation/recovery plan shrank
+is made. Policies and endpoint examples stay package-specific.
+
+Static size reduction is not evidence of actual lazy loading, lower latency,
+answer quality, installed-host activation, or model compliance. Those require
+separately authorized host instrumentation and evaluations. The normal CI suite
+runs no models or live Microsoft 365 operations.
 
 ## Host adapter contract (version 1)
 

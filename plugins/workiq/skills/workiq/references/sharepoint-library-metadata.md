@@ -3,6 +3,10 @@
 Use this reference when a user asks about SharePoint library columns or wants
 files filtered, counted, grouped, sorted, or compared by metadata.
 
+Explicit access, authentication, consent or policy denial means stop the affected
+workflow. Do not reinterpret denial as a URL-shape problem or use another path,
+tool or agent to bypass it. [Recovery](troubleshooting.md) governs all diagnostics.
+
 ## Routing boundary
 
 **OOB-first routing rule:** preserve the OOB 0817 workflow unless the user
@@ -282,11 +286,9 @@ response or path, then fetch the corresponding list item with
 `?$expand=fields` before filtering, sorting, counting, or grouping metadata. Do
 not infer column values from drive-item properties. If the relationship cannot
 be resolved, disclose the limitation instead of claiming a complete metadata
-result. If
-`/drives/{driveId}/root/children` and `/drives/{driveId}/root:/{path}:/children`
-return “Access denied for GET path”, do **not** conclude the folder is empty —
-get the root folder item id from the list's drive metadata and enter the tree
-there.
+result. Resolve the root item from supported drive metadata before traversal.
+An access-denied result stops the workflow; it neither proves an empty folder
+nor authorizes another addressing route.
 
 ### 4. Targeted item read (single known item only)
 
@@ -329,7 +331,7 @@ Never present a partial set as a total, and never claim `all`, `earliest`,
 items retrieved” instead. Do not use `?$count=true` for the expected total — it
 is rejected (HTTP 400); use folder `childCount` from drive metadata instead. A
 request for a metadata total, percentage, extrema, or all-empty conclusion
-requires a complete set and therefore overrides the general 2–3-page cap in
+requires a complete set and therefore overrides nominal call budgets in
 [Fetch](fetch-work-iq.md).
 
 ## Per-result status codes
@@ -339,12 +341,11 @@ SharePoint call failed. Inspect `structuredContent.results[].statusCode` for
 every entry in every response:
 
 - `200` — usable.
-- `404` — the item does not exist. Fine when probing; not fine for an item you
-  were told exists.
-- `500` — transient; the item was not read. Retry that single URL once, on its
-  own, before doing anything else.
-- `400` — the query shape is unsupported. Read the message; do not reword and
-  retry blindly.
+- `404` — not found at that path, not proof of a cause or tenant-wide absence.
+- `500` — the read failed; generic status does not establish why. Apply bounded
+  read recovery and actual backoff, preserving successful entries.
+- `400` — rejected; the diagnostic must establish a specific unsupported shape
+  before a correction is justified. Do not reword/retry blindly.
 
 When you send N `entityUrls`, count the 200s. If fewer than N came back 200,
 your data set is short by the difference — recover the item or state how many
@@ -355,19 +356,18 @@ requested == items returned 200. If those disagree, say so.
 
 | Error text | Meaning | Correct response |
 |---|---|---|
-| `Access denied for GET path: /sites/{name}?...` | The site was addressed by name rather than composite id | Resolve `/sites/{host}:/sites/{name}`, then retry once with the returned id |
-| `Access denied for GET path: /drives/{id}/root:/X:/children` or `/drives/{id}/root/children` | The path-addressed template was rejected | Get the root folder item id from the list's drive metadata, then traverse `/drives/{id}/items/{itemId}/children`. Do not treat the denial as an empty folder |
-| `Access denied` on a SharePoint read | It does not prove the folder is empty or the user lacks permission | Try at most two materially different supported path shapes, then report `could not read` |
+| Explicit `Access denied`, including `Access denied for GET path` | Access was denied; no formatting cause is established | Stop; no other addressing shape, tool or agent. Report the actual diagnostic, not an empty folder |
 | `Query parameter $skip is not permitted` on a continuation call | This continuation's `$skiptoken` was rejected | Stop that paging strategy; use folder traversal with list-item rehydration, and keep the result partial unless traversal produces the complete candidate set. Do not id-range page — `$filter=id gt` is also blocked (HTTP 500) |
 | `Field 'X' cannot be referenced in filter or orderby` | The column is not indexed | Enumerate fields and process client-side |
 | Error on a bare list-item `$select` of custom columns | List columns live under `fields` | Use `$expand=fields($select=...)` |
-| 403 from `call_function` for an ODSP path | The operation is unavailable with current tenant permissions | Stop using `call_function` for this conversation and use `fetch` where supported |
-| 500 or `assistant is busy, retry in 120 seconds` | Transient failure | Retry at most twice with backoff, then change strategy or report failure |
+| Generic 403 from any ODSP operation | Forbidden; precise cause unknown | Stop the affected workflow; no alternate tool |
+| Generic 400/500/null/Unknown error | Failure without an established cause | Follow central diagnostic-driven recovery; no speculative path changes |
+| `assistant is busy, retry in 120 seconds` | Returned backoff for this read | Wait the full returned delay before the one bounded recovery pass, or report the limitation |
 
-For one failing target, make at most three attempts total. Each attempt must
-change something material, such as the site addressing mode, folder addressing
-mode, or pagination strategy. After three attempts, mark the target
-unreachable, continue with other independent targets, and disclose the gap.
+Recovery shares one objective budget with the original request; a new query or
+batch does not reset it. Preserve successful entries and recover only eligible
+failed reads. A demonstrated non-denial pre-execution defect may be corrected
+once when supported; a generic error does not qualify. Disclose unresolved gaps.
 
 An error is not an empty value. Never report “the folder is empty” or “there
 are no matching files” solely because a call failed.

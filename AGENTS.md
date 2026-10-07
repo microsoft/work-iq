@@ -14,7 +14,7 @@ work-iq/
 │   ├── workiq-preview/
 │   ├── microsoft-365-agents-toolkit/
 │   └── workiq-productivity/
-├── tests/workiq-guidance/     # Offline preview guidance and trace-contract checks
+├── tests/workiq-guidance/     # Both-package static checks and preview trace contracts
 ├── server.json               # MCP server manifest
 ├── ADMIN-INSTRUCTIONS.md     # Tenant admin consent guide
 ├── CONTRIBUTING.md           # Guide for adding new plugins
@@ -69,15 +69,21 @@ plugins/<plugin-name>/
 ### Available plugins
 
 - **workiq** — Full WorkIQ tool surface for Microsoft 365 (read + write). Bundles:
-  - `workiq` skill — Guides usage of `ask` for semantic questions plus the entity tools for fast, structured M365 and Business Applications reads and writes
-  - Hosted MCP server (`workiq`) with tools: `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `get_debug_link`
+  - `workiq` skill — Ask-first semantic synthesis/discovery when used without preview; entity tools for exact M365 and Business Applications reads/writes. When both plugins are installed, load `workiq-preview` and follow its guidance for overlapping requests. Exposed `retrieve` alone does not change the standalone public default.
+  - Hosted MCP server (`workiq`): resolve exact tool names and schemas from its connected catalog, not guessed prefixes. Current `search_paths.query` is a string; legacy `filter` applies only when advertised.
+  - Compact entry dispatches to mail, Teams, calendar, files, SharePoint and workflow references. Exact-source verification, read/write intent, complete paging versus budgets, diagnostic-driven recovery and denial stops apply to both packages. Public and preview versions are independent.
+  - Both package-local routers select bounded operation leaves. Markdown `Routes` tables and `Required before use` lists define the static loading graph; mutation guidance loads before writes and recovery before retry/reconciliation. Do not load all references or treat a summary as available verbatim guidance.
   - SharePoint library-metadata requests dispatch to `references/sharepoint-library-metadata.md`; read it before the workflow. Detailed procedures and safeguards live there rather than being duplicated in `SKILL.md`.
 
 - **workiq-preview** — Preview build with agent-host-neutral, retrieve-first guidance (read + write). Bundles:
+  - Takes precedence over public `workiq` when both plugins are installed, including their routing and configured tools for overlapping requests. Missing preview retrieval does not authorize public ask-first fallback; skill guidance does not claim host-enforced activation.
   - `workiq-preview` skill — Retrieve caller-owned context with explicit Grounding when available; use `ask` only for intentional delegation, and entity tools for exact reads, writes, and downloads. Load the skill before using WorkIQ tools.
   - Hosted MCP server (`workiq-preview`): discover exact tool names and schemas in the connected host catalog. Preview retrieval is tenant-dependent; installation does not enable it, and missing `retrieve` never silently falls back to `ask`.
-  - Preview-only offline checks: `npm ci --prefix tests/workiq-guidance --ignore-scripts --no-audit --no-fund` then `npm --prefix tests/workiq-guidance test` (Node 22+). CI does not run models or live M365 operations. The public `workiq` package retains its existing routing policy and version; its SharePoint metadata documentation is consolidated separately.
+  - Offline checks: `npm ci --prefix tests/workiq-guidance --ignore-scripts --no-audit --no-fund` then `npm --prefix tests/workiq-guidance test` (Node 22+). Static alignment checks cover both packages; observed-trace provenance stays preview-only. CI runs no models or live M365 operations. Current `retrieve.query` is a single nonblank string, not an array.
+  - Teams parity includes exact directory/topic/member identity, marker/supplied URL reads, supported paging, hide/read state, literal reactions, edits/replies and preferred presence. Creating/reusing a oneOnOne chat is a confirmed mutation, never a read-only lookup.
   - Observed trace validation requires nonblank package-hash provenance, including direct validator calls; authoritative state claims are compared by property presence, including falsey values.
+  - Trace claim checks retain records from capped reads without treating them as complete coverage; calendar, mail-thread, marker and exact-source regressions also verify failed-read records remain excluded.
+  - `npm --prefix tests/workiq-guidance run context` reports Markdown-derived unique full-file byte costs. Loading checks cover both packages; observed traces remain preview-only. Entry budgets include metadata and retain universal URL/ID/safety gates. First-call retrieval retains stop/broadening limits; any same-objective follow-up loads the repair contract, even after successful gaps/caps. These checks do not prove host/model lazy loading.
 
 - **microsoft-365-agents-toolkit** — Toolkit for building M365 Copilot declarative agents. Bundles:
   - `install-atk` skill — Install or update the M365 Agents Toolkit CLI and VS Code extension

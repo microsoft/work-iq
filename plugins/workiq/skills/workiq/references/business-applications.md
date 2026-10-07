@@ -158,3 +158,9 @@ App-scoped paths intentionally differ from environment table paths:
   confirmation.
 - For metadata-only questions, prefer `search_paths` or `/businessapps/me`, then fetch the returned resource. For
   exact data reads/writes, use the environment/table/app paths directly after discovery.
+
+## Routes
+
+| Route | Intent | Read |
+| --- | --- | --- |
+| businessapps-actions | Before a requested CRM/ERP/Power Apps mutation | [Actions](business-applications-actions.md) |

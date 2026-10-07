@@ -1,0 +1,98 @@
+{
+  "revision": "eff05fb49c0d40043e3f5d596b00bef8bfd6a4ca",
+  "measurement": "Declared full-file load plans, not observed host reads. UTF-8 bytes; whole SKILL.md plus one selected canonical domain reference, counted identically before and after.",
+  "packages": {
+    "workiq": {
+      "semantic-context": {
+        "files": [
+          "SKILL.md",
+          "references/ask-work-iq.md"
+        ],
+        "bytes": 17659,
+        "fileHashes": {
+          "SKILL.md": "5140a20371c24d45248fa050e07e2d878397e9d7613564e88d67c2fe72011170",
+          "references/ask-work-iq.md": "0bcff58357cb2a2c82eae8ef3a61c84100954f204d8bc37def2026aca3c82e54"
+        }
+      },
+      "calendar-read": {
+        "files": [
+          "SKILL.md",
+          "references/calendar-work-iq.md"
+        ],
+        "bytes": 15872,
+        "fileHashes": {
+          "SKILL.md": "5140a20371c24d45248fa050e07e2d878397e9d7613564e88d67c2fe72011170",
+          "references/calendar-work-iq.md": "f164d0684094c92723f0744f3ad86de450728ca8e8e7726320c42335a104864d"
+        }
+      },
+      "mail-read": {
+        "files": [
+          "SKILL.md",
+          "references/mail-work-iq.md"
+        ],
+        "bytes": 19096,
+        "fileHashes": {
+          "SKILL.md": "5140a20371c24d45248fa050e07e2d878397e9d7613564e88d67c2fe72011170",
+          "references/mail-work-iq.md": "dcf87a623902cc17185c1fcd79dc1dce3c0de6f9a3f1ce71d97f434496881285"
+        }
+      },
+      "teams-read": {
+        "files": [
+          "SKILL.md",
+          "references/teams-work-iq.md"
+        ],
+        "bytes": 27448,
+        "fileHashes": {
+          "SKILL.md": "5140a20371c24d45248fa050e07e2d878397e9d7613564e88d67c2fe72011170",
+          "references/teams-work-iq.md": "83a0bd1472399a9eb677d72b2d8822ef874c5124b936d396f9047df26dc1c393"
+        }
+      }
+    },
+    "workiq-preview": {
+      "semantic-context": {
+        "files": [
+          "SKILL.md",
+          "references/retrieve-work-iq.md"
+        ],
+        "bytes": 28498,
+        "fileHashes": {
+          "SKILL.md": "b1411ec547537c67c77ada33108ff35251daf5d12bba2e632db936a5de3ea8f4",
+          "references/retrieve-work-iq.md": "c796c7869963edbcad09e9f0e2ad78bb69ec9c6c5efe8c0d9fc4d9fa9e7f1070"
+        }
+      },
+      "calendar-read": {
+        "files": [
+          "SKILL.md",
+          "references/calendar-work-iq.md"
+        ],
+        "bytes": 32337,
+        "fileHashes": {
+          "SKILL.md": "b1411ec547537c67c77ada33108ff35251daf5d12bba2e632db936a5de3ea8f4",
+          "references/calendar-work-iq.md": "8f413fac7dd506f11612f75ead8856b4b67222fdcbfbf086cb27891eb59381cc"
+        }
+      },
+      "mail-read": {
+        "files": [
+          "SKILL.md",
+          "references/mail-work-iq.md"
+        ],
+        "bytes": 24021,
+        "fileHashes": {
+          "SKILL.md": "b1411ec547537c67c77ada33108ff35251daf5d12bba2e632db936a5de3ea8f4",
+          "references/mail-work-iq.md": "f36b877360c31efc5425e895b314376cc34df823d814f134bf4dda67c61247fc"
+        }
+      },
+      "teams-read": {
+        "files": [
+          "SKILL.md",
+          "references/teams-work-iq.md"
+        ],
+        "bytes": 26373,
+        "fileHashes": {
+          "SKILL.md": "b1411ec547537c67c77ada33108ff35251daf5d12bba2e632db936a5de3ea8f4",
+          "references/teams-work-iq.md": "281151939828874f236df2bfc347120882afb4562fc1a3579e7d3c215752afb9"
+        }
+      }
+    }
+  }
+}

@@ -2,6 +2,29 @@
 
 Full WorkIQ tool surface for GitHub Copilot CLI: agentic semantic queries via `ask` **plus** direct, structured reads and writes against Microsoft 365 — emails, meetings, calendar, documents, Teams messages, OneDrive/SharePoint files, and people.
 
+When both plugins are installed, **workiq-preview takes precedence over workiq**
+for overlapping requests. Load preview's skill and follow its retrieve-first
+guidance. Without preview, public `workiq` remains **ask-first** for semantic
+synthesis/discovery even when its connected server exposes `retrieve`.
+Load the skill before tool use. Exact entities, known-date calendar, library
+columns, complete structured collections and downloads use entity tools.
+The compact entrypoint dispatches endpoint recipes to canonical domain references.
+Both packages verify exact sources and intent, preserve supported completeness,
+and stop on explicit denial or ambiguous mutation outcomes.
+
+## Progressive guidance loading
+
+`SKILL.md` keeps routing and universal safety rules. Read the selected domain
+index, then only its operation leaf and `Required before use` links before the
+relevant call. Mutation prerequisites load before any write; recovery loads
+before retry or reconciliation. Exact verbatim guidance must be available:
+reread when uncertain, and stop if a required file is unavailable.
+
+The package-local leaves preserve standalone public ask-first routing and do
+not depend on preview files. This is guidance, not a host-enforced lazy loader.
+Loaded text is not unloaded. [Offline load-plan measurements](../../tests/workiq-guidance/README.md#progressive-loading-contract)
+count unique full-file UTF-8 bytes, not observed model context or compliance.
+
 ## Installation
 
 ### Via GitHub Copilot CLI Plugin Marketplace

@@ -107,16 +107,16 @@ export function exampleProblems(text, isRetrieveReference = false) {
       if (!object || typeof object !== 'object') return;
       if (Object.hasOwn(object, 'actionUrl') || Object.hasOwn(object, 'entityUrls') ||
           Object.hasOwn(object, 'functionUrl')) return;
-      if (Object.hasOwn(object, 'query')) {
-        if (isPathDiscovery) {
-          if (typeof object.query !== 'string' || !object.query.trim()) {
-            errors.push(`${code.heading}: search_paths query must be a nonblank string`);
-          }
-          if (Object.keys(object).some(key => key !== 'query')) {
-            errors.push(`${code.heading}: unsupported current search_paths argument`);
-          }
-          return;
+      if (isPathDiscovery) {
+        if (typeof object.query !== 'string' || !object.query.trim()) {
+          errors.push(`${code.heading}: search_paths query must be a nonblank string`);
         }
+        if (Object.keys(object).some(key => key !== 'query')) {
+          errors.push(`${code.heading}: unsupported current search_paths argument`);
+        }
+        return;
+      }
+      if (Object.hasOwn(object, 'query')) {
         errors.push(...retrievalProblems(object).map(p => `${code.heading}: ${p}`));
         if (/unknown|unspecified/i.test(code.heading) && !/external|broader|conflict/i.test(code.heading) && object.strategy !== 'grounding') {
           errors.push(`${code.heading}: unknown source must explicitly select Grounding`);
@@ -134,31 +134,31 @@ export const policies = [
   ['G07', 'SKILL.md', /(?:grounding.{0,35}default|default.{0,45}grounding)/is, 'advertise the Grounding skill default'],
   ['G08', 'references/retrieve-work-iq.md', /(?:unknown|unspecified)[\s\S]{0,180}grounding/i, 'unknown/unspecified locations use Grounding'],
   ['G25', 'SKILL.md', /unspecified source families[\s\S]{0,50}omit[\s\S]{0,30}capabilities/i, 'advertise omitted capability filters for unspecified sources'],
-  ['G25', 'references/retrieve-work-iq.md', /source families are unspecified[\s\S]{0,50}omit[\s\S]{0,30}capabilities/i, 'do not guess a source-family allow-list'],
+  ['G25', 'references/retrieve-work-iq.md', /(?:source families are unspecified|unspecified source families)[\s\S]{0,50}omit[\s\S]{0,30}capabilities/i, 'do not guess a source-family allow-list'],
   ['G22', 'references/retrieve-work-iq.md', /(?:explicit|user|select|permission)[\s\S]{0,100}(?:delegat|alternative)|(?:delegat|alternative)[\s\S]{0,100}(?:explicit|user|select)/i, 'delegation alternative requires user selection'],
   ['G19', 'references/retrieve-work-iq.md', /(?:one|once|1)[\s\S]{0,150}(?:objective|bounded.{0,20}goal)/i, 'bound escalation per objective'],
-  ['G20', 'references/retrieve-work-iq.md', /(?:capp?ed|truncat)[\s\S]{0,200}(?:saved|read|inspect)/i, 'inspect available saved capped results'],
+  ['G20', 'references/retrieve-work-iq.md', /(?:inspect[\s\S]{0,40}saved[\s\S]{0,40}capped|(?:capp?ed|truncat)[\s\S]{0,200}(?:saved|read|inspect))/i, 'inspect available saved capped results'],
   ['G03', 'references/agents-work-iq.md', /list_agents/, 'discover named agents from the live catalog'],
   ['G04', 'references/agents-work-iq.md', /(?:reuse|already known|known.{0,20}ID)/i, 'reuse trusted known agent IDs'],
   ['G05', 'references/agents-work-iq.md', /ambigui|ambiguous/i, 'handle ambiguous agent selection'],
   ['G06', 'references/ask-work-iq.md', /conversationId/, 'preserve delegated conversation continuity'],
-  ['R.C2', 'references/files-work-iq.md', /same.drive/i, 'declare same-drive move constraints'],
-  ['R.C2', 'references/files-work-iq.md', /parentReference\.driveId|driveId[\s\S]{0,100}parentReference/i, 'retain authoritative drive identity'],
-  ['R.C3', 'references/files-work-iq.md', /(?:session|upload)[\s\S]{0,100}(?:bytes|replac)/i, 'separate session creation from uploaded bytes'],
-  ['R.C5', 'references/calendar-work-iq.md', /(?:time.?zone|timeZone)/i, 'resolve timezone and window'],
-  ['R.C5', 'references/calendar-work-iq.md', /each boundary[\s\S]{0,100}date/i, 'resolve each boundary using its requested date'],
-  ['R.C5', 'references/calendar-work-iq.md', /round.trip/i, 'verify timezone conversion by round-trip'],
-  ['R.C5', 'references/calendar-work-iq.md', /reminderView|reminder/i, 'state reminder scope'],
-  ['R.C5', 'references/calendar-work-iq.md', /(?:instance|series|recurr)/i, 'preserve instance/series intent'],
-  ['R.C3', 'references/mail-work-iq.md', /createReply/, 'persist reply drafts with reply linkage'],
-  ['R.C3', 'references/mail-work-iq.md', /isDraft/, 'exclude unsent drafts from exchanged history'],
-  ['R.C6', 'references/teams-work-iq.md', /tenantId|tenant identity|tenant.*field/i, 'retain required member tenant identity'],
+  ['R.C2', 'references/files-actions-work-iq.md', /same.drive/i, 'declare same-drive move constraints'],
+  ['R.C2', 'references/files-identity-work-iq.md', /parentReference\.driveId|driveId[\s\S]{0,100}parentReference/i, 'retain authoritative drive identity'],
+  ['R.C3', 'references/files-actions-work-iq.md', /(?:session|upload)[\s\S]{0,100}(?:bytes|replac)/i, 'separate session creation from uploaded bytes'],
+  ['R.C5', 'references/calendar-base-work-iq.md', /Resolve dates, timezone, and DST offsets at runtime/i, 'resolve timezone and window'],
+  ['R.C5', 'references/calendar-base-work-iq.md', /Compute each boundary's offset on that[\s\S]{0,20}boundary's date/i, 'resolve each boundary using its requested date'],
+  ['R.C5', 'references/calendar-base-work-iq.md', /Round-trip each instant through the[\s\S]{0,30}requested timezone/i, 'verify timezone conversion by round-trip'],
+  ['R.C5', 'references/calendar-reminders-work-iq.md', /actual multi-calendar reminder coverage is[\s\S]{0,40}unverified/i, 'state reminder scope'],
+  ['R.C5', 'references/calendar-base-work-iq.md', /Resolve the calendar\/mailbox[\s\S]{0,120}occurrence versus series/i, 'preserve instance/series intent'],
+  ['R.C3', 'references/mail-actions-work-iq.md', /reply draft must use[\s\S]{0,30}createReply[\s\S]{0,80}resolved original message/i, 'persist reply drafts with reply linkage'],
+  ['R.C3', 'references/mail-read-work-iq.md', /Exclude `?isDraft:true`? from exchanged messages/i, 'exclude unsent drafts from exchanged history'],
+  ['R.C6', 'references/teams-targets-work-iq.md', /retain the same member's[\s\S]{0,30}returned `tenantId`/i, 'retain required member tenant identity'],
   ['R.C5', 'references/call-function-work-iq.md', /(?:checkpoint|initial.sync)/i, 'distinguish initial sync from saved checkpoint'],
   ['R.C4', 'references/troubleshooting.md', /(?:202|accepted)[\s\S]{0,150}(?:pending|complet)/i, 'accepted is not completed'],
   ['R.C4', 'references/troubleshooting.md', /412|precondition/i, 'reconcile precondition failures'],
   ['R.C4', 'references/troubleshooting.md', /(?:effect|read.only|getSchedule)/i, 'classify actions by effects'],
-  ['R.C6', 'references/workflows-work-iq.md', /directory[\s\S]{0,200}contacts/i, 'distinguish directory users from contacts'],
-  ['R.schema', 'references/workflows-work-iq.md', /(?:explicit|request)[\s\S]{0,200}(?:get_schema|schema)/i, 'honor explicit schema requests']
+  ['R.C6', 'references/people-work-iq.md', /Directory users and personal Outlook contacts are separate stores/i, 'distinguish directory users from contacts'],
+  ['R.schema', 'references/setup-work-iq.md', /Do not optimize away an explicit[\s\S]{0,30}schema request/i, 'honor explicit schema requests']
 ];
 
 export function policyProblems(file, text) {

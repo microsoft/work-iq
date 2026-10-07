@@ -34,7 +34,8 @@ For exact reads ("show/list/get latest messages", "list members", "show my chats
 
 - The batch result can report an error when **any one** URL fails, even if the other URLs
   returned data. If a multi-fetch errors, don't discard it — check for successful payloads
-  inside the response, and re-issue only the failing URL on its own to isolate the problem.
+  inside the response. Recover only eligible failed reads within the shared
+  objective budget in [troubleshooting](troubleshooting.md); do not retry a denial.
   When a URL might fail (permissions, existence unknown), prefer small batches or single URLs.
 - Large URL lists also stack per-URL latency into a single tool-call window and raise the
   odds of one failure poisoning the batch. Prefer focused batches over speculative bulk
@@ -52,9 +53,10 @@ Collection responses are **pages**, not the full result set. When a response con
   support it and the call fails.
 - If you stop before exhausting pages, **tell the user the list is partial** ("first 25 of
   more") — never present one page as the complete answer.
-- **Cap your paging.** For "latest/recent" questions one page is usually enough; otherwise stop
-  after 2–3 pages unless the user explicitly asked for the complete set. Do not follow
-  `@odata.nextLink` for dozens of pages to enumerate an entire mailbox or message history.
+- **Bound work to the request.** One page may suffice for a bounded recent list.
+  Requested all/every/complete collections or exchanged history override nominal
+  call counts: continue supported paging within user/runtime limits or state
+  partial coverage. Never invent cursors or enumerate unrelated sources.
 
 ## URL Format
 
@@ -82,7 +84,9 @@ Common URL encodings for OData query values:
 
 ## OData Query Tips
 
-**Always include `$select`** with only the fields you need to reduce response size (e.g., `/me/messages?$select=id,subject,from`). For collection endpoints, include `$top` to bound results.
+Include `$select` and `$top` only where supported. Endpoint-specific recipes
+override generic defaults: Teams joined-team/message reads omit `$top`, and
+`/chats/{chatId}/members` has no query string. See [Teams](teams-work-iq.md).
 
 | Parameter | Purpose | Example |
 |-----------|---------|---------|

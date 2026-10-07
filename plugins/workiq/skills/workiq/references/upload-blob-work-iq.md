@@ -28,7 +28,7 @@ Upload a local file to a WorkIQ path via HTTP PUT. Use this to upload files to O
 
 ## Gotchas
 
-- **File size limit**: Simple PUT uploads via this tool work for files up to 4MB. For larger files, initiate an upload session via `do_action` with `actionUrl: "/me/drive/root:/{path}:/createUploadSession"` and PUT chunks to the returned `uploadUrl`. See the `createUploadSession` example in `do-action-work-iq.md`.
+- **File size limit**: This unreleased tool's illustrative simple PUT limit is 4MB. For the supported upload-session operation, read [file actions](files-actions-work-iq.md). Session creation does not enable binary upload; do not PUT chunks or expose the preauthenticated `uploadUrl`.
 - The URL uses the Graph path-based format `root:/{path}:/content` — include the leading `/` before the filename.
 
 ## Examples

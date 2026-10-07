@@ -2,6 +2,10 @@
 
 Canonical recovery and outcome policy for all WorkIQ operations. Domain references
 may impose tighter bounds; a happy-path call budget never overrides safety.
+Generic `Unknown error`, null, or timeout does not establish a cause. The recovery
+budget belongs to the objective; rephrasing, batching or changing tools does not
+reset it. A read-only retry below is at most one failed-read recovery pass for
+that objective, preserving successes; it is not a new allowance per query.
 
 ## Classify effects before recovery
 

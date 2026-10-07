@@ -21,6 +21,9 @@ Do not normalize fields to fit general Graph conventions.
 
 ## Workflow
 
+Establish the requested effect and intent first. A search-like "reply", "message"
+or "draft" phrase is not authorization to mutate; remain read-only and clarify.
+
 1. Resolve exact identities and documented effects.
 2. Prepare the domain-owned payload. For a mutation, obtain required confirmation
    of target, recipients, content, and consequences; reuse only applicable explicit
@@ -41,7 +44,7 @@ mutations even if they do not send a message.
 | Send, reply/forward, persist reply drafts, mail copy/move/permanent deletion | [Mail](mail-work-iq.md) |
 | Accept/decline, cancellation, forwarding, free/busy | [Calendar](calendar-work-iq.md) |
 | Drive-scoped copy and upload-session creation | [Files](files-work-iq.md) |
-| Read/unread, reactions, presence | [Teams](teams-work-iq.md) |
+| hideForUser, read/unread, literal reactions, presence | [Teams](teams-work-iq.md) |
 
 Use [create_entity](create-entity-work-iq.md) for collection creation such as a
 fresh draft; `createReply`/`createReplyAll`/`createForward` remain actions.
