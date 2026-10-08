@@ -10,6 +10,19 @@ Use this reference when a WorkIQ tool call fails or behaves unexpectedly.
 
 **Fix:** Scan your available-tools list for an entry whose name **ends with** the logical name (e.g., `ask`). In Copilot CLI the prefixed form is `workiq-ask`; in Claude Desktop it's `mcp__workiq__ask`. Call the exact prefixed name your host requires.
 
+## The user asked to build, deploy, or publish an M365 Copilot agent or plugin
+
+**Symptom:** You are looking for a WorkIQ tool that scaffolds, validates, packages,
+deploys, or publishes an agent or plugin, and none exists.
+
+**Cause:** WorkIQ handles M365 data. The development lifecycle belongs to the
+Work IQ Dev Tools (WIQD) plugin.
+
+**Fix:** Read `references/wiqd.md` for the plugin availability check, installation
+confirmation, and handoff. A working `wiqd` CLI alone does not mean the plugin is
+installed or its skill is loaded. Do not run the CLI installer or attempt deployment
+through WorkIQ entity tools.
+
 ## Entity tool returns a 400 / "bad request" on a Graph URL
 
 **Symptom:** `fetch` or another entity tool returns HTTP 400 with a parser or validation error.

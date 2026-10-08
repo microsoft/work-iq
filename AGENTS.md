@@ -72,6 +72,7 @@ plugins/<plugin-name>/
   - `workiq` skill — Guides usage of `ask` for semantic questions plus the entity tools for fast, structured M365 and Business Applications reads and writes
   - Hosted MCP server (`workiq`) with tools: `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `get_debug_link`
   - SharePoint library-metadata requests dispatch to `references/sharepoint-library-metadata.md`; read it before the workflow. Detailed procedures and safeguards live there rather than being duplicated in `SKILL.md`.
+  - M365 Copilot agent/plugin lifecycle requests dispatch to `references/wiqd.md` and hand off to the external WIQD plugin. Check loaded skills and `copilot plugin list`; with explicit approval, install using `copilot plugin install microsoft/wiqd:plugins/wiqd`, then restart the session. Do not use CLI availability as proof of plugin installation or run WIQD CLI installers from WorkIQ; the WIQD skill owns runtime setup. This does not change the preview package's routing.
 
 - **workiq-preview** — Preview build with agent-host-neutral, retrieve-first guidance (read + write). Bundles:
   - `workiq-preview` skill — Retrieve caller-owned context with explicit Grounding when available; use `ask` only for intentional delegation, and entity tools for exact reads, writes, and downloads. Load the skill before using WorkIQ tools.
