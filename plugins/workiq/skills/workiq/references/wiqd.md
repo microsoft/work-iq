@@ -48,16 +48,11 @@ Check in this order, before installing anything:
    restart their Copilot CLI session and re-send the request.
 3. **Missing plugin:** Only a successful plugin-list result showing no `wiqd`
    establishes that it is missing. If the command fails or Copilot CLI is unavailable,
-   report the actual failure and stop; do not assume absence or switch to a CLI installer.
+   report the actual failure and stop; do not assume absence.
    In another host, use its supported plugin-manager availability and installation
    instructions; do not run Copilot CLI commands as if they installed into that host.
 
-**Do not use `wiqd --version` or `wiqd doctor` as a plugin availability check.**
-The CLI can exist without the plugin, and the plugin can be installed without its
-runtime dependencies. This handoff is about loading the plugin's skill, not proving
-that the CLI is ready.
-
-## 3. Confirm and install the plugin, not the CLI
+## 3. Confirm and install the plugin
 
 Never treat a build/deploy request as consent to install software. Ask for explicit
 confirmation and wait for a clear affirmative answer. The prompt, in the user's
@@ -66,8 +61,7 @@ language, must state:
 - The WIQD plugin is missing and provides the guided agent/plugin lifecycle.
 - WIQD is a preview experience with the limitations stated above.
 - This command installs the Copilot plugin from Microsoft's `microsoft/wiqd`
-  repository, including its skill and agent. It is not the WIQD CLI installer
-  and does not install the VS Code extension or guarantee runtime prerequisites.
+  repository, including its skill and agent.
 - The exact command you will execute:
 
   ```bash
@@ -82,10 +76,7 @@ After confirmation, execute the command through your shell tool. If the user dec
 respect the decision and stop the lifecycle portion of the request. Silence, ambiguity,
 or a question is not consent.
 
-If installation fails, report the actual error and stop. Do not retry through global npm
-installation, the WIQD CLI installer scripts, repo-local build scripts, or a different
-toolkit. Do not install Node.js, a CLI, or an editor extension as an implicit dependency
-of this handoff.
+If installation fails, report the actual error and stop the handoff.
 
 After a successful installation, run `copilot plugin list` and confirm that `wiqd` is
 listed. If it is absent or verification fails, report that plugin availability could
@@ -105,9 +96,8 @@ Once `wiqd` appears in the available skills, invoke it and let it own the reques
 Do not attempt to call an unloaded skill or claim that installation hot-loaded it into
 the current session.
 
-Plugin installation is not runtime setup. The WIQD skill owns any further prerequisite
-checks, CLI setup, authentication, and lifecycle execution under its own instructions
-and confirmation gates. WorkIQ should not preempt those by running raw lifecycle commands.
+The WIQD skill guides prerequisite checks, setup, authentication, and lifecycle
+execution under its own instructions and confirmation gates.
 
 Official plugin: <https://github.com/microsoft/wiqd/tree/main/plugins/wiqd>
 
@@ -118,8 +108,6 @@ WIQD documentation: <https://aka.ms/wiqd/docs>
 - Do not hand-author agent manifests or app packages as a workaround for a missing
   WIQD plugin or failed installation.
 - Do not use WorkIQ MCP entity tools to deploy, sideload, share, or publish an agent.
-- Do not run `https://aka.ms/wiqd/install.ps1`, `https://aka.ms/wiqd/install.sh`,
-  or `npm install -g` as the WorkIQ-to-WIQD handoff.
-- Do not equate plugin installation with CLI availability or successful deployment.
+- Only claim successful deployment after the lifecycle operation is confirmed.
 - Do not broaden this routing to unrelated development requests or change the
   existing WorkIQ M365 data routing.

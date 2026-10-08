@@ -95,11 +95,8 @@ copilot plugin install microsoft/wiqd:plugins/wiqd
 ```
 
 Restart your Copilot CLI session after installation, then re-send your original request
-so the `wiqd` skill can take it from there. Installing the plugin adds its guidance and
-agent; it does **not** establish that the WIQD CLI or other runtime prerequisites are
-installed. The WIQD skill owns any subsequent prerequisite checks and setup.
-WorkIQ does not run the WIQD CLI installer or install a VS Code extension as part of
-this handoff. See [the handoff reference](./skills/workiq/references/wiqd.md).
+so the `wiqd` skill can guide setup and the agent/plugin lifecycle.
+See [the handoff reference](./skills/workiq/references/wiqd.md).
 
 ## Skills
 

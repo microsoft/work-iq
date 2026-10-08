@@ -19,9 +19,8 @@ deploys, or publishes an agent or plugin, and none exists.
 Work IQ Dev Tools (WIQD) plugin.
 
 **Fix:** Read `references/wiqd.md` for the plugin availability check, installation
-confirmation, and handoff. A working `wiqd` CLI alone does not mean the plugin is
-installed or its skill is loaded. Do not run the CLI installer or attempt deployment
-through WorkIQ entity tools.
+confirmation, and handoff. Once the `wiqd` skill is loaded, let it guide setup and
+lifecycle operations.
 
 ## Entity tool returns a 400 / "bad request" on a Graph URL
 
