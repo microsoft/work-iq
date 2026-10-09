@@ -2,7 +2,7 @@
 
 POST a WorkIQ action — a named operation that performs a task (send mail, copy/move messages, accept/decline a meeting, compute free/busy) rather than creating a resource.
 
-> **📘 Action body shapes live here.** This file is the source of truth for action `jsonBody` shapes. You can also call `get_schema` with `operationType: "action"` to retrieve the request-body schema directly; it does not return the action's response resource schema.
+> **📘 Action body shapes live here.** This file is the source of truth for action `jsonBody` shapes, except Teams actions, whose bodies live in the Teams reference files (see [Teams actions](#teams-actions)). You can also call `get_schema` with `operationType: "action"` to retrieve the request-body schema directly; it does not return the action's response resource schema.
 
 > **⚠️ Writes execute immediately.** `/me/sendMail`, `/forward`, `/accept`, `/decline`, `/permanentDelete`, and similar verbs are immediate and visible to others (or unrecoverable). **Summarize the action (recipients, subject, body, target) and get explicit user confirmation before invoking.** Never auto-send drafts or auto-respond to meeting invites.
 
@@ -22,6 +22,7 @@ POST a WorkIQ action — a named operation that performs a task (send mail, copy
 - Forward or reply — `/me/messages/{id}/{forward|reply}`
 - Compute free/busy across multiple users — `/me/calendar/getSchedule`
 - React to a Teams message — `/chats/{chatId}/messages/{messageId}/setReaction`
+- Reply to a Teams chat message with a quote — `/chats/{chatId}/messages/replyWithQuote`
 - Remove a Teams chat from the current user's list — `/chats/{chatId}/hideForUser`
 - Mark a Teams chat read or unread — `/chats/{chatId}/markChatReadForUser`, `/chats/{chatId}/markChatUnreadForUser`
 - Set the user's Teams presence — `/me/presence/setUserPreferredPresence`
@@ -241,78 +242,23 @@ This is a known action contract. Do not call `ask`, `search_paths`, or
 `get_schema` first. See `references/sharepoint-work-iq.md` for the full
 SharePoint route.
 
-### Set my Teams presence to Busy
-```json
-{
-  "actionUrl": "/me/presence/setUserPreferredPresence",
-  "jsonBody": "{\"availability\":\"Busy\",\"activity\":\"Busy\",\"expirationDuration\":\"PT1H\"}"
-}
-```
+### Teams actions
 
-Use `setUserPreferredPresence` for user requests ("set me to Busy"). The `setPresence` action is the application-session variant and requires a `sessionId` — don't fall back to it without one.
+Teams action bodies live in the Teams reference files; use them directly
+without `get_schema`:
 
-### React to a Teams chat message
-
-Resolve the exact chat or channel message as described in
-`references/teams-work-iq.md`, then call:
-
-```json
-{
-  "actionUrl": "/chats/{chatId}/messages/{messageId}/setReaction",
-  "jsonBody": "{\"reactionType\":\"👍\"}"
-}
-```
-
-For channel messages use the `/teams/{teamId}/channels/{channelId}/messages/{messageId}/setReaction` path. See `references/teams-work-iq.md` for chat-vs-channel resolution.
-The deployed WorkIQ action expects the literal Unicode reaction value. For a
-thumbs-up reaction, use `👍`; not `like`.
-
-### Remove a Teams chat from the current user's list
-
-Use `hideForUser` for requests to delete, remove, or hide a chat from the
-current user's chat list. For a named group-chat topic, use the exact-topic
-lookup in `references/teams-work-iq.md`:
-`/me/chats?$filter=topic%20eq%20%27{odataEscapedAndUrlEncodedExactTopic}%27&$expand=members&$top=50`.
-Require an exact topic match, follow the global pagination guidance if a
-continuation is returned, and use the expanded signed-in member for the action
-identity. Do not fetch
-`/chats/{chatId}/members` again. For a named person, use the 1:1 resolver in
-`references/teams-work-iq.md`; do not use `delete_entity`.
-
-```json
-{
-  "actionUrl": "/chats/{chatId}/hideForUser",
-  "jsonBody": {
-    "user": {
-      "@odata.type": "#microsoft.graph.teamworkUserIdentity",
-      "id": "{signedInUserId}",
-      "tenantId": "{signedInMemberTenantId}",
-      "userIdentityType": "aadUser"
-    }
-  }
-}
-```
-
-
-### Mark a Teams chat read or unread
-
-Resolve the exact chat and current-user identity as described in
-`references/teams-work-iq.md`. Both actions use the same `user` object as
-`hideForUser`:
-
-When the chat response does not already include members, fetch exactly
-`/chats/{chatId}/members` with no query string. Do not request `userId` or
-`tenantId` through `$select`; read those properties from the unfiltered member
-response.
-
-| Intent | Action URL | Additional body field |
-|--------|------------|-----------------------|
-| Mark read | `/chats/{chatId}/markChatReadForUser` | None |
-| Mark unread | `/chats/{chatId}/markChatUnreadForUser` | `"lastMessageReadDateTime":"{returnedCreatedDateTime}"` |
-
-For mark-unread, add `lastMessageReadDateTime` beside `user` in `jsonBody`.
-Do not omit `tenantId` or substitute the chat resource's
-`lastUpdatedDateTime`. These are known deployed contracts; call them directly.
+| Action | Path | Reference |
+|--------|------|-----------|
+| React to a message | `/chats/{chatId}/messages/{messageId}/setReaction` (or the channel-message equivalent) | `references/teams-messages-writes.md` |
+| Remove my reaction | `/chats/{chatId}/messages/{messageId}/unsetReaction` (or the channel-message equivalent) | `references/teams-messages-writes.md` |
+| Reply with a quote | `/chats/{chatId}/messages/replyWithQuote` | `references/teams-messages-writes.md` |
+| Remove (hide) a chat from my list | `/chats/{chatId}/hideForUser` | `references/teams-messages-writes.md` |
+| Mark a chat read or unread | `/chats/{chatId}/markChatReadForUser`, `/chats/{chatId}/markChatUnreadForUser` | `references/teams-messages-writes.md` |
+| Remove a user-authored message | `/users/{userId}/chats/{chatId}/messages/{chatMessageId}/softDelete` (chat) or `/teams/{teamId}/channels/{channelId}/messages/{messageId}/softDelete` (channel) | `references/teams-messages-writes.md` |
+| Set, reset, or add a status message to my presence | `/me/presence/setUserPreferredPresence`, `/me/presence/clearUserPreferredPresence`, `/me/presence/setStatusMessage` | `references/teams-members-presence.md` |
+| Add people to a team | `/teams/{teamId}/members/add` | `references/teams-members-presence.md` |
+| Archive or unarchive a team or channel | `/teams/{teamId}/archive`, `/teams/{teamId}/unarchive`, `/teams/{teamId}/channels/{channelId}/archive`, `/teams/{teamId}/channels/{channelId}/unarchive` | `references/teams-lifecycle-settings.md` |
+| Set today's work location; show a location in presence | `/me/settings/workHoursAndLocations/occurrences/setCurrentLocation`; `/me/presence/setManualLocation`, `/me/presence/clearLocation` | `references/teams-lifecycle-settings.md` |
 
 ### Replace an existing file with an upload session
 Resolve the existing driveItem with one `call_function` exact-name search and
@@ -353,5 +299,3 @@ session, report only non-secret metadata such as `expirationDateTime` and
 | `403` + empty / generic `Forbidden` | Tenant policy or admin-controlled action (e.g. presence write in a managed tenant, send-as another mailbox). The body has no scope hint because the directory denied the call before scope evaluation. | Stop. Tell the user the operation is policy-denied. Do NOT iterate through sibling action verbs (`setUserPreferredPresence` ↔ `setPresence`) — they share the same policy gate. |
 | `400` / `BadRequest` on the body | The `jsonBody` wrapper shape is wrong (e.g. `sendMail` expects `{Message, SaveToSentItems}`, not a raw `Message`). | Stop. Re-read this file's JSON sample for that action; do not re-send the same body. |
 | `404` on `actionUrl` | The entity ID embedded in the path is stale, or the action verb does not exist on this resource family. | Stop. Re-`fetch` to get the current ID, OR re-check `search_paths` for the right action verb. |
-
-**Especially for `/me/presence/*`:** if the first `setPresence` or `setUserPreferredPresence` POST returns 403, the second will too. Both verbs share the `Presence.ReadWrite[.All]` scope gate. Stop after one 403, surface the failure, and identify the missing consent scope if the error body names one.

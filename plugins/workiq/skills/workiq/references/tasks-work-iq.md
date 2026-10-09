@@ -30,8 +30,8 @@ Planner task body fields: `planId`, `title`, `bucketId`, `assignments`, `dueDate
   3. If the plan is not in `/me/planner/plans`, resolve likely backing groups before using `ask`.
     Fetch `/me/joinedTeams?$select=id,displayName,description` to get group IDs for Teams the
     user has joined, guess likely team/group names, then fetch
-    `/groups/{group-id}/planner/plans?$select=id,title,owner` to get the plan ID. Do not pass
-    `$top` to `/me/joinedTeams`.
+    `/groups/{group-id}/planner/plans?$select=id,title,owner` to get the plan ID.
+    `/me/joinedTeams` takes `$select` only; never pass `$top` to it.
   4. If `/me/joinedTeams` misses, use known group IDs when provided or fetch the user's joined
     groups and then fetch `/groups/{group-id}/planner/plans?$select=id,title,owner`.
   5. If you have an owner/group ID but not the group-plans path, use

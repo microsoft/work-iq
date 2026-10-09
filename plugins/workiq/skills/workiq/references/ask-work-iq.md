@@ -32,6 +32,7 @@ Prefer `ask` over entity tools when the question is open-ended or exploratory. S
 - **API / path questions** ("endpoint", "available operations", "what can I do with…") → `search_paths`
 - **Schema / field / body-shape questions** ("what does sendMail take?", "what fields are required?") → `get_schema`
 - **Exact mutations by title / name / thread / channel** ("delete the X event", "react to the Y message") → resolve with `fetch`, then call the write/action tool directly
+- **Exact reads and listings** ("list everyone in the X chat", "who is in the Y channel", "list my teams/channels", "show the latest messages in Z") → `fetch` the structured roster, collection, or messages. `ask` can omit or paraphrase members, roles, and items, so use it only when the user asks for synthesis.
 - **A "summarize then draft/send/create/update/delete/forward/react" chain** — continue with the mutation tool after `ask`. The `ask` answer alone does not satisfy the second half of the request.
 
 ## Examples

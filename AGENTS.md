@@ -72,6 +72,7 @@ plugins/<plugin-name>/
   - `workiq` skill — Guides usage of `ask` for semantic questions plus the entity tools for fast, structured M365 and Business Applications reads and writes
   - Hosted MCP server (`workiq`) with tools: `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `get_debug_link`
   - SharePoint library-metadata requests dispatch to `references/sharepoint-library-metadata.md`; read it before the workflow. Detailed procedures and safeguards live there rather than being duplicated in `SKILL.md`.
+  - Teams guidance: `SKILL.md` holds the chat-vs-channel distinction and routes each Teams task to a topic file. `teams-routing.md` holds the core rules every Teams task uses (lookups, which ID goes where, the member body, query limits, write outcomes); the topic files are `teams-reading.md`, `teams-messages-writes.md`, `teams-members-presence.md`, `teams-lifecycle-settings.md`, `teams-meetings.md`, and `teams-apps-files-content.md`.
 
 - **workiq-preview** — Preview build with agent-host-neutral, retrieve-first guidance (read + write). Bundles:
   - `workiq-preview` skill — Retrieve caller-owned context with explicit Grounding when available; use `ask` only for intentional delegation, and entity tools for exact reads, writes, and downloads. Load the skill before using WorkIQ tools.
