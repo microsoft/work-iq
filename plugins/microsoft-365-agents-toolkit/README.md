@@ -12,9 +12,9 @@ Toolkit for building Microsoft 365 Copilot declarative agents.
 
 ## Declarative Agent prerequisite
 
-The `declarative-agent-developer` skill delegates every Declarative Agent request to the Work IQ
-Dev Tools (WIQD) Copilot plugin. Install WIQD separately, then restart Copilot CLI so its `wiqd`
-skill is loaded:
+The Work IQ Dev Tools (WIQD) Copilot plugin must be installed and enabled before using the
+`declarative-agent-developer` skill. Install WIQD separately, then restart Copilot CLI so its
+`wiqd` skill is loaded:
 
 ```bash
 copilot plugin install microsoft/wiqd:plugins/wiqd
