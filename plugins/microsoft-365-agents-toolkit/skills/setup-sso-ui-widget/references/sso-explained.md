@@ -6,9 +6,9 @@
 > further (OBO / Microsoft Graph) once SSO is in place. Read this first if you want the
 > mental model before (or while) running the skill.
 >
-> For the broader authentication picture — Entra SSO vs third-party OAuth, the auth
-> pattern chooser, and the `oauth/register` lifecycle — see the **`authentication.md`**
-> reference in the `declarative-agent-developer` skill (`microsoft-365-agents-toolkit`).
+> For broader declarative-agent authentication guidance, use
+> **`declarative-agent-developer`**, which delegates the request to the WIQD plugin.
+> This document remains the source of truth for this widget-specific SSO flow.
 
 ---
 
@@ -147,8 +147,6 @@ for authorization you must configure app roles / group claims on the Entra app; 
 appear automatically. To add your own attributes to the token, see §3.3.
 
 ### 3.2. Guard implication — accept the client-id GUID audience
-
-> **Canonical rule lives in** [`authentication.md`](../../declarative-agent-developer/references/authentication.md) ("accept every audience form Entra may emit"). This section only shows the **skill-specific `auth.ts`** implication so the two docs don't drift.
 
 Because a real token's `aud` is the **bare client-id GUID**, the guard in `auth.ts` must
 include that GUID in its accepted audiences. The skill writes exactly this:
@@ -304,7 +302,9 @@ audience bug in §3.2, wrong issuer/tenant, or the server reading the wrong env 
 can never fix it, because the retried token is identical — so the user is stuck clicking a
 sign-in button that never "sticks".
 
-**401 vs 403 — the key behavioral difference** is documented canonically in [`authentication.md` → *SSO Behavior — 401 vs 403*](../../declarative-agent-developer/references/authentication.md). In short: **401** makes Copilot re-prompt and retry the *same* token (so a wrongly-rejected token loops forever), while **403** stops the loop and surfaces an error to the user.
+**401 vs 403 — the key behavioral difference:** **401** makes Copilot re-prompt and retry the
+*same* token (so a wrongly-rejected token loops forever), while **403** stops the loop and
+surfaces an error to the user.
 
 **Troubleshooting guidance:**
 - **Seeing an endless sign-in loop?** Your server is returning 401 for a token it *should*

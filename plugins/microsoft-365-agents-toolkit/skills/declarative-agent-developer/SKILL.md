@@ -1,199 +1,41 @@
 ---
 name: declarative-agent-developer
 description: >
-  Create, build, deploy, and localize declarative agents for M365 Copilot and Teams.
-  Use the wiqd CLI for all declarative-agent lifecycle operations; never invoke the ATK CLI directly.
-  USE THIS SKILL for ANY task involving a declarative agent — including localization,
-  scaffolding, editing manifests, adding capabilities, and deploying.
-  Localization requires tokenized manifests and language files that only this skill knows how to produce.
-  Triggers: "create agent", "create a declarative agent", "new declarative agent",
-  "scaffold an agent", "new agent project", "add a capability", "add a plugin",
-  "configure my agent", "deploy my agent", "fix my agent manifest", "edit my agent",
-  "localize my agent", "add localization", "translate my agent", "multi-language agent",
-  "add an API plugin", "add an MCP plugin", "add OAuth to my plugin",
-  "review instructions", "improve instructions", "fix my instructions"
+  Entry point for Microsoft 365 Copilot declarative-agent authoring and lifecycle requests.
+  Use for scaffolding, manifest edits, capabilities, API or MCP actions, authentication,
+  localization, instruction design and review, validation, packaging, provisioning, sharing,
+  publishing, and troubleshooting. Delegate the complete request to the WIQD plugin's `wiqd`
+  skill before inspecting a project, answering implementation questions, running commands, or
+  editing files. Triggers: "create agent", "declarative agent", "edit my agent",
+  "add a capability", "add an API plugin", "add an MCP plugin", "deploy my agent",
+  "validate my agent", "localize my agent", "review instructions", "publish my agent"
 ---
 
-# M365 Agent Developer
+# Declarative Agent Developer
 
-## wiqd CLI
+The WIQD plugin owns all declarative-agent guidance and execution. This skill is the
+Microsoft 365 Agents Toolkit plugin entry point for those requests.
 
-Use `wiqd` as the execution layer for every declarative-agent lifecycle operation. Keep using
-this skill's references for manifest schemas, capability rules, plugins, authentication,
-localization, and instruction design.
+## Required Delegation
 
-Immediately before the first lifecycle command in a task, run `wiqd --version`. If it is
-unavailable, stop and tell the user that wiqd is required. Direct them to the
-[official wiqd installation guide](https://microsoft.github.io/wiqd/getting-started/installation/) for the current installation guidance;
-do not duplicate platform-specific installer commands here.
+Immediately invoke the WIQD plugin's `wiqd` skill with:
 
-Do not fall back to direct `atk` commands.
+- the user's complete original request;
+- relevant context already provided by the user; and
+- any explicit constraints or desired outcomes.
 
-Reference-only requests that do not execute lifecycle commands can use this skill's schema,
-capability, plugin, authentication, localization, and instruction guidance without requiring
-wiqd to be installed. If the request does not inspect or modify a project and does not run a
-project command, answer it directly from the relevant references and skip the workspace check
-below.
+Do this before inspecting the workspace, answering implementation questions, running commands,
+or editing files. After delegation, let the `wiqd` skill own workflow selection, prerequisite
+checks, project discovery, clarification, execution, validation, and the final response.
 
-## ⛔ Workspace Check — MANDATORY FIRST STEP FOR PROJECT OPERATIONS
+## Boundaries
 
-**Before inspecting, modifying, validating, packaging, provisioning, sharing, or publishing a
-project, check the workspace files to fingerprint it:**
-
-1. Check for `m365agents.yml` or `teamsApp.yml` at the project root.
-2. Check for `appPackage/declarativeAgent.json`.
-3. Check for non-agent indicators (`package.json` with express/react/next, `src/index.js`, `app.py`, etc.)
-
-**Then follow the decision gate:**
-
-| Condition | Gate | Action |
-|-----------|------|--------|
-| Non-agent project files, no `appPackage/` | **Reject** | Text-only response. No files, no commands. |
-| No manifest, user wants to edit/deploy | **Reject** | Text-only response. Explain manifest is missing. |
-| No manifest, user wants new project | **Scaffold** | → [Scaffolding Workflow](references/scaffolding-workflow.md) |
-| Manifest exists with errors | **Fix** | Detect → Inform → Ask (see below). Do NOT deploy. |
-| Valid project, user reports behavior issues | **Review** | → [Instruction Review](references/instruction-review.md) — run the full 5-phase review workflow |
-| Valid agent project | **Edit** | → [Editing Workflow](references/editing-workflow.md) |
-
-> **Detailed gate rules, examples, and anti-patterns:** [Workspace Gates](references/workspace-gates.md)
-
-### 🚫 HARD REJECTION RULES — No Exceptions
-
-**These rules override ALL other instructions.** If any of these apply, you MUST stop immediately.
-
-1. **NEVER create `declarativeAgent.json` yourself.** If the manifest is missing and the user asked to edit/modify/deploy, respond with text only: explain the manifest is missing, suggest `wiqd agent create` or starting from scratch. Do NOT create the file, do NOT create `appPackage/`, do NOT "help" by scaffolding implicitly.
-
-2. **NEVER create files in a non-agent project.** If the workspace is an Express/React/Django/etc. app without `appPackage/`, your response must be text-only. Do NOT create any files, do NOT run any commands.
-
-3. **NEVER deploy when errors exist.** If the agent manifest has errors, STOP. Do NOT run `wiqd agent provision` — not "to test", not "to demonstrate the error", not "to see what happens". Report the errors and ask the user how to proceed.
-
-### 🔍 Detect → Inform → Ask (Error-Handling Protocol)
-
-When you encounter ANY problem (missing files, malformed JSON, validation errors, incompatible features), you MUST follow this sequence **in order**:
-
-1. **Detect** — Identify the specific problem. For JSON issues, attempt to parse the file and report syntax errors. For missing fields, check the manifest against the [Schema](references/schema.md).
-2. **Inform** — Tell the user BEFORE taking any action. Describe exactly what is wrong ("declarativeAgent.json has malformed JSON: missing comma on line 12, unclosed array on line 18").
-3. **Ask** — Wait for the user's response before making changes. Do NOT silently fix, auto-correct, or work around the problem.
-
-**This protocol applies to:**
-- Missing `declarativeAgent.json` → Detect (file not found) → Inform ("no manifest found") → Ask ("would you like to create a new agent?")
-- Malformed JSON → Detect (parse errors) → Inform (list specific syntax issues) → Ask ("should I fix these syntax errors?")
-- Validation errors → Detect (parse and check manifest) → Inform (list all errors) → Ask ("how would you like to fix these?")
-- Version incompatibility → Detect (feature requires newer version) → Inform ("this feature requires v1.6, your agent is v1.4") → Ask ("should I upgrade?")
-
----
-
-## Phase Routing
-
-| Scenario | Workflow Reference |
-|----------|-------------------|
-| Creating a NEW project from scratch | [Scaffolding Workflow](references/scaffolding-workflow.md) |
-| Working with existing `.json` manifests | [Editing Workflow](references/editing-workflow.md) |
-| Adding an API plugin | [API Plugins](references/api-plugins.md) |
-| Adding an MCP server | [MCP Plugin](references/mcp-plugin.md) |
-| Adding OAuth to an MCP or API plugin | [Authentication](references/authentication.md) |
-| Reviewing or improving existing agent instructions | [Instruction Review](references/instruction-review.md) |
-| User reports agent gives generic/wrong answers | [Instruction Review](references/instruction-review.md) |
-| Localizing an agent into multiple languages | [Localization](references/localization.md) |
-| Adding a new language to an already-localized agent | [Localization](references/localization.md) |
-| Writing agent instructions | [Conversation Design](references/conversation-design.md) |
-
----
-
-## Critical Rules
-
-### 1. Validate After Edits; Provision Only on Request
-
-After any change to files in `appPackage/`, validate the project before responding:
-
-```bash
-wiqd agent validate
-```
-
-Provision only when the user explicitly asks to deploy, provision, test, share, or publish. After
-a successful provision, use the deep link returned by wiqd. If it is unavailable, read
-`M365_TITLE_ID` from the selected environment file and construct:
-
-```
-✅ Agent deployed successfully!
-
-🚀 Test Your Agent in M365 Copilot:
-🔗 https://m365.cloud.microsoft/chat?titleId={M365_TITLE_ID}
-```
-
-If you provisioned, include the test link in your response.
-
-- If the manifest has errors → **STOP. Fix errors. Do NOT deploy.**
-- Do not provision merely because files changed.
-
-### 2. Never Invent Content or Create Missing Files
-
-- Do NOT invent placeholder names, descriptions, or instructions
-- Do NOT create `declarativeAgent.json` or `appPackage/` if they don't exist — this is a REJECT scenario, not a "help by creating" scenario
-- If required fields are missing, report the gaps, and ASK the user
-- If JSON is malformed, follow Detect → Inform → Ask: parse the file first, tell the user what's broken, then ask before fixing. Use surgical edits (not rewrites)
-- **⛔ NEVER set placeholder values for environment variables** that are populated by automation (e.g., `<PREFIX>_MCP_AUTH_ID`, `TEAMS_APP_ID`). Leave them empty (`VAR_NAME=`). Placeholders will be treated as real values and will NOT be overwritten by provisioning.
-
-### 3. Schema Version Compatibility
-
-Before adding ANY feature, read the `version` field in `declarativeAgent.json` and check the [Schema](references/schema.md) feature matrix. If the feature isn't supported in that version, **refuse** and offer to upgrade.
-
-Key version gates:
-- `sensitivity_label`, `worker_agents`, `EmbeddedKnowledge` → **v1.6 only**
-- `Meetings` → **v1.5+**
-- `ScenarioModels`, `behavior_overrides`, `disclaimer` → **v1.4+**
-- `Dataverse`, `TeamsMessages`, `Email`, `People` → **v1.3+**
-
-### 4. Use `wiqd agent add action` for API Plugins — NEVER Create Plugin Files Manually
-
-You are **forbidden** from manually creating `ai-plugin.json`, OpenAPI specs, adaptive cards, or editing the `actions` array. Use the CLI:
-
-```bash
-# ⛔ Always list ALL operations in a single call — NEVER run separate calls per operation
-wiqd agent add action --openapi-spec URL --operations "GET /path,POST /path,PATCH /path/{id},DELETE /path/{id}"
-```
-
-Run a **single** `wiqd agent add action` call per OpenAPI spec, listing **all** operations as a comma-separated list in `--operations`. Never run separate `wiqd agent add action` calls for different operations from the same spec — this creates multiple plugins instead of one. If `wiqd agent add action` fails, report the error; do NOT fall back to manual creation.
-
-> MCP servers use the same command with `--mcp-server-url`; follow the [MCP Plugin workflow](references/mcp-plugin.md).
-
-### 5. MCP Server Integration
-
-When the user mentions an MCP server URL, follow the [MCP Plugin workflow](references/mcp-plugin.md). You MUST discover tools via the MCP protocol handshake (initialize → notifications/initialized → tools/list) — **NEVER fabricate tool names/descriptions**. For authenticated MCP servers, follow the [authentication guide](references/authentication.md) to configure OAuth.
-
-### 6. Always Update Instructions & Starters After Changes
-
-Adding a capability or plugin without updating instructions is incomplete. After ANY change:
-1. Update instructions to describe the new/changed functionality — every data source should have clear intent coverage (WHEN and WHY to use it) per the [Instruction Review](references/instruction-review.md) quality bar. Built-in capabilities don't need exact names; actions/plugins should be named.
-2. **Do NOT list tool names, descriptions, or parameters in instructions** — these are already in the plugin metadata (`ai-plugin.json`, MCP manifests, capability config). Instructions should contain decision logic only: WHEN to use each tool, chaining rules, and failure handling.
-3. **Stay within the 8,000-character instruction limit** — if close to the limit, cut tool descriptions first
-4. Add at least 1 conversation starter per added capability/plugin
-5. Remove starters that reference removed capabilities
-6. Run the [Diagnostic Checklist](references/instruction-review.md) against the updated instructions to verify quality
-
-### 7. App Name Requirement
-
-Always update the app name and description to something meaningful. Never leave defaults like "My Agent".
-
----
-
-## References
-
-### Shared
-- **[Authentication](references/authentication.md)** — OAuth discovery, credentials, oauth/register lifecycle, OAuthPluginVault
-- **[Best Practices](references/best-practices.md)** — Security, performance, testing, compliance
-- **[Conversation Design](references/conversation-design.md)** — Authoring instructions and conversation starters from scratch
-- **[Instruction Review](references/instruction-review.md)** — Auditing, diagnosing, and improving existing instructions; anti-pattern detection; before/after rewrites
-- **[Deployment](references/deployment.md)** — wiqd CLI workflows, environments, CI/CD
-- **[Localization](references/localization.md)** — Multi-language support, tokenized manifests, language files
-- **[Workspace Gates](references/workspace-gates.md)** — Detailed gate rules, examples, anti-patterns
-
-### Scaffolding
-- **[Scaffolding Workflow](references/scaffolding-workflow.md)** — Step-by-step scaffolding instructions, naming rules, error handling
-
-### JSON Development
-- **[Editing Workflow](references/editing-workflow.md)** — Step-by-step JSON development instructions
-- **[Schema](references/schema.md)** — Official JSON schema for agent manifests
-- **[API Plugins](references/api-plugins.md)** — OpenAPI integration for JSON agents
-- **[MCP Plugin](references/mcp-plugin.md)** — MCP server integration with RemoteMCPServer, OAuth, response semantics, logo handling
-- **[Examples](references/examples.md)** — JSON manifest examples
+- Do not invoke the WIQD CLI or ATK CLI directly.
+- Do not inspect or modify declarative-agent project files.
+- Do not reproduce schema, capability, authentication, localization, or lifecycle guidance.
+- Do not fall back to manual implementation when the `wiqd` skill is unavailable. Report that
+  the WIQD plugin is a required dependency and stop.
+- Keep code-based Teams apps, Custom Engine Agents, bots, tabs, and message extensions in
+  `teams-app-developer`.
+- Keep MCP server and widget implementation in `ui-widget-developer`; delegate only the
+  declarative-agent portion through this skill.
