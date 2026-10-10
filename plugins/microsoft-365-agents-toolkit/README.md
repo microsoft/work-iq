@@ -10,15 +10,18 @@ Toolkit for building Microsoft 365 Copilot declarative agents.
 /plugin install microsoft-365-agents-toolkit@work-iq
 ```
 
-## Prerequisites
+## Declarative Agent prerequisite
 
-Declarative Agent project lifecycle operations through the
-`declarative-agent-developer` skill require the wiqd CLI. Follow the
-[official wiqd installation guide](https://microsoft.github.io/wiqd/getting-started/installation/)
-for the current installation instructions.
+The `declarative-agent-developer` skill delegates every Declarative Agent request to the Work IQ
+Dev Tools (WIQD) Copilot plugin. Install WIQD separately, then restart Copilot CLI so its `wiqd`
+skill is loaded:
 
-This requirement applies only to Declarative Agent workflows. Other ATK workflows continue to
-use the ATK CLI and do not require wiqd.
+```bash
+copilot plugin install microsoft/wiqd:plugins/wiqd
+```
+
+The entry skill does not invoke the WIQD or ATK CLI directly and has no fallback when the WIQD
+plugin is unavailable. Other ATK workflows continue to use the ATK CLI and do not require WIQD.
 
 ## Usage
 
@@ -56,7 +59,7 @@ npx -y --package @microsoft/m365-copilot-eval@latest runevals --prompts-file eva
 | Skill | What It Does |
 |-------|-------------|
 | [**install-atk**](./skills/install-atk/SKILL.md) | Install or update the ATK CLI and VS Code extension |
-| [**declarative-agent-developer**](./skills/declarative-agent-developer/SKILL.md) | DA schema, capability, and security guidance with lifecycle operations executed through the wiqd CLI |
+| [**declarative-agent-developer**](./skills/declarative-agent-developer/SKILL.md) | Entry point that delegates Declarative Agent requests to the WIQD plugin |
 | [**ui-widget-developer**](./skills/ui-widget-developer/SKILL.md) | Build MCP servers with OpenAI Apps SDK widget rendering for Copilot Chat |
 | [**m365-agent-evaluator**](./skills/m365-agent-evaluator/SKILL.md) | Generate, run, and analyze evaluation suites for M365 Copilot declarative agents |
 

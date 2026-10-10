@@ -172,7 +172,7 @@ Installing the plugin does not enable tenant-gated retrieval.
 | Skill | Description |
 |-------|-------------|
 | [**install-atk**](./plugins/microsoft-365-agents-toolkit/skills/install-atk/SKILL.md) | Install or update the M365 Agents Toolkit CLI and VS Code extension |
-| [**declarative-agent-developer**](./plugins/microsoft-365-agents-toolkit/skills/declarative-agent-developer/SKILL.md) | Scaffolding, JSON manifest authoring, capability configuration, deployment |
+| [**declarative-agent-developer**](./plugins/microsoft-365-agents-toolkit/skills/declarative-agent-developer/SKILL.md) | Entry point that delegates Declarative Agent requests to the WIQD plugin |
 | [**ui-widget-developer**](./plugins/microsoft-365-agents-toolkit/skills/ui-widget-developer/SKILL.md) | Build MCP servers with OpenAI Apps SDK widget rendering for Copilot Chat |
 | [**m365-agent-evaluator**](./plugins/microsoft-365-agents-toolkit/skills/m365-agent-evaluator/SKILL.md) | Generate, run, and analyze evaluation suites for M365 Copilot declarative agents |
 
@@ -181,7 +181,7 @@ Installing the plugin does not enable tenant-gated retrieval.
 ```
 "Scaffold a new declarative agent for HR FAQ"
 "Add web search to my agent"
-"Deploy my agent with ATK"
+"Deploy my declarative agent"
 "Create eval prompts for my agent"
 "Run my evals and explain the failures"
 "Improve my agent instructions based on the latest eval results"
