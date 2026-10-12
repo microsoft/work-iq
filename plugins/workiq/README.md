@@ -30,7 +30,13 @@ Add to your `.mcp.json` or IDE MCP settings:
 }
 ```
 
-The plugin connects to the hosted WorkIQ MCP prod endpoint. It does **not** launch a local MCP server for tool calls.
+The plugin connects to the hosted WorkIQ **production** endpoint. It does
+**not** launch a local MCP server. Installing a skill and connecting an MCP
+server are separate: the skill supplies instructions, and the connection
+supplies tools. A host can override the bundled connection, so its name alone
+does not establish the effective destination. Follow the
+[local test runbook](TEAMS-BOTDOC-TDF.md) for explicit TDF overrides, connection
+verification, automatic-routing tests, and rollback. Never publish test routing.
 
 ## Updating
 
@@ -38,12 +44,36 @@ The MCP tool surface is served by the hosted WorkIQ endpoint above, so updating 
 
 ## Usage
 
-The plugin exposes the WorkIQ MCP tool surface — read **and** write — from `https://workiq.svc.cloud.microsoft/mcp`.
+The plugin exposes the WorkIQ MCP tool surface — read **and** write — from the
+hosted endpoint configured in `.mcp.json`.
+
+### Specific Teams chat content (`fetch` with BotDoc)
+
+For an existing named 1:1, group, or meeting chat, the skill resolves the chat
+read-only, supplies its returned ID as `threadId` to `/m365-grounding/fetch`,
+and translates the requested dates into `start`/`end` UTC instants. Summaries
+are generated locally from the returned content, with line-based paging.
+The route activates only after support is positively confirmed on the selected
+connection, before any chat lookup. Installing this plugin does not deploy or
+enable the provider; production availability depends on the service and tenant.
+Users do not need to name the API:
+
+```text
+"Get my conversation with Alex from the last 3 days"
+"Summarize my chat with alex@example.com yesterday"
+"What decisions did we make in the Release planning group chat this week?"
+```
+
+Chat inventory/membership, exact message reads, channels, mutations, binary
+attachments, and broad cross-workload questions keep their existing routes.
+Unconfirmed support, explicit unavailability, and authorization errors are
+reported separately, not silently hidden by a Graph/`ask` fallback. A discovery
+search miss alone is not proof of unavailability.
 
 ### Semantic queries (`ask`)
 
 ```
-"What did John say about the proposal?"
+"Across email and Teams, what did John say about the proposal?"
 "Summarize emails from the leadership team this week"
 "What's top of mind for Sarah?"
 "Find the design doc for the authentication system"
@@ -82,7 +112,7 @@ The plugin exposes the WorkIQ MCP tool surface — read **and** write — from `
 
 | Skill | Description |
 |-------|-------------|
-| [**workiq**](./skills/workiq/SKILL.md) | Guides usage of the full WorkIQ tool surface — `ask` for semantic questions plus entity tools for fast, structured M365 reads and writes |
+| [**workiq**](./skills/workiq/SKILL.md) | BotDoc fetch for specific Teams chat content; `ask` for broader semantic questions; entity tools for exact M365 reads and writes |
 
 ## Platform Support
 

@@ -27,8 +27,17 @@ Use `ask` when:
 
 Prefer `ask` over entity tools when the question is open-ended or exploratory. Switch to entity tools when you need precise, structured data or need to write/modify data.
 
+**Specific Teams chat exception:** "get my conversation with Alex", chat
+history by date, and summaries/decisions/action items from a named group,
+meeting, or 1:1 **chat** use
+[Teams chat BotDoc grounding](teams-grounding-work-iq.md), not `ask`.
+Resolve the existing chat read-only, fetch its grounding content, and synthesize
+locally. Broad topic discovery without a specific chat, channel-wide synthesis,
+meeting transcripts, email, and cross-workload questions retain the `ask` route.
+
 ## Do NOT use `ask` as a shortcut for:
 
+- **Reading or summarizing a specific Teams chat** → `/m365-grounding/fetch` with the resolved `threadId` and requested time window
 - **API / path questions** ("endpoint", "available operations", "what can I do with…") → `search_paths`
 - **Schema / field / body-shape questions** ("what does sendMail take?", "what fields are required?") → `get_schema`
 - **Exact mutations by title / name / thread / channel** ("delete the X event", "react to the Y message") → resolve with `fetch`, then call the write/action tool directly

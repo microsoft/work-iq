@@ -6,7 +6,7 @@
   "engines": { "node": ">=22" },
   "scripts": {
     "test": "node --test *.test.mjs",
-    "test:static": "node --test static.test.mjs",
+    "test:static": "node --test static.test.mjs teams-grounding.test.mjs",
     "test:oracle": "node --test oracle.test.mjs",
     "trace": "node trace-cli.mjs"
   },

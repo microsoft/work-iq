@@ -72,11 +72,13 @@ plugins/<plugin-name>/
   - `workiq` skill — Guides usage of `ask` for semantic questions plus the entity tools for fast, structured M365 and Business Applications reads and writes
   - Hosted MCP server (`workiq`) with tools: `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `get_debug_link`
   - SharePoint library-metadata requests dispatch to `references/sharepoint-library-metadata.md`; read it before the workflow. Detailed procedures and safeguards live there rather than being duplicated in `SKILL.md`.
+  - Specific existing Teams chat content dispatches to `references/teams-grounding-work-iq.md`: read-only chat resolution, query-derived UTC windows, BotDoc fetch, line paging, and local synthesis. Inventory, exact messages, channels, mutations, and broad cross-workload questions retain their routes.
+  - The bundled connection retains the production endpoint. Follow [`plugins/workiq/TEAMS-BOTDOC-TDF.md`](plugins/workiq/TEAMS-BOTDOC-TDF.md) for explicit local TDF overrides, connection verification, fresh-session acceptance tests, and package rollback. Do not commit a test endpoint or routing header.
 
 - **workiq-preview** — Preview build with agent-host-neutral, retrieve-first guidance (read + write). Bundles:
   - `workiq-preview` skill — Retrieve caller-owned context with explicit Grounding when available; use `ask` only for intentional delegation, and entity tools for exact reads, writes, and downloads. Load the skill before using WorkIQ tools.
   - Hosted MCP server (`workiq-preview`): discover exact tool names and schemas in the connected host catalog. Preview retrieval is tenant-dependent; installation does not enable it, and missing `retrieve` never silently falls back to `ask`.
-  - Preview-only offline checks: `npm ci --prefix tests/workiq-guidance --ignore-scripts --no-audit --no-fund` then `npm --prefix tests/workiq-guidance test` (Node 22+). CI does not run models or live M365 operations. The public `workiq` package retains its existing routing policy and version; its SharePoint metadata documentation is consolidated separately.
+  - Offline checks: `npm ci --prefix tests/workiq-guidance --ignore-scripts --no-audit --no-fund` then `npm --prefix tests/workiq-guidance test` (Node 22+). The preview contracts remain preview-only; focused public Teams BotDoc checks run alongside them without adopting preview policy/version. CI does not run models or live M365 operations.
   - Observed trace validation requires nonblank package-hash provenance, including direct validator calls; authoritative state claims are compared by property presence, including falsey values.
 
 - **microsoft-365-agents-toolkit** — Toolkit for building M365 Copilot declarative agents. Bundles:
