@@ -100,12 +100,12 @@ plugins/<plugin-name>/
   - `channel-audit` skill — Audit channels for inactivity and cleanup
   - `channel-digest` skill — Summarize activity across multiple channels
 
-- **wiqd** — Preview Work IQ Dev Tools, maintained in [microsoft/wiqd](https://github.com/microsoft/wiqd/tree/main/plugins/wiqd), for building, debugging, validating, publishing, evaluating, and monitoring M365 Copilot plugins and declarative agents.
+- **wiqd** — Work IQ Dev Tools, maintained in [microsoft/wiqd](https://github.com/microsoft/wiqd/tree/main/plugins/wiqd), for building, debugging, validating, publishing, evaluating, and monitoring M365 Copilot plugins and declarative agents.
   - Registers the external `plugins/wiqd` directory using `{ "source": "github", "repo": "microsoft/wiqd", "path": "plugins/wiqd" }` in both marketplace registries.
   - Keep its description identical to the upstream `microsoft/wiqd` marketplace entry.
   - Bundles the `wiqd` orchestrator skill and `wiqd:wiqd` journey agent; workflows run through the separate `wiqd` CLI and its extensions.
   - Install from this marketplace with `copilot plugin install wiqd@work-iq`, or directly with the quick-install command above.
-  - Experimental preview, not production-ready or officially supported. Follow upstream installation guidance; currently requires Node.js 24.15+ for the CLI, independently of WorkIQ MCP prerequisites.
+  - Follow the [upstream installation guide](https://github.com/microsoft/wiqd/blob/main/docs/src/content/docs/getting-started/installation.md) for prerequisites and setup.
 
 ## Prerequisites
 
