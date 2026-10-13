@@ -52,6 +52,7 @@ Once the marketplace is registered, install any plugin with a single command:
 /plugin install workiq-preview@work-iq
 /plugin install microsoft-365-agents-toolkit@work-iq
 /plugin install workiq-productivity@work-iq
+/plugin install wiqd@work-iq
 ```
 
 > **Tip:** Restart your Copilot CLI session after installing a plugin for the new skills to become available.
@@ -69,6 +70,7 @@ copilot plugin uninstall workiq
 copilot plugin uninstall workiq-preview
 copilot plugin uninstall microsoft-365-agents-toolkit
 copilot plugin uninstall workiq-productivity
+copilot plugin uninstall wiqd
 ```
 
 ---
@@ -81,6 +83,7 @@ copilot plugin uninstall workiq-productivity
 | 2 | [**workiq-preview**](#workiq-preview) | 1 | Preview retrieve-first context, intentional delegation, and exact M365 reads and writes |
 | 3 | [**microsoft-365-agents-toolkit**](#microsoft-365-agents-toolkit) | 4 | Toolkit for building M365 Copilot declarative agents |
 | 4 | [**workiq-productivity**](#workiq-productivity) | 10 | Read-only productivity insights across M365 |
+| 5 | [**wiqd**](#wiqd) | 1 | Preview developer toolkit for the M365 Copilot plugin and declarative-agent lifecycle |
 
 ---
 
@@ -228,12 +231,51 @@ Installing the plugin does not enable tenant-gated retrieval.
 
 ---
 
+## wiqd
+
+> **Pre-release preview.** Work IQ Dev Tools guide building, debugging, validating, provisioning, publishing, evaluating, and monitoring Microsoft 365 Copilot plugins, including declarative agents, skills, and connectors. The upstream project is experimental, not production-ready, and not officially supported.
+
+**Install:** `/plugin install wiqd@work-iq`
+**Source:** [`microsoft/wiqd`, `plugins/wiqd/`](https://github.com/microsoft/wiqd/tree/main/plugins/wiqd)
+
+This marketplace references the upstream GitHub plugin directly; no WIQD skill or agent files are copied into this repository.
+
+For prerequisites and setup, follow the [WIQD installation guide](https://github.com/microsoft/wiqd/blob/main/docs/src/content/docs/getting-started/installation.md).
+
+### Skills and agents
+
+| Component | Description |
+|-----------|-------------|
+| [**wiqd** skill](https://github.com/microsoft/wiqd/blob/main/plugins/wiqd/skills/wiqd/SKILL.md) | Routes tasks to extension-contributed workflows for authoring, validation, deployment, evaluation, and monitoring |
+| **wiqd:wiqd** agent | Orchestrates the declarative-agent journey and selects the next workflow based on project state |
+
+WIQD uses the CLI and its extensions rather than bundling a WorkIQ MCP server configuration.
+
+### Example prompts
+
+```text
+"Create a new declarative agent for HR FAQ"
+"Validate my agent manifest"
+"Generate a DevUI link for my agent"
+"Package and share my agent with my team"
+"Run evals for my agent"
+"Show usage analytics for my agent"
+```
+
+To route a request explicitly to the orchestrator:
+
+```bash
+copilot -i "create a new declarative agent" --agent wiqd:wiqd
+```
+
+---
+
 ## 🤝 Contributing a Plugin
 
 Want to add your own plugin? See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full guide. The short version:
 
 1. Create your plugin under `plugins/{your-plugin}/`
 2. Add `.mcp.json`, `README.md`, and `skills/{name}/SKILL.md`
-3. Register it in [`.github/plugin/marketplace.json`](./.github/plugin/marketplace.json)
+3. Register it in both [`marketplace.json`](./marketplace.json) and [`.claude-plugin/marketplace.json`](./.claude-plugin/marketplace.json)
 4. Update this file (`PLUGINS.md`) with your plugin entry
 5. Submit a pull request

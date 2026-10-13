@@ -6,9 +6,9 @@ Work IQ is a **Copilot CLI plugin marketplace** for managing AI agent plugins fo
 
 ```
 work-iq/
-├── .github/
-│   └── plugin/
-│       └── marketplace.json  # Plugin marketplace registry
+├── marketplace.json          # Plugin marketplace registry
+├── .claude-plugin/
+│   └── marketplace.json      # Mirrored marketplace registry
 ├── plugins/                  # Plugin packages (skills + MCP servers)
 │   ├── workiq/
 │   ├── workiq-preview/
@@ -33,6 +33,7 @@ copilot plugin install ./plugins/workiq
 copilot plugin install ./plugins/workiq-preview
 copilot plugin install ./plugins/microsoft-365-agents-toolkit
 copilot plugin install ./plugins/workiq-productivity
+copilot plugin install microsoft/wiqd:plugins/wiqd
 ```
 
 > **Important:** After installing, restart your Copilot CLI session for new skills to become available.
@@ -50,11 +51,12 @@ copilot plugin uninstall workiq
 copilot plugin uninstall workiq-preview
 copilot plugin uninstall microsoft-365-agents-toolkit
 copilot plugin uninstall workiq-productivity
+copilot plugin uninstall wiqd
 ```
 
 ## Plugins
 
-Plugins live in `plugins/<plugin-name>/` and follow this structure:
+Locally maintained plugins live in `plugins/<plugin-name>/` and follow this structure. External plugins such as `wiqd` are registered with a GitHub source object in both marketplace registries, not copied into this repository.
 
 ```
 plugins/<plugin-name>/
@@ -97,6 +99,13 @@ plugins/<plugin-name>/
   - `site-explorer` skill — Browse SharePoint sites, lists, and libraries
   - `channel-audit` skill — Audit channels for inactivity and cleanup
   - `channel-digest` skill — Summarize activity across multiple channels
+
+- **wiqd** — Preview Work IQ Dev Tools, maintained in [microsoft/wiqd](https://github.com/microsoft/wiqd/tree/main/plugins/wiqd), for building, debugging, validating, publishing, evaluating, and monitoring M365 Copilot plugins and declarative agents.
+  - Registers the external `plugins/wiqd` directory using `{ "source": "github", "repo": "microsoft/wiqd", "path": "plugins/wiqd" }` in both marketplace registries.
+  - Keep its description identical to the upstream `microsoft/wiqd` marketplace entry.
+  - Bundles the `wiqd` orchestrator skill and `wiqd:wiqd` journey agent; workflows run through the separate `wiqd` CLI and its extensions.
+  - Install from this marketplace with `copilot plugin install wiqd@work-iq`, or directly with the quick-install command above.
+  - Experimental preview, not production-ready or officially supported. Follow upstream installation guidance; currently requires Node.js 24.15+ for the CLI, independently of WorkIQ MCP prerequisites.
 
 ## Prerequisites
 
@@ -142,7 +151,7 @@ Skill instructions here...
 ```
 
 After creating a plugin:
-1. Register it in `.github/plugin/marketplace.json` by adding an entry to the `plugins` array
+1. Register it in both `marketplace.json` and `.claude-plugin/marketplace.json` by adding matching entries to the `plugins` arrays
 2. Install it with `copilot plugin install ./plugins/my-plugin`
 
 ---
@@ -152,7 +161,7 @@ After creating a plugin:
 > **Important:** When making changes to this repository — adding new plugins or modifying workflows — update this AGENTS.md file to reflect those changes. This file serves as the primary context document for AI agents working in this repo. Keep it accurate and current. Specifically:
 >
 > - Add new plugins to the "Available plugins" section when they are created
-> - Register new plugins in `.github/plugin/marketplace.json`
+> - Register new plugins in both `marketplace.json` and `.claude-plugin/marketplace.json`; use a GitHub source object for externally maintained plugins
 > - Update "Getting Started" if new setup steps are required
 > - Update "Repository Structure" if top-level directories change
 > - **After editing any skill or plugin content**, reinstall the affected plugin so the running session picks up the changes:
