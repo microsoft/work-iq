@@ -60,17 +60,17 @@ language, must state:
 
 - The WIQD plugin is missing and provides the guided agent/plugin lifecycle.
 - WIQD is a preview experience with the limitations stated above.
-- This command installs the Copilot plugin from Microsoft's `microsoft/wiqd`
-  repository, including its skill and agent.
+- This command installs the WIQD plugin, including its skill and agent, from the
+  built-in `awesome-copilot` marketplace.
 - The exact command you will execute:
 
   ```bash
-  copilot plugin install microsoft/wiqd:plugins/wiqd
+  copilot plugin install wiqd@awesome-copilot
   ```
 
-This official repository subdirectory is the plugin source; no marketplace registration
-is required for this direct install. Do not register it as a plugin in the Work IQ
-marketplace or claim it is bundled with WorkIQ.
+The `awesome-copilot` marketplace is built in, so no marketplace registration is
+required. Do not register WIQD in the Work IQ marketplace or claim it is bundled
+with WorkIQ.
 
 After confirmation, execute the command through your shell tool. If the user declines,
 respect the decision and stop the lifecycle portion of the request. Silence, ambiguity,
@@ -98,8 +98,6 @@ the current session.
 
 The WIQD skill guides prerequisite checks, setup, authentication, and lifecycle
 execution under its own instructions and confirmation gates.
-
-Official plugin: <https://github.com/microsoft/wiqd/tree/main/plugins/wiqd>
 
 WIQD documentation: <https://aka.ms/wiqd/docs>
 
