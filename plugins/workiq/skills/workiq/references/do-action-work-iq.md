@@ -196,7 +196,12 @@ runtime; never reuse a literal date from this example.
 
 ### Search documents across SharePoint team sites
 
-Use Microsoft Search for a bounded cross-site document query. This response can
+First call `search_paths` for the exact SharePoint search intent. If it returns
+`/sharepoint/search_site`, inspect that action's schema, resolve `siteKey` when
+required, and invoke it with `do_action`.
+
+Only for a genuinely cross-site search that is not covered by a returned
+provider path, use Microsoft Search for a bounded document query. This response can
 contain results from multiple SharePoint-backed locations and does not provide
 team-site display names, so derive each site slug from its SharePoint `webUrl`,
 then make one batched `fetch` to
@@ -237,9 +242,7 @@ folder, home page, SitePages entry, or another `.aspx` site page unless the
 user explicitly asks for a page. Prefer typical document extensions such as
 `.docx`, `.pptx`, `.xlsx`, `.pdf`, and `.txt`.
 
-This is a known action contract. Do not call `ask`, `search_paths`, or
-`get_schema` first. See `references/sharepoint-work-iq.md` for the full
-SharePoint route.
+See `references/sharepoint-work-iq.md` for the complete provider routing rule.
 
 ### Set my Teams presence to Busy
 ```json

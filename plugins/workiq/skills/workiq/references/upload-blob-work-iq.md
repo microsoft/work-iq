@@ -1,6 +1,11 @@
 # upload_blob
 
-> ⚠️ **Not released yet.** `upload_blob` is documented here for future reference but is **not part of the current WorkIQ MCP surface**. Calling it today returns `tool does not exist`. When a user asks to upload a local file, tell them WorkIQ can't accept raw byte payloads yet and ask them to upload through the OneDrive / SharePoint web UI — see the [Binary downloads and uploads](../SKILL.md) section in `SKILL.md`.
+> ⚠️ **Not released yet.** `upload_blob` is documented here for future
+> reference but is **not part of the current WorkIQ MCP tool surface**.
+> SharePoint uploads use the provider-backed
+> `/sharepoint/getUploadFileDetails` action and its returned transfer
+> instructions; do not treat the missing direct tool as proof that SharePoint
+> upload is unsupported.
 
 Upload a local file to a WorkIQ path via HTTP PUT. Use this to upload files to OneDrive or SharePoint.
 
@@ -14,8 +19,11 @@ Upload a local file to a WorkIQ path via HTTP PUT. Use this to upload files to O
 ## When to Use
 
 - Uploading a file to OneDrive
-- Uploading a file to a SharePoint document library
 - Replacing the content of an existing file
+
+For a SharePoint document library, use `search_paths` to discover
+`/sharepoint/getUploadFileDetails`, call `get_schema` for its action body, and
+invoke it with `do_action`.
 
 ## Path Conventions
 

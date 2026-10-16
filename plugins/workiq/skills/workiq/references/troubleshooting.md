@@ -50,9 +50,14 @@ See the **URL Format Rules** section of `SKILL.md` for full examples.
 
 **Symptom:** `search_paths` returns a tool input validation error, or silently ignores extra arguments like `backend: "sharepoint-rest"` / `provider: "dataverse"`.
 
-**Cause:** `search_paths` only accepts `filter` (regex, required) and `agentId` (optional). There is no `backend` parameter and no equivalent — WorkIQ exposes a single catalog of Microsoft Graph paths.
+**Cause:** `search_paths` accepts `filter` (regex or a path prefix) and optional
+`agentId`. There is no `backend` parameter and no equivalent. WorkIQ exposes
+Graph-backed and provider-backed routes in one catalog.
 
-**Fix:** Drop the extra argument and retry with `filter` only. If the user explicitly asked for SharePoint REST, Dataverse, or any other API surface, report honestly that WorkIQ surfaces Graph paths through `search_paths` and the other surface is not available here. Do not invent a tool variant or alternate backend.
+**Fix:** Drop the extra argument and retry with `filter` only. For SharePoint,
+filter on the exact intent or `/sharepoint`, then use a returned provider-backed
+path. For Business Applications, use `/businessapps/me` or a focused filter.
+Do not invent a tool variant or alternate backend.
 
 ## `fetch_blob` returns "tool does not exist"
 
@@ -68,7 +73,12 @@ See the **URL Format Rules** section of `SKILL.md` for full examples.
 
 **Cause:** `upload_blob` is documented for future reference but is **not released in the current WorkIQ MCP surface**.
 
-**Fix:** Do not retry or search for an alternate upload tool. Tell the user WorkIQ cannot send file bytes yet; use `fetch` to return the destination folder's `webUrl` when useful so they can upload through OneDrive or SharePoint.
+**Fix:** For SharePoint, use `search_paths` to discover
+`/sharepoint/getUploadFileDetails`, inspect its action schema, invoke it with
+`do_action`, and follow the returned transfer instructions. For personal
+OneDrive, do not retry or invent another upload tool; return the destination
+folder's `webUrl` when useful and report that direct raw-byte upload is not
+released.
 
 ## `ask` is slow or appears to hang
 

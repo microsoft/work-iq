@@ -1,6 +1,6 @@
 ---
 name: workiq
-description: WorkIQ tools for Microsoft 365 workplace data and actions. Use for email, calendar events and meetings, files, SharePoint, OneDrive, Teams, people, Planner, and other M365 requests. Triggers include cancel meeting or event, accept or decline meetings, create or update events, create an upload session or replace an existing OneDrive file, find or summarize workplace content, send or reply to mail, manage or download files, manage tasks, read SharePoint library metadata or columns, filter/count/group/sort files by metadata, and discover M365 paths or schemas. Prefer `ask` for synthesis and structured entity tools for exact reads, writes, SharePoint library metadata, and binary downloads with `fetch_blob`. This skill contains instructions for the WorkIQ MCP tools and must be used beforehand to understand their usage.
+description: WorkIQ tools for Microsoft 365 workplace data and actions. Use for email, calendar events and meetings, files, SharePoint, OneDrive, Teams, people, Planner, and other M365 requests. Triggers include cancel meeting or event, accept or decline meetings, create or update events, find or summarize workplace content, send or reply to mail, manage or download files, manage tasks, SharePoint sites/lists/libraries/files, and M365 path or schema discovery. Route SharePoint operations through provider-backed `/sharepoint/*` paths discovered with `search_paths`.
 compatibility: >
   Uses the hosted WorkIQ MCP endpoint. No local package is required for MCP
   tool calls.
@@ -21,6 +21,38 @@ The tools in this skill are documented by their **logical names** (`ask`, `fetch
 ✅ **DO** scan your available tools list for an entry whose name **ends with** `ask` and call that exact name. In Copilot CLI this will be `workiq-ask`.
 
 See [Resolving tool names in your host](#resolving-tool-names-in-your-host) below for the full resolution algorithm. If you skip this step, your first tool call will fail with "tool does not exist."
+
+## SharePoint provider actions — required routing
+
+WorkIQ's single MCP endpoint includes SharePoint IQ provider operations in the
+same path catalog as Graph-backed entity paths. Provider-backed SharePoint
+operations use the `/sharepoint/*` namespace and are invoked with WorkIQ
+`do_action`; they are not separate host-level MCP tools.
+
+For any SharePoint operation such as creating or updating lists/items, moving,
+copying, renaming, deleting, sharing, searching a site, creating folders,
+managing pages or approvals, or preparing uploads/downloads:
+
+1. Call `search_paths` once with the exact SharePoint intent or the
+   `/sharepoint` prefix.
+2. Select only a returned `/sharepoint/*` path whose description matches the
+   request. Provider configuration is the source of truth; do not guess paths.
+3. Call `get_schema` with `operationType: "action"` for that exact path.
+4. If the schema requires `siteKey`, call `/sharepoint/get_site_key` with
+   `do_action` and `{"siteUrl":"<exact site URL>"}`, then pass the returned
+   opaque `siteKey` through unchanged.
+5. Resolve any additional prerequisite named by the path description or schema
+   (for example user, lookup, or taxonomy values), then invoke the selected
+   path with `do_action`.
+
+Do not replace a discovered provider action with a generic Graph path,
+Microsoft Search, `ask`, or a fabricated backend/provider argument. If no
+matching `/sharepoint/*` path is returned, report that WorkIQ did not expose the
+requested SharePoint operation.
+
+Structured SharePoint reads that are not exposed as provider actions may still
+use the documented Graph-backed `fetch` routes. The routing rule above takes
+precedence whenever the catalog returns a matching `/sharepoint/*` action.
 
 ## CRITICAL: When to Use This Skill
 
@@ -54,6 +86,7 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 | Summarizing exact marker messages in a shared Teams channel | "In General, summarize only messages containing exact marker `[Eval] Project X abc123`" | Do not use `ask`: shared history adds noise and newly posted messages may not be semantically indexed. Use three structured `fetch` calls: `/me/joinedTeams?$select=id,displayName`; `/teams/{teamId}/channels?$select=id,displayName`; then `/teams/{teamId}/channels/{channelId}/messages?$select=id,createdDateTime,body`. Do not add `$top` or `$orderby`; filter locally to the exact marker and do not fetch replies unless requested. |
 | Summarizing supplied exact Teams message URLs | "Summarize these two exact channel messages" | Use one batched `fetch` containing every supplied `/teams/{teamId}/channels/{channelId}/messages/{messageId}` URL, then synthesize locally. Do not use `ask` or search broader channel history. |
 | Rolling up exact Mail, Calendar, and Teams entity URLs | "Use these exact entities to summarize status and blockers" | Use one batched `fetch` containing every supplied entity URL, then synthesize locally. Do not use `ask`, tenant-wide search, path discovery, or additional source lookups. |
+| SharePoint provider operation | "Move these files", "Create a list item", "Rename this folder", "Share this file", "Upload this document" | `search_paths` for the exact intent, `get_schema` on the returned `/sharepoint/*` path, resolve `siteKey` when required, then `do_action` |
 | Inventorying Teams chat API paths | "What chat paths support creating chats, members, messages, updates, and read state?" | Call `search_paths` once with the exact query `/chats`, report every returned operation, and state when a requested category was not confirmed. Do not make a second path or schema call. |
 | Inventorying Teams channel API paths | "What channel paths support creation, updates, members, messages, files, and archive?" | Call `search_paths` once with the exact query `/teams/{team-id}/channels`, report every returned operation, and state when a requested category was not confirmed. Do not make a second path or schema call. |
 | Sending/replying/reacting in Teams, setting presence | "Send a chat to Alex", "Post in the Daily channel", "React with 👍", "Set me to Busy" | entity tools on `/chats/...` or `/teams/...` — see `references/teams-work-iq.md` |
@@ -281,6 +314,12 @@ them. `ask` and content search cannot substantiate library-column values.
 Otherwise preserve the existing semantic-owner and content-summary workflows;
 mentioning "owner" in a technical-spec summary does not itself select this route.
 
+For metadata or list-item **mutations**, do not construct Graph writes. Discover
+the matching provider path, such as `/sharepoint/create_list_items_v2`,
+`/sharepoint/update_list_items_v2`, `/sharepoint/update_batch_list_items`, or
+`/sharepoint/delete_list_item`, then use its live action schema. Resolve user,
+lookup, or taxonomy values first when the selected path requires it.
+
 **Before handling a library-metadata request, read
 [SharePoint document-library metadata](references/sharepoint-library-metadata.md).**
 That reference owns column resolution, grounding, enumeration and completeness,
@@ -363,17 +402,22 @@ Re-sending a denied shape with a different folder, `$select`, or casing fails id
 Cache the templates and reuse them.
 
 
-### Binary downloads use `fetch_blob`; `upload_blob` is not released
+### Binary downloads and uploads
 
-Use `fetch_blob` for file content in OneDrive/SharePoint, attachment payloads for messages, calendar events, and profile photos. It accepts a relative WorkIQ `path`, returns up to 4 MB as base64 with content metadata, and supports an optional `format` conversion value on compatible drive-content endpoints. Use `fetch` first only when you need to resolve an item or attachment ID. You should also help the user decode the base64 into a file with the correct extension and MIME type if needed.
+For SharePoint files, discover and use
+`/sharepoint/getDownloadFileDetails` or
+`/sharepoint/getUploadFileDetails`, then follow the returned transfer
+instructions exactly. Do not bypass those provider actions with guessed Graph
+content or upload-session paths.
 
-`upload_blob` is documented for future reference but **is not part of the current WorkIQ MCP surface**. Attempting to call it returns `tool does not exist`. Do not call it, search for an alternate upload tool, or invent a similar name such as `put_file`.
+For personal OneDrive, mail attachments, calendar attachments, and profile
+photos, use `fetch_blob` for binary downloads as documented. `upload_blob`
+remains unreleased as a direct WorkIQ MCP tool; SharePoint upload preparation
+through `/sharepoint/getUploadFileDetails` is a separate provider-backed
+contract.
 
-When the user asks to upload a local file:
-
-1. Tell the user WorkIQ cannot upload raw byte payloads yet.
-2. Use `fetch` to resolve and return the destination folder's `webUrl` when useful, so the user can upload through OneDrive or SharePoint.
-3. Do not claim the upload succeeded without a confirmed write response.
+Never claim a transfer succeeded until the provider's returned transfer
+instructions have been completed and confirmed.
 
 For detailed download paths and examples, read `references/fetch-blob-work-iq.md`. For the unreleased upload contract, see `references/upload-blob-work-iq.md`.
 
@@ -510,7 +554,7 @@ body, not the resource returned after the action succeeds.
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `search_paths` | Discover available API paths | `filter` (regex, **required**) |
+| `search_paths` | Discover available API and provider paths | `filter` (regex, **required**) |
 | `get_schema` | Inspect an operation schema: fetch entity/response shape, or create/update/action request body | `path`, `operationType` (`fetch`/`create`/`update`/`action`), `format` |
 | `fetch` | Fetch entities by path (GET) | `entityUrls[]` — supports OData (`$filter`, `$select`, `$top`) |
 | `call_function` | Call named OData functions — GET-shaped, side-effect-free, parenthesised inline params (e.g. `delta`, `reminderView`) | `functionUrl` with inline function params |
