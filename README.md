@@ -170,8 +170,18 @@ workiq mcp
 | [**workiq-preview**](./plugins/workiq-preview/) | **Preview build.** Agent-host-neutral, retrieve-first context with explicit Grounding when available, intentional delegation via `ask`, and exact entity reads, writes, and downloads. This preview policy does not change the public `workiq` routing policy. |
 | [**microsoft-365-agents-toolkit**](./plugins/microsoft-365-agents-toolkit/) | Toolkit for building and evaluating M365 Copilot declarative agents — scaffolding, manifest authoring, capability configuration, and eval workflows. |
 | [**workiq-productivity**](./plugins/workiq-productivity/) | Read-only WorkIQ productivity insights — email triage, meeting costs, org charts, channel audits, and more. |
+| [**wiqd**](https://github.com/microsoft/wiqd/tree/main/plugins/wiqd) | **Preview developer toolkit.** Build, debug, validate, publish, evaluate, and monitor M365 Copilot plugins and declarative agents. Maintained in the external `microsoft/wiqd` repository. |
 
 > 📖 **See [PLUGINS.md](./PLUGINS.md)** for the full plugin catalog with detailed skill listings, example prompts, MCP server info, and installation instructions.
+
+Install WIQD through this marketplace:
+
+```bash
+copilot plugin marketplace add microsoft/work-iq
+copilot plugin install wiqd@work-iq
+```
+
+For prerequisites and setup, follow the [WIQD installation guide](https://github.com/microsoft/wiqd/blob/main/docs/src/content/docs/getting-started/installation.md). Restart your Copilot CLI session after installing.
 
 ---
 
@@ -187,7 +197,7 @@ We welcome new plugins! See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full gu
 
 1. Create your plugin under `plugins/{your-plugin}/`
 2. Add `.mcp.json`, `README.md`, and `skills/{name}/SKILL.md`
-3. Register it in `.github/plugin/marketplace.json`
+3. Register it in both `marketplace.json` and `.claude-plugin/marketplace.json`
 4. Submit a pull request
 
 ---
