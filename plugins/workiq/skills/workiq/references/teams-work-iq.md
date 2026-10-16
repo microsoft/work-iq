@@ -162,8 +162,35 @@ To "send a chat to Alex" or message yourself:
 2. POST the message to that chat with `create_entity` on `/chats/{chatId}/messages`.
 3. Never create a group chat to deliver a single 1:1 message.
 
-Message body shape (chat and channel):
-`{"body": {"contentType": "text", "content": "..."}}`.
+### Format messages for Teams
+
+Use plain text only for a simple one-line message or when the user explicitly
+requests it:
+
+`{"body":{"contentType":"text","content":"..."}}`.
+
+For messages with multiple paragraphs, two or more links or items, status
+details, or other structure, use safe Teams HTML:
+
+```json
+{
+  "body": {
+    "contentType": "html",
+    "content": "<p><strong>Project update</strong></p><ul><li><a href=\"https://example.com/item/1\">Item 1: descriptive title</a></li></ul><p>Next step: review.</p>"
+  }
+}
+```
+
+- Use `<p>` for paragraphs, `<ul><li>` for lists, `<strong>` for short labels,
+  and `<a href="...">descriptive link text</a>` for links.
+- Do not send Markdown, Unicode bullets, or a list of raw URLs and expect Teams
+  to render them as structured content.
+- HTML-encode dynamic text and attribute values. Do not add scripts, styles,
+  images, tracking markup, or unsupported interactive elements.
+- Keep the message concise and lead with the outcome. Group related links under
+  a short label instead of repeating repository names and full URLs in prose.
+- Before confirmation, show the exact recipient and a readable preview of the
+  rendered structure. The approved wording and links must match the HTML sent.
 
 ## Reacting to a message
 
@@ -188,8 +215,10 @@ Use **Finding a channel**, then **Finding a message**, and call `update_entity`
 on `/teams/{teamId}/channels/{channelId}/messages/{messageId}`.
 
 For both surfaces, use
-`{"body":{"contentType":"text","content":"..."}}` as the update body. Do not
-call `search_paths` or `get_schema` for these known edit paths.
+the same formatting rules as a new message. Preserve the existing
+`contentType` unless formatting is the reason for the edit. A structured edit
+uses `{"body":{"contentType":"html","content":"<p>...</p>"}}`. Do not call
+`search_paths` or `get_schema` for these known edit paths.
 
 ## Removing/Deleting/Hiding a chat from the current user's chat list
 

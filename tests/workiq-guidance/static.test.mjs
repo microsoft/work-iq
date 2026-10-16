@@ -27,6 +27,14 @@ for (const name of packages) {
     test(`${name}/${relative}: semantic policy lint`, () => check(policyProblems(relative, text)));
   }
 }
+test('stable and preview Teams guidance enforce the same formatting policy', () => {
+  for (const name of ['workiq', 'workiq-preview']) {
+    const file = path.join(skillRoot(name), 'references', 'teams-work-iq.md');
+    const problems = policyProblems('references/teams-work-iq.md', fs.readFileSync(file, 'utf8'))
+      .filter(problem => problem.startsWith('D.teams-format'));
+    check(problems);
+  }
+});
 for (const file of packages.flatMap(name => [`plugins/${name}/README.md`, `plugins/${name}/skills/${name}/SKILL.md`])) {
   test(`${file}: preview guidance is agent-host-neutral`, () => {
     const text = fs.readFileSync(path.join(root, file), 'utf8');
