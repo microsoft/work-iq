@@ -52,7 +52,8 @@ export const requiredReferences = [
   'retrieve-work-iq.md', 'ask-work-iq.md', 'agents-work-iq.md',
   'files-work-iq.md', 'calendar-work-iq.md', 'mail-work-iq.md',
   'teams-work-iq.md', 'tasks-work-iq.md', 'workflows-work-iq.md',
-  'troubleshooting.md', 'get-schema-work-iq.md', 'search-paths-work-iq.md'
+  'business-applications.md', 'troubleshooting.md', 'get-schema-work-iq.md',
+  'search-paths-work-iq.md'
 ];
 
 export function retrievalProblems(args, supported = capabilities) {
