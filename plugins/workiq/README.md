@@ -78,6 +78,26 @@ The plugin exposes the WorkIQ MCP tool surface — read **and** write — from `
 
 > ⚠️ `upload_blob` is documented for future reference but is not released in the current WorkIQ MCP surface. For uploads, direct the user to OneDrive / SharePoint until raw byte upload support is released.
 
+### Building or publishing an M365 Copilot agent or plugin
+
+WorkIQ handles Microsoft 365 **data**, not the agent/plugin development lifecycle.
+Requests such as "create a declarative agent", "validate my agent", or "publish my M365
+plugin" are handed off to the **Work IQ Dev Tools (WIQD) plugin**.
+
+> **Preview:** WIQD is experimental, not production-ready, and not officially supported.
+> Expect breaking changes.
+
+If the plugin is not installed, the skill asks for your explicit confirmation before
+installing it through the Copilot CLI plugin manager:
+
+```bash
+copilot plugin install microsoft/wiqd:plugins/wiqd
+```
+
+Restart your Copilot CLI session after installation, then re-send your original request
+so the `wiqd` skill can guide setup and the agent/plugin lifecycle.
+See [the handoff reference](./skills/workiq/references/wiqd.md).
+
 ## Skills
 
 | Skill | Description |
