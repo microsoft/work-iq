@@ -13,9 +13,20 @@ Query Microsoft 365 Copilot for workplace intelligence using natural language. T
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `question` | string | Yes | A natural language question. Be specific about people, topics, or timeframes for better results. |
-| `fileUrls` | string[] | No | Optional list of OneDrive or SharePoint file URLs to use as context for the question. |
+| `fileUrls` | string[] | No | Optional legacy list of OneDrive or SharePoint file URLs to use as context for the question. Prefer `resources` when you need non-file content references or already have IDs/display names. |
+| `resources` | object[] | No | Optional Add content references. Requires `enable_ask_content_references`. Each item must contain exactly one facet: `person`, `file`, `site`, `event`, `message`, `emailConversation`, `chat`, `channel`, or `external`. |
 | `conversationId` | string | No | Optional conversation ID from a prior `ask` response to continue an existing conversation. |
 | `agentId` | string | No | Optional agent ID to target a specific M365 Copilot agent. Defaults to bizchat. Use `list_agents` to discover available agent IDs. |
+
+### Content references
+
+Use `resources` to attach typed Add content references to a turn. Prefer URL-first references; include `id` and `displayName` only when you already have them. The server resolves supported URLs to IDs where needed.
+
+Supported facets:
+- `person`: `{ "upn": "user@contoso.com" }`
+- `file`, `site`, `event`, `message`, `emailConversation`: `{ "url": "...", "id": "...", "displayName": "..." }` where `id` and `displayName` are optional
+- `chat`, `channel`: `{ "url": "...", "displayName": "..." }` where `displayName` is optional; IDs are derived from Teams URLs
+- `external`: either `{ "url": "..." }` or `{ "itemId": "...", "contentSource": "..." }`
 
 ## When to Use
 
@@ -41,6 +52,16 @@ Prefer `ask` over entity tools when the question is open-ended or exploratory. S
 { "question": "Who is the expert on authentication in our team?" }
 { "question": "What has Sarah been focused on lately?" }
 { "question": "What are the latest top of mind from Rob I should be aware of?" }
+{
+  "question": "What has this person been focused on lately?",
+  "resources": [
+    {
+      "person": {
+        "upn": "sarah@contoso.com"
+      }
+    }
+  ]
+}
 ```
 
 ### Meetings and decisions
@@ -62,6 +83,16 @@ Prefer `ask` over entity tools when the question is open-ended or exploratory. S
 { "question": "Find the design doc for the authentication system" }
 { "question": "What's the latest spec for Project X?" }
 { "question": "Where is the API documentation for the payments service?" }
+{
+  "question": "What are the open issues in this spec?",
+  "resources": [
+    {
+      "file": {
+        "url": "https://contoso.sharepoint.com/sites/team/Shared%20Documents/spec.docx"
+      }
+    }
+  ]
+}
 ```
 
 ### Calendar and schedule
