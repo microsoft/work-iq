@@ -57,7 +57,7 @@ export function validateTrace(scenario, trace, { observed = false } = {}) {
   let pending, lastOutput, denied = false, ambiguity = false, precondition = false;
   let final, firstTool, selectedDelegation = scenario.mode === 'delegation';
   let sufficient = false, grounding = false, escalations = 0, missingEvidence;
-  let waitMs = 0, calls = 0, previousRequest, repeatedReads = 0;
+  let elapsedWaitMs = 0, calls = 0, repeatedReads = 0;
   let agentCandidates = scenario.knownAgents ?? [];
   const completed = new Set(), used = new Set(), seenCallIds = new Set(), confirmations = new Set();
   const outputByOperation = new Map();
@@ -65,6 +65,7 @@ export function validateTrace(scenario, trace, { observed = false } = {}) {
   const pendingLinks = new Set(), values = [];
   const pendingAccepted = new Set();
   const pendingPartials = new Set();
+  const failedReads = new Map();
   const requiredBroad = scenario.scope.required.some(c => broaderCapabilities.includes(c));
   const firstStrategy = requiredBroad || scenario.explicitCopilot ? 'copilot' : 'grounding';
 
@@ -80,7 +81,7 @@ export function validateTrace(scenario, trace, { observed = false } = {}) {
     }
     if (event.type === 'wait') {
       if (!Number.isFinite(event.milliseconds) || event.milliseconds < 0) fail('trace-schema', 'Invalid wait evidence.');
-      else waitMs += event.milliseconds;
+      else elapsedWaitMs += event.milliseconds;
       continue;
     }
     if (event.type === 'call') {
@@ -135,12 +136,12 @@ export function validateTrace(scenario, trace, { observed = false } = {}) {
         if (sufficient) fail('redundant-retrieval', 'Already sufficient evidence does not need semantic resynthesis.');
         if (escalations > 0 && event.args.strategy === 'grounding') fail('escalation-budget', 'Do not switch back to Grounding after the broader attempt.');
         if (grounding && event.args.strategy === 'copilot') {
-          escalations += Array.isArray(event.args.query) ? event.args.query.length : 1;
+          escalations++;
           if (escalations > 1) fail('escalation-budget', 'One targeted broader query per objective; batching/paraphrasing does not reset it.');
           if (!missingEvidence || !scenario.scope.allowed.includes(missingEvidence.capability)) {
             fail('unjustified-escalation', 'No concrete missing allowed broader-source fact in the scripted evidence.');
-          } else if (!Array.isArray(event.args.query) || missingEvidence.queryTerms.some(term =>
-            !event.args.query.every(q => typeof q === 'string' && q.toLowerCase().includes(term.toLowerCase())))) {
+          } else if (typeof event.args.query !== 'string' || missingEvidence.queryTerms.some(term =>
+            !event.args.query.toLowerCase().includes(term.toLowerCase()))) {
             fail('untargeted-escalation', 'Broader search must target the missing fact rather than repeat the original task.');
           }
         }
@@ -193,15 +194,20 @@ export function validateTrace(scenario, trace, { observed = false } = {}) {
           if (op.reconciles && !completed.has(op.reconciles)) {
             fail('precondition-replay', 'Reconciliation read is required before an authorized changed write.');
           }
-        } else if (previousRequest && equal(previousRequest, { tool: event.tool, args: canonicalArguments(event.args) })) {
-          repeatedReads++;
-          if (repeatedReads > scenario.limits.readRetries) fail('read-retry-budget', 'Bounded read retry budget exceeded.');
-          if (lastOutput?.retryAfterMs > waitMs) fail('retry-delay', 'Retry preceded the returned delay.');
+        } else {
+          const recovering = [...failedReads.entries()].filter(([id, failure]) =>
+            (failure.active && equal(failure.request, { tool: event.tool, args: canonicalArguments(event.args) })) ||
+            op.recoveryOf === id || op.resolves?.includes(id));
+          if (recovering.length) {
+            repeatedReads++;
+            if (repeatedReads > scenario.limits.readRetries) fail('read-retry-budget', 'Objective-scoped failed-read recovery budget exceeded.');
+            if (recovering.some(([, failure]) => elapsedWaitMs < failure.readyAt)) {
+              fail('retry-delay', 'Recovery preceded the returned delay, including across interleaved reads.');
+            }
+          }
         }
         used.add(op.id);
       }
-      previousRequest = { tool: event.tool, args: canonicalArguments(event.args) };
-      waitMs = 0;
       pending = { op, call: event };
       continue;
     }
@@ -211,17 +217,27 @@ export function validateTrace(scenario, trace, { observed = false } = {}) {
         continue;
       }
       const { op, call } = pending;
-      waitMs = 0;
       if (op && !equal(event.value, op.output)) fail('script-output', 'Observed mock result differs from the authoritative scripted tool output.');
       const value = op?.output;
       if (value) {
         outputByOperation.set(op.id, value);
         values.push(value);
         lastOutput = value;
+        if (op.effect === 'read' && (['timeout', 'error', 'null', 'transport', 'throttled'].includes(value.status) ||
+            value.failedUrls?.length)) {
+          failedReads.set(op.id, {
+            request: { tool: call.tool, args: canonicalArguments(call.args) },
+            readyAt: elapsedWaitMs + (value.retryAfterMs ?? 0), active: true
+          });
+        }
         denied ||= value.status === 'denied';
         ambiguity ||= op.effect === 'mutation' && ['timeout', 'error', 'null', 'transport'].includes(value.status);
         precondition ||= op.effect === 'mutation' && value.status === 'precondition';
         if (value.status === 'ok') {
+          for (const [id, failure] of failedReads) {
+            if (equal(failure.request, { tool: call.tool, args: canonicalArguments(call.args) }) ||
+                op.recoveryOf === id || op.resolves?.includes(id)) failure.active = false;
+          }
           completed.add(op.id);
           for (const id of op.resolves ?? []) {
             if (!pendingPartials.delete(id)) fail('partial-recovery', 'Recovery must identify an outstanding partial result.');
@@ -282,7 +298,27 @@ export function validateTrace(scenario, trace, { observed = false } = {}) {
       if (Object.hasOwn(value, key) && !equal(final.claims[key], value[key])) fail('result-claim', `Claim ${key} conflicts with authoritative returned entities.`);
     }
   }
-  const records = values.flatMap(value => value.records ?? []);
+  const records = values.filter(value => ['ok', 'partial', 'capped'].includes(value.status)).flatMap(value => value.records ?? []);
+  if (scenario.messageMarker) {
+    const matching = records.filter(record => record.body?.content?.includes(scenario.messageMarker)).map(record => record.id);
+    if (!equal(final.claims.messageIds, matching)) fail('result-claim', 'Only exact marker messages belong in the requested summary.');
+  }
+  if (scenario.sourceTargets) {
+    const resolved = {};
+    for (const target of scenario.sourceTargets) {
+      const matches = new Set(records.filter(record =>
+        typeof record.id === 'string' && record.id.trim() &&
+        Object.entries(target.fields).every(([key, value]) => equal(record[key], value)) &&
+        (target.requiredText ?? []).every(text => record.content?.includes(text))).map(record => record.id));
+      if (matches.size === 1) resolved[target.key] = [...matches][0];
+      else if (!final.limitations.includes(`unresolved-source:${target.key}`) || final.claims.completeCoverage === true) {
+        fail('source-identity', `Unresolved source ${target.key} must be disclosed, not substituted.`);
+      }
+    }
+    if (!equal(final.claims.resolvedSources, resolved)) {
+      fail('source-identity', 'Each source must match requested identity, type, location, time and content constraints.');
+    }
+  }
   if (scenario.calendarSelection) {
     const window = scenario.calendarSelection;
     const eligible = records.filter(r => !r.isCancelled && (window.includeAllDay || !r.isAllDay) &&

@@ -60,3 +60,13 @@ If the response reports that the payload is too large, do not retry path variant
 	"format": "pdf"
 }
 ```
+
+## Known endpoint recipes
+
+Call counts below describe an unambiguous, authorized happy path, not a hard limit.
+Identity, required confirmation, supported paging and requested completeness take
+precedence. Endpoint query restrictions and payload shapes remain binding.
+
+| Request | Example | Contract |
+| --- | --- | --- |
+| Downloading the first file attachment from Inbox | "Find the first inbox email with a file attachment and download that attachment" | The normal happy path uses two calls. First, `fetch` `/me/mailFolders/inbox/messages?$filter=hasAttachments%20eq%20true&$top=10&$select=id,subject,receivedDateTime,hasAttachments&$expand=attachments($select=id,name,contentType,size,isInline)`; do not combine this filter with `$orderby` and do not use `$skip`. In returned order, select the first message containing a file attachment and its first file attachment. Then call `fetch_blob` `/me/messages/{messageId}/attachments/{attachmentId}/$value`. Insert the complete `message.id` and selected `fileAttachment.id` directly from the structured response without retyping, shortening, normalizing, or reconstructing either value. Before the single `fetch_blob` call, compare both path segments character-for-character with their source fields and correct any mismatch before calling. The suffix is the literal `/$value` with no space between `/` and `$`; construct the path once and do not retry formatting variants. When the user requests raw content, include the returned `base64Content` in the final answer, or the actual materialized file path when the host wrote the bytes to disk; do not merely state that the content was downloaded. If the bounded page contains no file attachment, report no match in that page; use supported continuation when requested completeness needs it, or label coverage partial. Do not enumerate unrelated mailbox history or probe alternate filters. |

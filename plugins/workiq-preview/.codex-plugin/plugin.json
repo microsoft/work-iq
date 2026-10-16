@@ -1,6 +1,6 @@
 {
   "name": "workiq-preview",
-  "version": "2.1.0",
-  "description": "Preview WorkIQ for Microsoft 365 email, calendars, meetings, Teams messages, SharePoint and OneDrive files, people and contacts, and Planner tasks. Search, summarize, read, create, update, delete, send, and download using supported tools, with confirmation for mutations. Use retrieve-first context with explicit Grounding when available, intentional Copilot or named-agent delegation via ask, and entity tools for exact operations.",
+  "version": "2.1.2",
+  "description": "Preview WorkIQ for Microsoft 365 email, calendars, meetings, Teams messages, SharePoint and OneDrive files, people and contacts, and Planner tasks. Search, summarize, read, create, update, delete, send, and download using supported tools, with confirmation for mutations. Use retrieve-first context with explicit Grounding when available, intentional Copilot or named-agent delegation via ask, and entity tools for exact operations. When both plugins are installed, workiq-preview takes precedence over workiq.",
   "skills": "./skills/"
 }

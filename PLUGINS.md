@@ -118,7 +118,7 @@ copilot plugin uninstall workiq-productivity
 
 ## workiq-preview
 
-> **Preview build.** Agent-host-neutral guidance for retrieve-first context with explicit Grounding when available, intentional agent delegation via `ask`, and exact entity reads, writes, and downloads. The public `workiq` skill retains its existing policy.
+> **Preview build.** Agent-host-neutral guidance for retrieve-first context with explicit Grounding when available, intentional agent delegation via `ask`, and exact entity reads, writes, and downloads. When both plugins are installed, `workiq-preview` takes precedence over public `workiq` for overlapping requests. Public remains ask-first when preview is not installed.
 
 **Install:** `/plugin install workiq-preview@work-iq`
 **Source:** [`plugins/workiq-preview/`](./plugins/workiq-preview/)

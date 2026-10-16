@@ -1,5 +1,9 @@
 # delete_entity
 
+Removing a Teams chat from the current user's list is not deletion here. Use
+`do_action` `/chats/{chatId}/hideForUser` after exact identity and confirmation;
+see [Teams](teams-work-iq.md). Do not delete the chat for other participants.
+
 Delete an exact WorkIQ entity. Recoverability and notification effects depend on
 the resource; DELETE is not universally permanent and not every removal uses it.
 

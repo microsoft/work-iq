@@ -4,6 +4,31 @@ Agent-host-neutral WorkIQ tools for compatible AI agents: caller-owned context
 via available `retrieve` with explicit Grounding by default, intentional agent
 delegation via `ask`, and exact Microsoft 365 reads and writes.
 
+When both plugins are installed, **workiq-preview takes precedence over workiq**
+for overlapping requests. Use preview's skill, tools and retrieve-first routing;
+unavailable preview retrieval does not trigger public ask-first fallback.
+Current `retrieve.query`
+is one nonblank string, not an array. Both skills verify exact sources and
+read/write intent before acting. Teams guidance shares exact directory/member
+identity, topic/marker/URL reads and known action contracts, while preserving
+preview source restrictions, confirmation and non-replay recovery.
+
+## Progressive guidance loading
+
+`SKILL.md` keeps routing and universal safety rules. Read the selected domain
+index, then only the operation leaf and its `Required before use` links before
+the relevant call. Mutation prerequisites load before writes; recovery loads
+before retry or reconciliation. The first retrieval contract retains source
+selection and safe stopping; before any same-objective follow-up, load its
+evidence-repair route, including after successful but insufficient or capped
+evidence. Such gaps do not themselves authorize broader retrieval.
+
+Leaves are package-local and never require the public package. Reuse only
+available verbatim guidance; reread on uncertainty and stop if required text is
+unavailable. This is not a host-enforced loader, unloading mechanism or proof of
+model behavior. [Offline measurements](../../tests/workiq-guidance/README.md#progressive-loading-contract)
+count unique full-file bytes and preserve both packages' distinct routing.
+
 ## Installation
 
 Use the selected host's plugin/skill loader and MCP connection mechanism. This
@@ -122,8 +147,9 @@ The skill opens with a compact dispatcher. Read the applicable canonical contrac
 [mail](./skills/workiq-preview/references/mail-work-iq.md),
 [Teams](./skills/workiq-preview/references/teams-work-iq.md), or
 [agents](./skills/workiq-preview/references/agents-work-iq.md).
-[Detailed workflows](./skills/workiq-preview/references/workflows-work-iq.md) owns
-the index, setup, and cross-domain sequencing; [troubleshooting](./skills/workiq-preview/references/troubleshooting.md)
+[Targeted workflows](./skills/workiq-preview/references/workflows-work-iq.md) dispatches
+setup, people, and cross-domain sequencing; it is not a universal preflight.
+[Troubleshooting](./skills/workiq-preview/references/troubleshooting.md)
 owns operation-aware recovery.
 
 | Skill | Description |

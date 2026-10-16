@@ -27,7 +27,7 @@ export const requirements = {
   G22: 'Missing retrieve is disclosed, with no implicit ask or broad sweep.',
   G23: 'Unsupported Grounding is disclosed, not silently omitted.',
   G24: 'Exact entities, full collections, bytes and mutations use entity tools.',
-  G25: 'Retrieval arguments have explicit strategy, query array and compatible capabilities.',
+  G25: 'Retrieval arguments have explicit strategy, a nonblank query string and compatible capabilities.',
   'R.C1': 'Domain recipes remain discoverable, parsed frontmatter and local links are valid.',
   'R.C2': 'Files use exact authoritative source/destination identity and effect-correct tools.',
   'R.C3': 'Approval, execution and observed completion are separate states.',
@@ -57,8 +57,7 @@ export const requiredReferences = [
 
 export function retrievalProblems(args, supported = capabilities) {
   const errors = [];
-  if (!Array.isArray(args.query) || !args.query.length ||
-      args.query.some(q => typeof q !== 'string' || !q.trim())) errors.push('query must be a nonempty array of nonblank strings');
+  if (typeof args.query !== 'string' || !args.query.trim()) errors.push('query must be a nonblank string');
   if (!['grounding', 'copilot'].includes(args.strategy)) errors.push('strategy must be explicitly grounding or copilot');
   if (args.capabilities !== undefined && (!Array.isArray(args.capabilities) ||
       args.capabilities.some(c => !c || typeof c !== 'object' || Array.isArray(c) ||

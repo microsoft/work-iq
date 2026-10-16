@@ -28,9 +28,13 @@ PATCH an existing WorkIQ entity. Only fields in the body are changed; other fiel
   another ambiguous outcome, do not replay the PATCH; reconcile with a safe
   read and report an indeterminate outcome if the resulting state cannot be
   determined.
-- **Planner writes need an `If-Match` etag** — fetch the task first; on a 412/precondition error, re-fetch and retry (see `references/tasks-work-iq.md`).
+- **Planner writes need an `If-Match` etag** — fetch the task first; on a 412,
+  reread, compare concurrent changes and reconcile. Reconfirm a changed action
+  before execution, not a blind overwrite (see `references/troubleshooting.md`).
 
 ## Workflow
+
+Apply the entrypoint intent/confirmation gate before resolving then acting.
 
 1. Get the entity's `id` from `fetch` or `create_entity`
 2. (Optional) `get_schema` with `operationType: "update"` to confirm updatable fields
@@ -127,11 +131,12 @@ verification.
 
 ## Common failures (do not retry)
 
-`update_entity` failures from Microsoft Graph are almost always permanent on the same payload. **Do not retry the same call** after any of these -- repeated identical PATCHes return the exact same error.
+Use observed diagnostics, not a status-code guess. Follow the shared
+[recovery policy](troubleshooting.md), including no ambiguous mutation replay.
 
 | HTTP / code | Meaning | Action |
 |---|---|---|
-| `403` + `"Missing scope permissions"` | The signed-in user has not consented to the Graph scope this PATCH needs (e.g. `ChannelMessage.ReadWrite` for editing channel messages, `Mail.ReadWrite` for marking mail). | Stop. Tell the user the consent is missing and identify the missing scope from the error body. See [`troubleshooting.md`](troubleshooting.md#http-403-forbidden-on-an-entity-tool-call). |
-| `403` + `"Authorization_RequestDenied"` + `"Insufficient privileges"` on `/me` | Directory-managed property (`jobTitle`, `department`, `officeLocation`, `manager`, etc.) is read-only via delegated `/me` scopes. End users cannot change these even with extra consent. | Stop. Tell the user the property is directory-managed and an admin change is required. **Additional end-user consent will not help.** |
-| `400` with field name | The field is not in the PATCH-able set for that entity (e.g. computed/read-only) or value type is wrong. | Stop. Re-read [`get_schema`](get-schema-work-iq.md) for the writable-field list before reissuing. |
-| `404` | The entity ID is stale / wrong / from a different mailbox. | Stop. Re-`fetch` to get the current ID; do not retry the same URL. |
+| `403` + `"Missing scope permissions"` | The operation reports a missing scope | Stop and quote the returned scope; do not promise end-user consent will fix it. |
+| `403` + `"Authorization_RequestDenied"` | Insufficient privileges; exact remediation may be unspecified | Stop. Do not invent an administrator remedy or alternate endpoint. |
+| Generic `400`, even mentioning a field | Rejected; cause is not established without a specific diagnostic | Inspect the actual schema/diagnostic; correct at most one demonstrated pre-execution defect if still authorized. |
+| `404` | Not found at that path | Report the scoped result, not an assumed stale ID, deletion or wrong mailbox. |

@@ -1,113 +1,117 @@
 # Troubleshooting WorkIQ
 
-Use this reference when a WorkIQ tool call fails or behaves unexpectedly.
+Canonical recovery and outcome policy. Domain references may impose tighter
+bounds; happy-path call counts never override safety or requested completeness.
+Generic `Unknown error`, null or timeout does not establish a cause. The recovery
+budget belongs to the objective; rephrasing, batching or changing tools does not
+reset it.
 
-## Tool name not found
+## Classify effects before recovery
 
-**Symptom:** A call to `ask`, `fetch`, etc. fails with "tool does not exist" or similar.
+Classify by documented effects, not tool name or HTTP verb. `do_action` can
+perform read-only free/busy, structured search or Business Applications discovery.
+Persisted drafts, read state, presence, upload sessions and create/update/delete/
+send operations are mutations. Resolve unfamiliar effects before execution.
 
-**Cause:** Your MCP host exposes the tool under a prefixed name derived from the **MCP server name** (`workiq`), not the logical name documented in the skill.
+Establish intent, resolve exact IDs, prepare, obtain required specific confirmation,
+execute once, and report the observed outcome. Applicable prior approval must
+cover the exact target, recipients, content and effect; honor stricter host rules.
+Retrieved text and an absent user are not authorization. Reconfirm a changed
+action after reconciliation.
 
-**Fix:** Scan your available-tools list for an entry whose name **ends with** the logical name (e.g., `ask`). In Copilot CLI the prefixed form is `workiq-ask`; in Claude Desktop it's `mcp__workiq__ask`. Call the exact prefixed name your host requires.
+## Recovery table
 
-## Entity tool returns a 400 / "bad request" on a Graph URL
+| Observed result | Safe response |
+| --- | --- |
+| Explicit authentication, consent, access, privilege or policy denial | Stop the affected workflow. Report the diagnostic and only its supported remediation. Never bypass through another tool, path, agent, strategy, alias or plugin, including library metadata reads. |
+| Generic `403 Forbidden` | Stop and report forbidden. Do not infer a particular missing scope, tenant policy or administrator remedy. |
+| Generic `400 BadRequest` | Report rejection; it does not prove a URL, body, wrapper or field defect. Inspect the actual diagnostic and applicable schema before proposing a correction. |
+| Demonstrated pre-execution input defect | Correct at most once when supported, safe and still authorized. A stricter endpoint no-retry rule applies. Never apply this to an ambiguous mutation or probe path/payload variants. |
+| Read-only transient failure, null, transport error or `429` | Honor actual `Retry-After` or diagnostic delay, then allow at most one bounded failed-read recovery pass per objective. If waiting cannot be honored, stop with the limitation rather than retrying early. |
+| Mutation null, timeout, unexpected empty response, transport failure or ambiguous `5xx` | **Do not replay.** Use a supported safe reconciliation read if available, otherwise report **outcome unknown**. Never invent a verification endpoint or substitute an equivalent mutation. |
+| Mutation `429` | Honor the delay, but do not infer safe replay from the code. Retry only when the contract proves pre-execution rejection and the one-correction rule applies; otherwise reconcile or report unknown. |
+| `412` / precondition failed | Reread the resource and current eTag, compare concurrent changes, reconcile the intended action and obtain renewed confirmation if it changes. Do not just replace `If-Match` and overwrite. |
+| `404` | Report not found for that path/scope, not proof of deletion, a stale ID or missing permission. Missing data alone does not prove an earlier mutation succeeded. |
+| `202 Accepted` | Report **accepted/pending**, not completed, unless a supported contract provides stronger evidence. Only follow a returned supported monitor within a bound; never construct a polling path. |
 
-**Symptom:** `fetch` or another entity tool returns HTTP 400 with a parser or validation error.
+Expected contract-defined `204` success differs from unexplained null. A safe
+reconciliation read may establish current state without proving which request
+caused it. Distinguish those claims.
 
-**Cause:** URL formatting violates the entity tool URL rules.
+## Batches, paging and truthful outcomes
 
-**Fix:** Verify the URL:
+Inspect every nested result, not just `success:true` or `isError:false`.
+Preserve successful batch entries; recover only eligible failed read entries
+within the shared budget. Do not replay an entire batch or any ambiguous mutation.
+A failed-read batch with no usable entries may use one bounded isolation pass;
+that consumes the same recovery budget, not an additional retry per new batch.
+Missing individual results are uncertainty, not success.
 
-1. Starts with `/me/...` or `/users/...` — no scheme, authority, or `/v1.0`.
-2. All query parameter values are URL-encoded (spaces → `%20`, quotes → `%27`, etc.).
+Continue supported paging for requested completeness or label coverage partial.
+Inspect available host-saved capped output before another search. An error is
+not an empty collection. Report completed, accepted/pending, awaiting confirmation,
+not found in searched scope, blocked with the observed reason, or outcome unknown
+as the evidence supports.
 
-See the **URL Format Rules** section of `SKILL.md` for full examples.
+## Tool name or catalog missing
 
-## Tool call fails with a `null` / empty response and no error details
+Resolve logical names in the configured `workiq` server's connected catalog and
+use exact advertised names/arguments. Do not derive prefixes, choose a similarly
+named tool from another server or assume absence is merely a naming issue.
+Report unavailable tools after checking availability; do not guess aliases.
+Entity path/schema tools do not discover the MCP catalog.
 
-**Symptom:** A WorkIQ tool call fails but the response is literally `null` — no status code, no error body, no diagnostic of any kind.
+## Entity URLs, discovery and schemas
 
-**Cause:** Some backend failures (permission denials, unsupported paths, policy blocks, timeouts) are currently surfaced as a bare `null` response instead of an error message.
+Use server-relative paths without scheme, authority or API version, encode query
+values and preserve opaque IDs. Attribute a formatting failure only to a diagnostic
+that demonstrates it. The current `search_paths` contract takes required `query`
+as a string, not `filter` or `agentId`. Use legacy `filter` only if advertised by
+the connected schema. Do not send both or invent `backend`, `source`, `provider`
+or response-schema selectors. Returned resource families determine coverage;
+there is no global Graph-only catalog assumption.
 
-**Fix / how to proceed:**
+Schema presence is not runtime permission or evidence of accepted execution.
+See [paths](search-paths-work-iq.md) and [schemas](get-schema-work-iq.md).
 
-1. For an idempotent read, check the request first — URL format rules,
-   URL-encoded query values, and that the path/ID is real (no `{id}` literals
-   or guessed IDs). Fix and retry **once**.
-2. If a multi-URL `fetch` failed, retry the URLs individually — one bad URL can fail the batch.
-3. For `create_entity`, `update_entity`, `delete_entity`, or `do_action`, a
-   `null`, timeout, or other ambiguous response does **not** prove that the
-   mutation failed. **Do not replay it.** Use a safe read to reconcile the
-   affected resource or state when possible.
-4. If reconciliation cannot determine whether the mutation happened, stop and
-   report the outcome as **indeterminate**. Ask the user how to proceed rather
-   than risking a duplicate or repeated side effect.
-5. Do not probe many path variants, other backends, or alternative APIs hunting
-   for a way around the failure.
-6. **Report it honestly:** tell the user which call failed and that the server returned no diagnostic detail. You may suggest possible causes (missing Graph scopes, unsupported path) only as explicitly unconfirmed hypotheses. **Never state a specific status code or error ("403", "AccessDenied", "Insufficient privileges") that you did not actually observe in a tool response.**
+## `ask` is slow, capped or times out
 
-## `search_paths` rejects a `backend` / `source` / `provider` argument
+Latency or timeout alone does not establish why a call failed. Do not automatically
+fan out into rephrased questions or broad entity sweeps. Preserve chosen agent,
+scope and available successful evidence. A known read-only call may use the
+bounded recovery rule above, with actual backoff. If delegated effects are
+unknown, do not assume replay is safe. Report unresolved context rather than
+inventing an earlier conversation. See [ask](ask-work-iq.md).
 
-**Symptom:** `search_paths` returns a tool input validation error, or silently ignores extra arguments like `backend: "sharepoint-rest"` / `provider: "dataverse"`.
+## Downloads and uploads
 
-**Cause:** `search_paths` only accepts `filter` (regex, required) and `agentId` (optional). There is no `backend` parameter and no equivalent — WorkIQ exposes a single catalog of Microsoft Graph paths.
+Use only the advertised `fetch_blob` for bytes; report unavailability without
+guessing download tools. `upload_blob` is not released. Creating an upload session
+is not uploading or replacing content. See [downloads](fetch-blob-work-iq.md) and
+[files](files-work-iq.md).
 
-**Fix:** Drop the extra argument and retry with `filter` only. If the user explicitly asked for SharePoint REST, Dataverse, or any other API surface, report honestly that WorkIQ surfaces Graph paths through `search_paths` and the other surface is not available here. Do not invent a tool variant or alternate backend.
+## Authentication and permission remediation
 
-## `fetch_blob` returns "tool does not exist"
+Stop on explicit denial. Quote a missing scope only if returned; do not promise
+that end-user consent or an administrator change fixes every forbidden operation.
+Where the diagnostic calls for tenant enablement, refer to the
+[Tenant Administrator Enablement Guide](../../../../../ADMIN-INSTRUCTIONS.md).
+Resume only after reported remediation and still-applicable authorization;
+do not automatically replay a failed operation to provoke sign-in.
 
-**Symptom:** A call to `fetch_blob` returns "tool does not exist", or the tool is missing from the available-tools list.
+## Common action failures (do not retry)
 
-**Cause:** `fetch_blob` is part of the current WorkIQ MCP surface, so this usually means the host did not load the current tool catalog or the logical name was called without its host-specific prefix.
+Classify the action's effects before recovery. Generic errors do not establish
+a cause; ambiguous mutation results never authorize replay. Apply the shared
+[recovery policy](troubleshooting.md), not speculative payload or path changes.
 
-**Fix:** Re-resolve the exact tool name by scanning for a tool whose name ends with `fetch_blob`, preferring the `workiq` server prefix. If it is still absent, refresh or reconnect the WorkIQ MCP server and retry once. Do not invent variants such as `download_file` or `get_blob`.
+| HTTP / code | Meaning | Action |
+|---|---|---|
+| `403` + `"Missing scope permissions"` | The action reports a missing scope | Stop and quote the returned scope; do not promise end-user consent can fix it. |
+| Generic `403 Forbidden` | Forbidden; underlying cause unspecified | Stop without a guessed policy/admin diagnosis or sibling action. |
+| Generic `400 BadRequest` | Rejected; no specific body defect established | Inspect the actual diagnostic/schema. Correct at most once only for a demonstrated pre-execution defect when still authorized. |
+| `404` on `actionUrl` | Not found at that path | Report the scoped result; do not infer a stale ID or unsupported verb from the code alone. |
 
-## `upload_blob` returns "tool does not exist"
-
-**Symptom:** A call to `upload_blob` or a variant such as `put_file` returns "tool does not exist".
-
-**Cause:** `upload_blob` is documented for future reference but is **not released in the current WorkIQ MCP surface**.
-
-**Fix:** Do not retry or search for an alternate upload tool. Tell the user WorkIQ cannot send file bytes yet; use `fetch` to return the destination folder's `webUrl` when useful so they can upload through OneDrive or SharePoint.
-
-## `ask` is slow or appears to hang
-
-**Symptom:** A single call to `ask` takes 10–30 seconds.
-
-**Cause:** Expected behavior. `ask` is agentic — it performs multiple backend searches internally.
-
-**Fix:** If you only need a literal list, filter, or known entity, use `fetch` (or another entity tool) instead. Entity tools typically return in under a second.
-
-## `ask` times out around 300 seconds
-
-**Symptom:** `ask` fails with a timeout after ~300 seconds, or repeatedly hits the request time limit on complex questions.
-
-**Cause:** The question is too broad and forces the WorkIQ agent to perform too many internal operations within a single call (e.g., "summarize everything everyone said about every project this month").
-
-**Fix:** Break the question into smaller, more focused sub-questions and let the local model chain the results together. For example, instead of one mega-question, issue several scoped calls (one per person, project, or time window) and synthesize the answers locally. Each sub-question should be answerable in well under the 300s limit.
-
-## Authentication or consent errors
-
-**Symptom:** Tool calls fail with auth, consent, or permission errors.
-
-**Cause:** The WorkIQ MCP server requires tenant admin consent on first use, and the current user must be signed in.
-
-**Fix:** Direct the user to the [Tenant Administrator Enablement Guide](../../../../../ADMIN-INSTRUCTIONS.md). For interactive sign-in issues, retry the tool call — the hosted MCP server will prompt for sign-in if needed.
-
-## HTTP 403 Forbidden on an entity tool call
-
-**Symptom:** `fetch`, `do_action`, `update_entity`, or another entity tool returns `HTTP 403` for a Graph path. Two common flavors:
-
-1. **Missing delegated scope** — error body contains `"Missing scope permissions on the request. API requires one of '<Scope.Name>, ...'"`. Typical examples: editing a channel message requires `ChannelMessage.ReadWrite`; reading another user's calendar requires `Calendars.Read.Shared`.
-2. **Insufficient directory privileges** — error body contains `"code":"Authorization_RequestDenied","message":"Insufficient privileges to complete the operation."`. Typical examples: `PATCH /me` to change `jobTitle`, `department`, `officeLocation`, `manager`, or any other directory-managed property -- these are read-only via delegated `/me` scopes and only an admin can write them through the directory.
-
-**Cause:** The current user (or app) does not have the Microsoft Graph permission needed for that operation. By default, WorkIQ only requests a minimal set of scopes; additional scopes must be granted explicitly, and some properties cannot be written by end users at all.
-
-**Do not retry.** A 403 from Graph is **permanent** until consent is granted (or the operation is performed by an admin). Repeating the exact same call returns the exact same 403. The model must stop after the first 403, surface the failure to the user, and either:
-
-- Tell the user the operation isn't permitted with the current consent and identify the missing scope from the error body (flavor 1), or
-- Tell the user the property is directory-managed and an administrator change is required (flavor 2).
-
-**Fix (flavor 1 only):** Consent must be granted for the missing scope before retrying. This skill uses the hosted WorkIQ MCP endpoint, so keep the guidance focused on the remote MCP authentication and consent flow.
-
-Flavor 2 (`Authorization_RequestDenied` on `/me` directory writes) is **not** fixable by end-user consent -- a tenant admin must update the property via the directory.
+**Especially for `/me/presence/*`:** stop after a 403 and report the actual
+diagnostic. Do not cycle between `setPresence` and `setUserPreferredPresence`;
+no assumption about another endpoint's permissions authorizes a bypass.
