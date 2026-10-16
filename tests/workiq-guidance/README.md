@@ -1,9 +1,15 @@
-# WorkIQ preview guidance contract checks
+# WorkIQ guidance contract checks
 
-This contract covers **`workiq-preview` only**. The public `workiq` routing
-policy, metadata, and version remain unchanged. Its SharePoint metadata guidance
-is consolidated into the existing reference as a separate documentation cleanup,
-not an adoption of preview policy; cross-package policy parity is not required.
+The retrieval/trace contract covers **`workiq-preview` only**. The public
+`workiq` package does not adopt preview policy, metadata, or version requirements;
+cross-package policy parity is not required. Focused public Teams BotDoc
+documentation checks run alongside the preview static checks in
+[`teams-grounding.test.mjs`](teams-grounding.test.mjs). They check dispatch
+precedence, positive same-connection capability confirmation, bounded read-only
+chat resolution, links/frontmatter, provider query examples, and rolling versus
+DST calendar-date boundaries. The separate
+[local TDF test runbook](../../plugins/workiq/TEAMS-BOTDOC-TDF.md) describes
+observed-model acceptance; these offline checks do not prove automatic routing.
 
 The preview contract is **agent-host-neutral**. Logical tool behavior is shared across
 compatible agents; host adapters normalize actual tool names and event formats

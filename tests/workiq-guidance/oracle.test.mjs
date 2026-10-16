@@ -253,8 +253,7 @@ test('CI is narrow, read-only, pinned and separates evidence layers', () => {
   const workflow = parseDocument(fs.readFileSync(new URL('../../.github/workflows/workiq-guidance.yml', import.meta.url), 'utf8')).toJS();
   assert.deepEqual(workflow.permissions, { contents: 'read' });
   for (const trigger of ['pull_request', 'push']) {
-    assert.ok(!workflow.on[trigger].paths.includes('plugins/workiq/**'));
-    for (const pattern of ['plugins/workiq-preview/**', '*.md', 'tests/workiq-guidance/**',
+    for (const pattern of ['plugins/workiq/**', 'plugins/workiq-preview/**', '*.md', 'tests/workiq-guidance/**',
       'marketplace.json', '.claude-plugin/marketplace.json']) {
       assert.ok(workflow.on[trigger].paths.includes(pattern));
     }

@@ -1,8 +1,11 @@
 # Teams (chats, channel messages, reactions, presence)
 
 Use the WorkIQ **entity tools** for Teams requests — sending/reading chat messages, posting in
-channels, replying, reacting, and presence. Use `ask` only for synthesis questions
-("what's the team's take on the release?"), not for sending or listing messages.
+channels, replying, reacting, and presence. For reading or summarizing a
+specific chat, first read [Teams chat BotDoc grounding](teams-grounding-work-iq.md);
+it overrides Graph chat-message listing and generic `ask` synthesis.
+Use `ask` for broader synthesis ("what's the team's take on the release?"),
+not for sending or listing messages.
 
 Known Teams mutations — message edits, `hideForUser`, mark read or unread,
 and reactions — must use the documented workflows below directly. Do not call
@@ -14,7 +17,7 @@ The most common Teams routing mistake is mixing these up:
 
 | Surface | What it is | Path root |
 | --- | --- | --- |
-| **Chat** | 1:1, group, or meeting chat — flat message list | `/me/chats`, `/chats/{chatId}/messages` |
+| **Chat** | 1:1, group, or meeting chat — flat message list | `/me/chats`; content via `/m365-grounding/fetch`; exact message entities via `/chats/{chatId}/messages` |
 | **Channel** | A channel inside a team — messages have threaded **replies** | `/teams/{teamId}/channels/{channelId}/messages` |
 
 - A name like "Project X Daily" can be either a chat **or** a channel. Resolve it before acting
@@ -30,8 +33,10 @@ The most common Teams routing mistake is mixing these up:
 | Operation | Tool | Path |
 | --- | --- | --- |
 | List my chats | `fetch` | `/me/chats?$expand=members` |
-| Find, create, or reuse a 1:1 chat | `create_entity` | parentUrl `/chats` |
-| List messages in a chat | `fetch` | `/chats/{chatId}/messages` (don't use $top parameter) |
+| Resolve an existing chat for a content read | `fetch` | Read-only lookup in [Teams chat BotDoc grounding](teams-grounding-work-iq.md) |
+| Read or summarize chat conversation content | `fetch` | `/m365-grounding/fetch?threadId={encodedChatId}` with query-derived dates |
+| Find, create, or reuse a 1:1 chat for a mutation | `create_entity` | parentUrl `/chats` |
+| Read exact chat message entities for IDs/properties or mutations | `fetch` | `/chats/{chatId}/messages` (don't use $top parameter) |
 | Send a chat message | `create_entity` | parentUrl `/chats/{chatId}/messages` |
 | List my teams / a team's channels | `fetch` | `/me/joinedTeams`, `/teams/{teamId}/channels` |
 | List channel messages | `fetch` | `/teams/{teamId}/channels/{channelId}/messages` |
@@ -49,8 +54,10 @@ The most common Teams routing mistake is mixing these up:
 
 ## Finding Teams targets
 
-Every Teams task below starts from these lookups. Apply them to all Teams
-reads and mutations:
+The exact entity reads and mutations below use these lookups. For chat content
+reads/summaries, use the read-only resolution in
+[Teams chat BotDoc grounding](teams-grounding-work-iq.md) instead; never create
+a chat to retrieve its history.
 
 - Match names and message text exactly. Never act on a partial, similar, or
   semantic match.
@@ -68,7 +75,8 @@ reads and mutations:
 
 ### Finding a chat
 
-Pick the lookup that matches how the user named the chat.
+For a mutation, pick the lookup that matches how the user named the chat.
+These create/reuse workflows do not apply to BotDoc content reads.
 
 **By person (1:1 chat).** Microsoft Graph permits only one one-on-one chat for
 a pair of users. If it already exists, this call returns that existing chat

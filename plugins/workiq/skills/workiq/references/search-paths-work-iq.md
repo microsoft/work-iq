@@ -1,30 +1,41 @@
 # search_paths
 
-Discover available WorkIQ API paths by regex. Use as the first step before entity tools when the path is unknown.
+Discover candidate WorkIQ paths and supported operations on the selected
+connection. Use before entity tools when the path is unknown. Discover the
+live tool schema first: hosts/server versions expose different search contracts.
 
 ## Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `filter` | string | Yes | Regex pattern (e.g., `messages`, `.*calendar.*`). Empty or missing filter is rejected by the current server — pass `.*` to enumerate everything. |
+| `query` | string | When exposed | Natural-language request or path prefix, such as `recent emails` or `/me/chats`. Search results need not be exhaustive. |
+| `filter` | string | Legacy contract only | Regex pattern such as `messages` or `.*calendar.*`. Use only when the connected tool exposes this parameter. |
 
-> **⚠️ One catalog only.** `search_paths` enumerates the single WorkIQ path catalog (Microsoft Graph paths). There is no `backend` / `source` / `provider` parameter — do not pass one, do not fabricate one from general knowledge. If the user asks about SharePoint REST, Dataverse, or any other API surface, say WorkIQ surfaces Graph paths through `search_paths` and report that the other surface is not available here.
+Do not pass both parameters or invent a `backend`, `source`, or `provider`
+selector. Report only the surfaces and operations the actual response confirms;
+do not assume the catalog is Graph-only or that it exposes every provider.
 
 ## Workflow
 
-1. `search_paths` with a broad filter to find candidate paths
+1. `search_paths` using the live contract to find candidate paths
 2. `get_schema` on the chosen path
 3. `fetch` or the appropriate write tool (`create_entity` / `update_entity` / `delete_entity` / `do_action` / `call_function`)
 
 If the user asks to discover paths AND read or mutate, continue to the mutation tool after picking the path — discovery alone is incomplete.
 
-Never answer API/path questions from general Graph knowledge, local SQL, filesystem search, or built-in tools. Summarize paths from `search_paths`; if none matched, say WorkIQ did not confirm one.
+Never answer API/path questions from general Graph knowledge, local SQL,
+filesystem search, or built-in tools. Summarize every returned path and operation,
+not just common examples. A nonmatch, unrelated results, or a partial catalog
+means **not confirmed**, not unavailable. For a known provider operation such as
+chat grounding, use one exact same-connection `get_schema` check as described in
+[Teams chat BotDoc grounding](teams-grounding-work-iq.md#scope-and-availability).
+Only explicit unsupported-operation diagnostics establish unavailability.
 
 ## Examples
 
-### Find all message-related paths
+### Find message-related paths (`query` contract)
 ```json
-{ "filter": "messages" }
+{ "query": "email and Teams message paths" }
 ```
 
 When the user asks what paths are available, enumerate every confirmed path
@@ -34,22 +45,33 @@ chat messages, channel messages, replies, actions, retained or pinned
 messages, by-ID routes, and hosted content. Do not invent paths absent from the
 result, but do not omit less common confirmed variants.
 
-### Find calendar paths
+### Find calendar paths (`query` contract)
 ```json
-{ "filter": ".*calendar.*" }
+{ "query": "/me/calendar" }
 ```
 
-### Enumerate every path
+### Broad catalog search (`query` contract)
 ```json
-{ "filter": ".*" }
+{ "query": "/" }
 ```
 
-### Find Planner paths
+The `query` contract has no documented list-all or pagination control. Do not
+claim this broad search enumerates every available path. Exhaustive enumeration
+requires a server-provided complete catalog/export or an explicit completeness
+guarantee from the connected tool.
+
+### Find Planner paths (`query` contract)
 ```json
-{ "filter": "planner" }
+{ "query": "/planner" }
 ```
 
-### Find OneDrive/files paths
+### Find OneDrive/files paths (`query` contract)
 ```json
-{ "filter": "drive" }
+{ "query": "/me/drive" }
 ```
+
+### Legacy regex catalog
+
+Only if the live tool exposes `filter`, use `{"filter":"messages"}` or
+`{"filter":".*"}`. Report completeness only if that server's contract guarantees
+it; do not treat this legacy example as a parameter accepted by every host.

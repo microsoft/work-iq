@@ -15,11 +15,14 @@ Fetch one or more WorkIQ entities by path using HTTP GET. Use this for precise, 
 - When you already have an entity ID and want its full details
 - For multi-fetch: pass multiple URLs to retrieve several entities in one call
 
-Prefer `ask` for open-ended questions. Use `fetch` when you need precise, filtered, or structured data.
+Prefer `ask` for broad open-ended questions. A specific Teams chat read or
+summary is an exception: use `fetch` on `/m365-grounding/fetch` and synthesize
+locally, following [Teams chat BotDoc grounding](teams-grounding-work-iq.md).
+Use entity `fetch` when you need precise, filtered, or structured data.
 
 Use `fetch` (not `ask`) to resolve exact targets before mutations — find an event ID before deleting/updating, a draft before adding recipients or sending, a Teams chat/channel/message before editing/reacting/posting, a mail thread before reply/forward/move/mark-read.
 
-For exact reads ("show/list/get latest messages", "list members", "show my chats", "retrieve the event titled…"), prefer filtered `fetch` or a known function path. Do not answer from general knowledge, local SQL, or `ask` unless the prompt asks for synthesis.
+For exact reads ("show/list/get latest messages", "list members", "show my chats", "retrieve the event titled…"), prefer filtered `fetch` or a known function path. Do not answer from general knowledge, local SQL, or `ask` unless the prompt asks for synthesis outside the specific Teams chat grounding route.
 
 > **⚠️ Not for delta queries.** Calling `/.../delta` or `/.../delta()` through `fetch`
 > fails — delta is an OData **function** and must go through `call_function`. See
@@ -41,6 +44,10 @@ For exact reads ("show/list/get latest messages", "list members", "show my chats
   fetches.
 
 ## Pagination
+
+**The rules in this section are for OData entity collections.** BotDoc grounding
+uses `lineIndex`, `lineCount`, `availableLines`, and `fromLineNumber` instead;
+follow [its line-paging contract](teams-grounding-work-iq.md#paging-and-grounding).
 
 Collection responses are **pages**, not the full result set. When a response contains
 `@odata.nextLink`, more results exist:
@@ -82,7 +89,7 @@ Common URL encodings for OData query values:
 
 ## OData Query Tips
 
-**Always include `$select`** with only the fields you need to reduce response size (e.g., `/me/messages?$select=id,subject,from`). For collection endpoints, include `$top` to bound results.
+**For OData entities, include `$select`** with only the fields you need to reduce response size (e.g., `/me/messages?$select=id,subject,from`). For collection endpoints, include `$top` when supported to bound results. **Do not add OData options to `/m365-grounding/fetch`**; its request uses `threadId`, `start`, `end`, `fromLineNumber`, `characterLimit`, and `timeZoneId`.
 
 | Parameter | Purpose | Example |
 |-----------|---------|---------|

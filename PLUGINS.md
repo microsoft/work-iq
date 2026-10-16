@@ -101,7 +101,7 @@ copilot plugin uninstall workiq-productivity
 
 | Skill | Description |
 |-------|-------------|
-| [**workiq**](./plugins/workiq/skills/workiq/SKILL.md) | Guides usage of the full WorkIQ tool surface — `ask` for semantic questions plus entity tools for fast, structured M365 reads and writes |
+| [**workiq**](./plugins/workiq/skills/workiq/SKILL.md) | BotDoc fetch for specific Teams chat content; `ask` for broader semantic questions; entity tools for exact M365 reads and writes |
 
 ### Example prompts
 
@@ -112,13 +112,18 @@ copilot plugin uninstall workiq-productivity
 "Accept the 2pm meeting from Rob"
 "Send the draft email to the engineering distribution list"
 "Show me the channels in the DevX team"
+"Get my Teams conversation with Alex from the last 3 days"
 ```
+
+The bundled connection targets production. Teams BotDoc requires confirmed
+support on that connection; installation does not enable a provider.
+See the [explicit local TDF test steps](plugins/workiq/TEAMS-BOTDOC-TDF.md).
 
 ---
 
 ## workiq-preview
 
-> **Preview build.** Agent-host-neutral guidance for retrieve-first context with explicit Grounding when available, intentional agent delegation via `ask`, and exact entity reads, writes, and downloads. The public `workiq` skill retains its existing policy.
+> **Preview build.** Agent-host-neutral guidance for retrieve-first context with explicit Grounding when available, intentional agent delegation via `ask`, and exact entity reads, writes, and downloads. The public `workiq` skill has its own policy, including the specific Teams chat BotDoc route; it does not adopt preview retrieval policy.
 
 **Install:** `/plugin install workiq-preview@work-iq`
 **Source:** [`plugins/workiq-preview/`](./plugins/workiq-preview/)

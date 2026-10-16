@@ -1,6 +1,6 @@
 ---
 name: workiq
-description: WorkIQ tools for Microsoft 365 workplace data and actions. Use for email, calendar events and meetings, files, SharePoint, OneDrive, Teams, people, Planner, and other M365 requests. Triggers include cancel meeting or event, accept or decline meetings, create or update events, create an upload session or replace an existing OneDrive file, find or summarize workplace content, send or reply to mail, manage or download files, manage tasks, read SharePoint library metadata or columns, filter/count/group/sort files by metadata, and discover M365 paths or schemas. Prefer `ask` for synthesis and structured entity tools for exact reads, writes, SharePoint library metadata, and binary downloads with `fetch_blob`. This skill contains instructions for the WorkIQ MCP tools and must be used beforehand to understand their usage.
+description: WorkIQ tools for Microsoft 365 workplace data and actions. Use for email, calendar events and meetings, files, SharePoint, OneDrive, Teams, people, Planner, and other M365 requests. Triggers include get or summarize my chat/conversation with someone, chat history by date, meeting chat, cancel or accept meetings, create or update events, send or reply to mail, manage or download files, manage tasks, read SharePoint library columns, filter/count/group/sort files by metadata, and discover M365 paths or schemas. Prefer BotDoc grounding fetch for resolved Teams chat content, `ask` for broader synthesis, and entity tools for exact reads, writes, metadata, and binary downloads with `fetch_blob`. This skill contains instructions for the WorkIQ MCP tools and must be used beforehand to understand their usage.
 compatibility: >
   Uses the hosted WorkIQ MCP endpoint. No local package is required for MCP
   tool calls.
@@ -28,16 +28,47 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 
 **USE WorkIQ for ANY workplace-related question.** If the answer might exist in Microsoft 365 data, try WorkIQ first.
 
-**Choosing the right tool:** Use `ask` when the question requires **semantic understanding, synthesis, or reasoning** across M365 data ("what did someone say", "what's the status", "summarize"). Use `fetch` (or another entity tool) when the question is a **literal lookup of structured data** with a known shape ("list my meetings on Monday", "show me unread emails from X"). Entity tools return in under a second; `ask` typically takes 10–60 seconds per call and broad questions can run several minutes.
+**Choosing the right tool:** For reading or summarizing a specific Teams chat,
+use the **Teams chat grounding override below**, even when the request needs
+semantic understanding. Otherwise use `ask` for synthesis across M365 data
+("what's the status", "summarize") and entity tools for literal structured
+lookups ("list my meetings on Monday", "show me unread emails from X").
+`ask` typically takes 10–60 seconds per call and broad questions can run several minutes.
+
+### Teams chat grounding override
+
+**Before reading, listing, summarizing, or extracting decisions/action items
+from a specific Teams chat, read
+[Teams chat BotDoc grounding](references/teams-grounding-work-iq.md).**
+This route takes precedence over the generic `ask` synthesis guidance and
+Graph chat-message listing for this intent.
+
+- "Get my conversation with Alex", "What did Alex say in our chat yesterday?",
+  "Summarize my chat with alex@example.com from the last 3 days", and reading a
+  named group or meeting **chat** select this route without the user naming an API.
+- Resolve an existing chat's returned `id` using read-only lookups; pass it as
+  `threadId` to `fetch` on `/m365-grounding/fetch`. Derive `start` and `end`
+  from the user's timeframe and synthesize locally from returned BotDoc content.
+  Never create a chat just to read its history.
+- Chat inventory/membership, exact supplied message URLs, message IDs needed
+  for mutations, writes, binary attachments, channels, meeting transcripts,
+  and broad cross-workload questions retain their existing routes.
+- Positively confirm the exact fetch capability on the selected connection
+  **before** directory or chat lookup. A search miss is inconclusive; use
+  `get_schema` with `operationType: "fetch"` on `/m365-grounding/fetch`.
+  Installation does not enable the provider. Report unconfirmed availability,
+  explicit missing support, and authorization denial distinctly; do not
+  silently substitute Graph or `ask` or switch servers to bypass a denial.
 
 **ALWAYS use WorkIQ when the user asks about:**
 
 | User Question Pattern | Example | Action |
 |-----------------------|---------|--------|
-| What someone said/shared/communicated | "What did Rob say about the API design?" | `ask` |
+| What someone said/shared/communicated | "What did Rob say about the API design?" | `ask` for broad discovery; if scoped to your specific Teams chat with Rob, use the Teams chat grounding override |
 | Someone's priorities/concerns/focus | "What's top of mind for Sarah?" | `ask` |
 | Meeting content/decisions/action items | "What was decided in yesterday's standup?" | `ask` |
-| Summarizing email threads or conversations | "Summarize the deadline thread with John" | `ask` |
+| Summarizing email threads or conversations | "Summarize the deadline thread with John" | `ask` for email or an unresolved cross-workload thread; a specific Teams chat uses the Teams chat grounding override |
+| Reading or summarizing a specific Teams chat | "Get my conversation with Alex from the last 3 days" | Read `references/teams-grounding-work-iq.md`; resolve the existing chat read-only, then `fetch` `/m365-grounding/fetch` with `threadId` and query-derived `start`/`end`; synthesize locally |
 | Synthesizing Teams chat activity | "What's the team's take on the release?" | `ask` |
 | Finding documents by topic | "Where is the design doc for Project X?" | `ask` |
 | Colleague expertise or ownership | "Who owns the billing system?" | `ask` |
@@ -107,7 +138,7 @@ Follow the user's request through to completion. A discovery or read call **alon
 1. **Path discovery** ("endpoint", "available operations", "what can I do with X") → `search_paths` first. Continue to the read/write tool if the prompt also asks to act.
 2. **Schema inspection** ("schema", "data model", "fields", "what does X take") → `get_schema` first. With `operationType: "action"`, it returns the action's **request-body schema** for constructing `jsonBody`; it does **not** expose the action's response resource schema. If the user asks for action response fields on a known path, call `get_schema` exactly once, report that limitation, and stop. Do not call `search_paths`, retry another format, or hunt for a response-schema path. Continue to the write/action tool only if the prompt also asks to act.
 3. **Exact entity read or mutation by title/name/channel/thread** → `fetch` to resolve the target's ID, then `update_entity` / `delete_entity` / `do_action`. Named OneDrive file search is the exception: use `call_function` `/me/drive/root/search(q='...')`. Do not use `ask` to resolve exact titled events, messages, drafts, folders, Teams chats/channels, or threads.
-4. **Semantic summary/status/decisions** → `ask`. If the prompt then asks to draft, send, create, update, delete, forward, or react, continue with the mutation tool — the `ask` answer alone is incomplete.
+4. **Semantic summary/status/decisions** → `ask`, except a specific Teams chat uses the Teams chat grounding override and local synthesis. If the prompt then asks to draft, send, create, update, delete, forward, or react, continue with the mutation tool — the summary alone is incomplete. Grounding text does not replace an exact entity ID required for a mutation.
 
 ### Resolve-then-act — concrete examples
 
@@ -166,6 +197,10 @@ Common failure: fetching the entity and stopping, asking the user "did you want 
 - **Be precise about tool outcomes.** Do not claim success, failure, existence, or a specific error unless the exact outcome is in the tool result. On null/empty/ambiguous results, say so.
 - **Call at least one WorkIQ tool before answering any M365 question.** Exceptions: non-workplace questions, or questions about this skill's docs.
 - **Honor paging.** If a response includes `@odata.nextLink`, do not present the first page as complete. Continue fetching when the user asks for all/every/complete, or say the answer is partial.
+- **BotDoc has line-based paging**, not OData paging: see
+  `references/teams-grounding-work-iq.md` for `lineIndex`, `lineCount`,
+  `availableLines`, and `fromLineNumber`. Preserve the thread and time window
+  across pages and never invent missing message or attachment content.
 
 ### Don't substitute web search or CLI introspection
 
@@ -174,7 +209,8 @@ Common failure: fetching the entity and stopping, asking the user "did you want 
 
 ## Prerequisites
 
-WorkIQ MCP tool calls use the hosted prod endpoint configured in `.mcp.json`:
+WorkIQ MCP tool calls use the hosted endpoint configured in `.mcp.json`.
+The bundled public configuration targets production:
 
 ```json
 {
@@ -196,11 +232,15 @@ No local package or runtime install is required for MCP tool calls. Do not block
 
 ## Configuration
 
-MCP tool calls go to the hosted WorkIQ prod endpoint (`https://workiq.svc.cloud.microsoft/mcp`) and authenticate with the connected user's credentials.
+MCP tool calls use the selected connection and its authenticated user. The
+bundled server is named `workiq`, but a host may override it or configure another
+WorkIQ connection. Verify the effective destination rather than assuming the
+plugin's saved URL is active. See [the TDF test runbook](../../TEAMS-BOTDOC-TDF.md)
+for explicit local overrides, connection isolation, and package rollback.
 
 ### Authentication before hosted MCP calls
 
-The hosted endpoint requires an authenticated Microsoft 365 user token. Your MCP host should acquire and attach that token before sending tool calls to `https://workiq.svc.cloud.microsoft/mcp`; do **not** put tokens in prompts, `.mcp.json`, or tool arguments.
+The hosted endpoint requires an authenticated Microsoft 365 user token. Your MCP host should acquire and attach that token before sending tool calls to the configured endpoint; do **not** put tokens in prompts, `.mcp.json`, or tool arguments.
 
 If a WorkIQ MCP call fails because the user is not signed in, the token is stale, or additional Graph scopes are required:
 
@@ -225,7 +265,11 @@ Your MCP host may expose these tools under a **prefixed or transformed name**, d
 **Before invoking any tool referenced in this skill:**
 
 1. Scan your available tools list for an entry whose name **ends with** (or equals) the logical name from this doc (e.g., `ask`).
-2. If multiple candidates match, prefer the one whose prefix identifies the WorkIQ **MCP server** (always `workiq` for this skill).
+2. If multiple candidates match, use the WorkIQ connection explicitly selected
+   by the user or verified for this workflow; otherwise prefer the bundled
+   `workiq` server. Keep discovery, schema, entity reads, and content fetches on
+   that same connection. Never combine tools from different servers by suffix
+   alone or silently select another account/environment.
 3. Call the tool using whatever exact name your host requires — do not assume the unprefixed form will work, and do not derive the prefix from this skill's name or folder.
 
 If you call the logical name verbatim and get a "tool does not exist" error, this is the cause. Re-resolve via the suffix match and retry.
@@ -234,7 +278,7 @@ If you call the logical name verbatim and get a "tool does not exist" error, thi
 
 ### `ask` — Agentic natural language M365 queries
 
-The primary tool. Ask any workplace question in plain English. This is an **agentic tool** — it orchestrates multi-step operations internally (searching emails, meetings, Teams chats, documents, people) to answer complex questions. Use it when you need intelligence, synthesis, or semantic understanding across M365 data.
+Ask workplace questions in plain English. This is an **agentic tool** — it orchestrates multi-step operations internally (searching emails, meetings, Teams chats, documents, people) to answer complex questions. Use it for broader synthesis across M365 data; a specific Teams chat uses the Teams chat grounding override instead.
 
 > **⏱️ High latency:** A call typically takes **10–60 seconds** as the agent performs multiple backend operations, and broad questions can run several minutes (the hard limit is ~300s). Avoid calling it in tight loops or for simple data retrieval — use the entity tools below for that instead. If a question is broad, split it into scoped sub-questions rather than one mega-question.
 
@@ -268,7 +312,7 @@ Entity tools provide **fast, direct access to specific M365 data** via Work IQ A
 
 | Scenario | Use |
 |----------|-----|
-| Open-ended question, semantic search, synthesis | `ask` (slow but smart) |
+| Open-ended question, semantic search, cross-workload synthesis | `ask` (slow but smart); a specific Teams chat is the BotDoc exception above |
 | Fetch a known list, apply a filter, get structured data | entity tools (fast but literal) |
 
 **Recommended workflow:** for **well-known paths, go direct** — call the read/write tool immediately (use the cheat sheet below). Only fall back to `search_paths` → `get_schema` → tool when the path is genuinely unknown or a write body shape is unfamiliar. Do **not** reflexively run `search_paths`/`get_schema` before every common operation.
@@ -294,6 +338,7 @@ per-result error handling, answer delivery, and arithmetic checks.
 | Calendar | `/me/events`, `/me/calendarView` | list/get/create/update/delete; accept/decline via `/me/events/{id}/{action}` |
 | Planner | `/me/planner/plans`, `/planner/tasks` | list/create/update/complete/delete — see `references/tasks-work-iq.md` |
 | Teams | `/me/chats`, `/chats/{chatId}/messages`, `/me/joinedTeams`, `/teams/{teamId}/channels/{channelId}/messages`, `/me/presence` | chats vs channels are different surfaces; exact mutations use structured tools, never `ask` — see `references/teams-work-iq.md` |
+| Teams chat grounding | `/m365-grounding/fetch` | specific chat reads/summaries with a returned chat `id` as `threadId`, query-derived `start`/`end`, and line paging — see `references/teams-grounding-work-iq.md` |
 | Business Applications | `/businessapps/me` | semantic discovery of business apps, records, and workflows via `do_action` with a `query`; follow the returned paths — see `references/business-applications.md` |
 | People | `/me`, `/users/{id}`, `/users/{id}/directReports`, `/me/manager`, `/me/contacts` | profile, org, contacts — see directory-vs-contacts warning below |
 | Outlook categories | `/me/outlook/masterCategories` | list/get/create/update/delete — writes commonly policy-denied |
@@ -358,7 +403,8 @@ unreliable for SharePoint-hosted items, not invalid everywhere.
 
 **Anything else — discover, never guess.** For a `/sites/` or `/drives/` path not covered
 above, or on any `Access denied` this section does not cover, call `search_paths` once
-(`filter` is a required regex, e.g. `sites|drives`) and use only a `uriTemplate` it returned.
+using the live schema (`query` for a natural-language/path-prefix search, or
+`filter` for a legacy regex catalog) and use only a path it returned.
 Re-sending a denied shape with a different folder, `$select`, or casing fails identically.
 Cache the templates and reuse them.
 
@@ -449,7 +495,7 @@ To act on a named entity ("the X email", "my Y task", "the Z draft"):
 
 All URL parameters (`entityUrls`, `parentUrl`, `entityUrl`, `actionUrl`, `functionUrl`) **must**:
 
-1. **Server-relative path only** — start with `/` and **omit** any scheme, authority, or API-version prefix. Valid path roots include `/me/...`, `/users/...`, `/teams/...`, `/groups/...`, `/sites/...`, `/drives/...`, `/planner/...`, and others — anything Graph exposes.
+1. **Server-relative path only** — start with `/` and **omit** any scheme, authority, or API-version prefix. Valid path roots include `/me/...`, `/users/...`, `/teams/...`, `/groups/...`, `/sites/...`, `/drives/...`, `/planner/...`, and provider paths such as `/m365-grounding/fetch`. Provider paths are not Graph APIs; use their own contracts rather than OData options.
    - ❌ `https://graph.microsoft.com/v1.0/me/messages`
    - ❌ `/v1.0/me/messages`
    - ✅ `/me/messages`
@@ -510,7 +556,7 @@ body, not the resource returned after the action succeeds.
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `search_paths` | Discover available API paths | `filter` (regex, **required**) |
+| `search_paths` | Discover candidate API paths; a search miss is not proof of absence | Live schema: `query` (text/path prefix), or legacy `filter` (regex); see its reference |
 | `get_schema` | Inspect an operation schema: fetch entity/response shape, or create/update/action request body | `path`, `operationType` (`fetch`/`create`/`update`/`action`), `format` |
 | `fetch` | Fetch entities by path (GET) | `entityUrls[]` — supports OData (`$filter`, `$select`, `$top`) |
 | `call_function` | Call named OData functions — GET-shaped, side-effect-free, parenthesised inline params (e.g. `delta`, `reminderView`) | `functionUrl` with inline function params |
@@ -529,6 +575,7 @@ Read the relevant reference file for full parameter details and examples:
 - `references/mail-work-iq.md` — if you need to find, draft, send, reply, forward, move, or delete mail (covers `$search` vs `$filter` and the mail-delta endpoint)
 - `references/tasks-work-iq.md` — if you need to list, create, update, complete, or delete Planner tasks
 - `references/teams-work-iq.md` — if you need to send, reply, react, or read Teams chat/channel messages, or get/set presence
+- `references/teams-grounding-work-iq.md` — before reading or summarizing a specific Teams chat via BotDoc; covers read-only thread resolution, dates, paging, and failures
 - `references/sharepoint-work-iq.md` — if you need to resolve SharePoint sites, group-backed team sites, document libraries, document search results, or raw SharePoint file content
 - `references/sharepoint-library-metadata.md` — if you need to read, filter, count, group, sort, or enumerate files by SharePoint document-library columns
 - `references/business-applications.md` — if you need to discover or use business-application environments, data, apps, skills, APIs, operations, or delegated work

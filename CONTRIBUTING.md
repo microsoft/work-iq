@@ -83,7 +83,7 @@ Description and parameters...
 - Test your MCP server starts correctly
 - Ensure your skill documentation is accurate
 
-For `workiq-preview` guidance changes, use Node 22+:
+For `workiq-preview` guidance or public `workiq` Teams BotDoc changes, use Node 22+:
 
 ```bash
 npm ci --prefix tests/workiq-guidance --ignore-scripts --no-audit --no-fund
@@ -93,7 +93,10 @@ npm --prefix tests/workiq-guidance test
 The [preview guidance contract](tests/workiq-guidance/README.md) covers parsed
 frontmatter, local links, routing, metadata, and synthetic trace checks. It does
 not apply the preview policy to the public `workiq` package or require their
-versions to match. Keep preview metadata consistent across its host manifests,
+versions to match. Focused public Teams BotDoc checks run alongside the preview
+static checks; see [the local TDF test plan](plugins/workiq/TEAMS-BOTDOC-TDF.md)
+for the separate observed-model acceptance tests.
+Keep preview metadata consistent across its host manifests,
 `marketplace.json`, and `.claude-plugin/marketplace.json`.
 
 Preview guidance is agent-host-neutral; resolve logical tools against the current
