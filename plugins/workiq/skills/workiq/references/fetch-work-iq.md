@@ -82,7 +82,7 @@ Common URL encodings for OData query values:
 
 ## OData Query Tips
 
-**Always include `$select`** with only the fields you need to reduce response size (e.g., `/me/messages?$select=id,subject,from`). For collection endpoints, include `$top` to bound results.
+**Always include `$select`** with only the fields you need to reduce response size (e.g., `/me/messages?$select=id,subject,from`). For collection endpoints, include `$top` to bound results. Endpoint-specific guidance overrides these defaults: several deployed Teams paths reject `$select`, `$top`, `$filter`, or `$orderby`. Follow the **Query limits** table in `teams-routing.md` instead of retrying generic query options after a 400.
 
 | Parameter | Purpose | Example |
 |-----------|---------|---------|

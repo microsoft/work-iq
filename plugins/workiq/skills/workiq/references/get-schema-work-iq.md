@@ -45,6 +45,11 @@ the request `item` / `driveItemUploadableProperties` shape and does **not** expo
 returned `uploadSession` resource or fields such as `uploadUrl`, `expirationDateTime`, and
 `nextExpectedRanges`. Answer with that limitation after the single schema call.
 
+When answering "what can I set when creating X", a `create` schema can expose
+the whole resource model. Lead with fields the caller supplies, do not present
+system-generated or read-only fields (identifiers, timestamps, sender metadata)
+as settable, and say so when the schema lacks reliable writability annotations.
+
 ## When to Use
 
 - Before `create_entity` / `update_entity` to confirm body shape

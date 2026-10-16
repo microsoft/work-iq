@@ -14,17 +14,19 @@ DELETE a WorkIQ entity. Permanent — use with care, especially for emails and c
 - Delete a calendar event
 - Delete a draft email
 - Remove a Planner task
-- Delete a Teams message (where permitted)
 
 ## Gotchas
 
 - **Email delete moves to Deleted Items** — that's the right default for any "delete / remove / get rid of this email" request. Reach for `do_action` with `/me/messages/{id}/permanentDelete` only when the user explicitly asks for permanent, unrecoverable removal, and only against the **single resolved message ID** — never loop `permanentDelete` across a list of messages.
 - **Event delete** sends cancellation notices if it was an organized meeting.
-- **A Teams chat is not deleted from the user's chat list with this tool.** For
-  "delete", "remove", or "hide" a chat from my list, resolve the exact chat and
-  call `do_action` on `/chats/{chatId}/hideForUser` with the signed-in user's
-  `teamworkUserIdentity`. This is a per-user hide and does not delete the chat
-  for other participants.
+- **A Teams chat is not deleted from the user's chat list with this tool.**
+  "Delete", "remove", or "hide" a chat from my list means `do_action`
+  `/chats/{chatId}/hideForUser`; see `references/teams-messages-writes.md`.
+- **Teams messages are not removed with this tool.** Use `do_action` with `{}`
+  on `/users/{userId}/chats/{chatId}/messages/{messageId}/softDelete` (chat) or
+  `/teams/{teamId}/channels/{channelId}/messages/{messageId}/softDelete`
+  (channel). Do not retry encoded ID variants or alternate delete paths after
+  a capability or access denial.
 - Confirm the entity ID with `fetch` before deleting.
 
 ## Workflow

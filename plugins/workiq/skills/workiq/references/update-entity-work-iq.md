@@ -29,6 +29,7 @@ PATCH an existing WorkIQ entity. Only fields in the body are changed; other fiel
   read and report an indeterminate outcome if the resulting state cannot be
   determined.
 - **Planner writes need an `If-Match` etag** — fetch the task first; on a 412/precondition error, re-fetch and retry (see `references/tasks-work-iq.md`).
+- **Teams chat and channel message updates send only `body`.** Never include `@odata.type`, even if a generated entity schema marks it required (see `references/teams-messages-writes.md`).
 
 ## Workflow
 
