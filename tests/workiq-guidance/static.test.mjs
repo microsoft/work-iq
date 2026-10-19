@@ -60,6 +60,24 @@ test('affected plugin metadata agrees across host and marketplace manifests', ()
   checkMetadata(registries, hostManifests);
 });
 
+test('WIQD is registered consistently as an external GitHub plugin', () => {
+  const registries = ['marketplace.json', '.claude-plugin/marketplace.json']
+    .map(file => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8')));
+  const entries = registries.map(registry => {
+    const matches = registry.plugins.filter(plugin => plugin.name === 'wiqd');
+    assert.equal(matches.length, 1, 'Expected exactly one WIQD entry per registry');
+    return matches[0];
+  });
+  assert.deepEqual(entries[1], entries[0]);
+  assert.deepEqual(entries[0].source, {
+    source: 'github', repo: 'microsoft/wiqd', path: 'plugins/wiqd'
+  });
+  assert.match(entries[0].version, /^\d+\.\d+\.\d+$/);
+  assert.equal(entries[0].description,
+    'Developer toolkit for building, validating, provisioning, and publishing Microsoft 365 Copilot plugins, including extensibility capabilities such as declarative agents, skills, and connectors.');
+  assert.ok(entries[0].description.length <= 1024);
+});
+
 test('preview metadata stays consistent without imposing its version or policy on public', () => {
   const entries = ['workiq', 'workiq-preview'].map((name, index) => ({
     name, version: index ? '2.1.0' : '2.0.2', source: `./plugins/${name}`,

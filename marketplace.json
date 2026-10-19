@@ -28,6 +28,33 @@
       "source": "./plugins/workiq-productivity",
       "description": "WorkIQ productivity skills powered by the local WorkIQ CLI \u2014 read-only insights across email, meetings, calendar, Teams, SharePoint, projects, and people.",
       "version": "1.0.0"
+    },
+    {
+      "name": "wiqd",
+      "source": {
+        "source": "github",
+        "repo": "microsoft/wiqd",
+        "path": "plugins/wiqd"
+      },
+      "description": "Developer toolkit for building, validating, provisioning, and publishing Microsoft 365 Copilot plugins, including extensibility capabilities such as declarative agents, skills, and connectors.",
+      "version": "0.15.0",
+      "author": {
+        "name": "Microsoft",
+        "url": "https://www.microsoft.com"
+      },
+      "homepage": "https://github.com/microsoft/wiqd",
+      "keywords": [
+        "wiqd",
+        "microsoft-365",
+        "copilot",
+        "plugins",
+        "declarative-agents",
+        "skills",
+        "connectors",
+        "agent-development"
+      ],
+      "license": "MIT",
+      "repository": "https://github.com/microsoft/wiqd"
     }
   ]
 }
