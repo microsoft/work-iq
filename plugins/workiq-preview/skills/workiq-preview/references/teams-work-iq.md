@@ -96,21 +96,32 @@ state read only if the relevant state is actually exposed; otherwise report
 
 1. Resolve the existing 1:1 chat for a named recipient. A partial page without a
    match does not justify creating another chat.
-2. Prepare text and obtain required confirmation for the exact recipient/channel.
-3. Use `create_entity` on the correct message collection once. The inherited body
-   is `{"body":{"contentType":"text","content":"..."}}`; for reactions the inherited
-   action body is `{"reactionType":"like"}`. Confirm unfamiliar payloads with
-   [get_schema](get-schema-work-iq.md), not guessed variants.
+2. Prepare a readable preview and obtain required confirmation for the exact
+   recipient/channel, wording, structure, and links.
+3. Use `create_entity` on the correct message collection once. Use
+   `{"body":{"contentType":"text","content":"..."}}` only for a simple one-line
+   message or an explicit plain-text request. For multiple paragraphs, two or
+   more links or items, status details, or other structure, use safe Teams HTML
+   with `contentType: "html"`, `<p>` paragraphs, `<ul><li>` lists, `<strong>`
+   labels, and `<a href="...">descriptive link text</a>`. Do not send Markdown,
+   Unicode bullets, or raw URL lists and expect structured rendering. HTML-encode
+   dynamic values and omit scripts, styles, images, tracking markup, and
+   unsupported interactive elements. The approved preview must match the HTML
+   sent. For reactions the inherited action body is `{"reactionType":"like"}`.
+   Confirm unfamiliar payloads with [get_schema](get-schema-work-iq.md), not
+   guessed variants.
 4. Only create `/chats` with schema-defined `chatType` and members when absence of
    the intended chat is established and that creation is authorized. Do not create
    a new group chat to deliver a single 1:1 message.
 
-For edits, confirm exact message ownership and supported fields. Chat deletion,
-message deletion, and removal for one user are not interchangeable; do not infer
-support or a delete route from a message-read route. Establish the requested
-operation in the live catalog/schema before attempting an unfamiliar deletion.
-On a forbidden edit or deletion, report the actual diagnostic; do not promise
-that extra consent or an administrator change will enable it.
+For edits, confirm exact message ownership and supported fields. Preserve the
+existing `contentType` unless formatting is the reason for the edit, then apply
+the same HTML formatting rules and approved preview. Chat deletion, message
+deletion, and removal for one user are not interchangeable; do not infer support
+or a delete route from a message-read route. Establish the requested operation
+in the live catalog/schema before attempting an unfamiliar deletion. On a
+forbidden edit or deletion, report the actual diagnostic; do not promise that
+extra consent or an administrator change will enable it.
 
 ## Presence
 
