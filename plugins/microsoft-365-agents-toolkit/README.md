@@ -1,6 +1,7 @@
 # M365 Agents Toolkit
 
-Toolkit for building Microsoft 365 Copilot declarative agents.
+Toolkit for Declarative Agent development and evaluation through WIQD, code-based
+Teams apps, and existing widget/SSO workflows.
 
 ## Installation
 
@@ -13,7 +14,7 @@ Toolkit for building Microsoft 365 Copilot declarative agents.
 ## Declarative Agent prerequisite
 
 The Work IQ Dev Tools (WIQD) Copilot plugin must be installed and enabled before using the
-`declarative-agent-developer` skill. Install the plugin from the Awesome Copilot marketplace,
+`declarative-agent-developer` skill, including evaluation. Install the plugin from the Awesome Copilot marketplace,
 then restart Copilot CLI so its `wiqd` skill is loaded:
 
 ```bash
@@ -48,20 +49,27 @@ plugin is unavailable. Other ATK workflows continue to use the ATK CLI and do no
 "I changed my agent instructions. Re-run the evals with stable concurrency and compare the new results to .evals\baseline.json"
 ```
 
-The evaluator skill uses the public preview M365 Copilot eval CLI through package-scoped `npx`. Learn more about the preview, docs, issues, and feedback channels in the public [m365-copilot-eval repository](https://github.com/microsoft/m365-copilot-eval).
-
-```powershell
-npx -y --package @microsoft/m365-copilot-eval@latest runevals --prompts-file evals\evals.json --output .evals\latest.json
-```
+Evaluation requests go through `declarative-agent-developer` to WIQD's eval workflow,
+which owns CLI setup, dataset generation, execution, analysis, and regression comparison.
 
 ## Skills
 
 | Skill | What It Does |
 |-------|-------------|
 | [**install-atk**](./skills/install-atk/SKILL.md) | Install or update the ATK CLI and VS Code extension |
-| [**declarative-agent-developer**](./skills/declarative-agent-developer/SKILL.md) | Entry point that delegates Declarative Agent requests to the WIQD plugin |
+| [**declarative-agent-developer**](./skills/declarative-agent-developer/SKILL.md) | Delegate complete Declarative Agent requests, including evaluation, to WIQD |
+| [**teams-app-developer**](./skills/teams-app-developer/SKILL.md) | Build, test, and deploy code-based Teams apps |
 | [**ui-widget-developer**](./skills/ui-widget-developer/SKILL.md) | Build MCP servers with OpenAI Apps SDK widget rendering for Copilot Chat |
-| [**m365-agent-evaluator**](./skills/m365-agent-evaluator/SKILL.md) | Generate, run, and analyze evaluation suites for M365 Copilot declarative agents |
+| [**setup-sso-ui-widget**](./skills/setup-sso-ui-widget/SKILL.md) | Add SSO to an existing widget MCP server; existing workflow retained |
+
+## Scope of this change
+
+- The independent evaluator and its legacy assets are removed; WIQD owns evaluation.
+- Installation, Teams, widget, and SSO skills retain their original directories, references,
+  scripts, and execution flows. No local widget/SSO routing is added to the
+  Declarative Agent entry point.
+
+Restart the host session after updating the plugin.
 
 ## License
 

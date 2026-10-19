@@ -79,7 +79,7 @@ copilot plugin uninstall workiq-productivity
 |---|--------|--------|-------------|
 | 1 | [**workiq**](#workiq) | 1 | Full WorkIQ tool surface — agentic queries plus direct M365 reads and writes |
 | 2 | [**workiq-preview**](#workiq-preview) | 1 | Preview retrieve-first context, intentional delegation, and exact M365 reads and writes |
-| 3 | [**microsoft-365-agents-toolkit**](#microsoft-365-agents-toolkit) | 4 | Toolkit for building M365 Copilot declarative agents |
+| 3 | [**microsoft-365-agents-toolkit**](#microsoft-365-agents-toolkit) | 5 | Declarative Agent development and evaluation through WIQD, ATK setup, Teams apps, and existing widget/SSO skills |
 | 4 | [**workiq-productivity**](#workiq-productivity) | 10 | Read-only productivity insights across M365 |
 
 ---
@@ -172,9 +172,12 @@ Installing the plugin does not enable tenant-gated retrieval.
 | Skill | Description |
 |-------|-------------|
 | [**install-atk**](./plugins/microsoft-365-agents-toolkit/skills/install-atk/SKILL.md) | Install or update the M365 Agents Toolkit CLI and VS Code extension |
-| [**declarative-agent-developer**](./plugins/microsoft-365-agents-toolkit/skills/declarative-agent-developer/SKILL.md) | Entry point that delegates Declarative Agent requests to the WIQD plugin |
+| [**declarative-agent-developer**](./plugins/microsoft-365-agents-toolkit/skills/declarative-agent-developer/SKILL.md) | Delegate complete Declarative Agent requests, including evaluation, to WIQD |
+| [**teams-app-developer**](./plugins/microsoft-365-agents-toolkit/skills/teams-app-developer/SKILL.md) | Build, test, and deploy code-based Teams apps |
 | [**ui-widget-developer**](./plugins/microsoft-365-agents-toolkit/skills/ui-widget-developer/SKILL.md) | Build MCP servers with OpenAI Apps SDK widget rendering for Copilot Chat |
-| [**m365-agent-evaluator**](./plugins/microsoft-365-agents-toolkit/skills/m365-agent-evaluator/SKILL.md) | Generate, run, and analyze evaluation suites for M365 Copilot declarative agents |
+| [**setup-sso-ui-widget**](./plugins/microsoft-365-agents-toolkit/skills/setup-sso-ui-widget/SKILL.md) | Add SSO to an existing widget MCP server; existing workflow retained |
+
+Independent evaluation is removed in favor of WIQD. Installation, Teams, widget, and SSO skills are unchanged.
 
 ### Example prompts
 

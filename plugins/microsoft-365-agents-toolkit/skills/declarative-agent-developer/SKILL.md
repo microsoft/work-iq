@@ -4,11 +4,12 @@ description: >
   Entry point for Microsoft 365 Copilot declarative-agent authoring and lifecycle requests.
   Use for scaffolding, manifest edits, capabilities, API or MCP actions, authentication,
   localization, instruction design and review, validation, packaging, provisioning, sharing,
-  publishing, and troubleshooting. Delegate the complete request to the WIQD plugin's `wiqd`
+  publishing, troubleshooting, and evaluation. Delegate the complete request to the WIQD plugin's `wiqd`
   skill before inspecting a project, answering implementation questions, running commands, or
   editing files. Triggers: "create agent", "declarative agent", "edit my agent",
   "add a capability", "add an API plugin", "add an MCP plugin", "deploy my agent",
-  "validate my agent", "localize my agent", "review instructions", "publish my agent"
+  "validate my agent", "localize my agent", "review instructions", "publish my agent",
+  "evaluate my agent", "generate evals", "run my evals", "analyze eval failures"
 ---
 
 # Declarative Agent Developer
@@ -39,3 +40,5 @@ checks, project discovery, clarification, execution, validation, and the final r
   `teams-app-developer`.
 - Keep MCP server and widget implementation in `ui-widget-developer`; delegate only the
   declarative-agent portion through this skill.
+- Keep eval dataset generation, execution, result analysis, and regression comparison in
+  WIQD's eval workflow; do not maintain a separate evaluator here.
