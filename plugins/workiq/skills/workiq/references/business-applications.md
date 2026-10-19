@@ -45,6 +45,8 @@ substitute a separate endpoint, another MCP server, or an invented REST URL.
 | Update a business skill | `update_entity` on `/businessapps/environments/{environmentId}/skills/{skillName}` with changed fields |
 | Delete a business skill | `delete_entity` on `/businessapps/environments/{environmentId}/skills/{skillName}` |
 | Run an app-scoped operation | `do_action` on the exact `.../apps/{appName}/.../operations/{operationName}` path returned by `get_schema` |
+| List an app's custom operations | `fetch` `/businessapps/environments/{environmentId}/apps/{appName}/operations` |
+| Invoke an app custom operation | `get_schema` then `do_action` on the exact `/businessapps/environments/{environmentId}/apps/{appName}/operations/{operationName}` path, with the operation's inputs in `jsonBody` |
 | Invoke a Custom API | `do_action` on the exact `/businessapps/environments/{environmentId}/customapis/{apiName}` path returned by discovery, with API inputs in `jsonBody` |
 | Delegate an open-ended goal to an environment | `do_action` `/businessapps/environments/{environmentId}/execute-work` with `{"instruction":"...","sessionId":"<optional>"}` |
 | Invoke an in-app MCP tool | `do_action` on the exact `/businessapps/environments/{environmentId}/mcp/{serverName}/tools/{toolName}` path |
@@ -145,6 +147,9 @@ App-scoped paths intentionally differ from environment table paths:
   `submit_update`, `prepare_delete`, or `submit_delete`.
 - Use `view` for bounded/form-aware app record browsing. Use `prepare_*` then `submit_*` when the schema exposes
   that two-step operation.
+- An app can also expose custom operations directly under the app at
+  `/businessapps/environments/{environmentId}/apps/{appName}/operations`. `fetch` that path to list them, then
+  invoke one with `do_action` on its `.../operations/{operationName}` path, with its inputs in `jsonBody`.
 
 ## Grounding rules
 
