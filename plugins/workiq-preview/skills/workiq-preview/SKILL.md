@@ -1,6 +1,6 @@
 ---
 name: workiq-preview
-description: WorkIQ tools for Microsoft 365 workplace data and actions. Use for email, meetings, calendar, files, SharePoint, OneDrive, Teams, people, Planner, and connected work context. Triggers include gather requirements, summarize workplace discussions, manage meetings, create an upload session, send or draft replies, manage tasks, and discover paths or schemas. Retrieve context first with explicit Grounding when available and synthesize locally; use ask only for intentional delegation to Copilot or a known/discovered agent. Exact entities, structured workflows, writes, and downloads stay on entity tools. This skill contains instructions for the WorkIQ MCP tools and must be used beforehand to understand their usage. Use this skill also for Microsoft Business Applications requests involving CRM, ERP, Power Apps, or Dataverse records and workflows, including requests that reference paths under /businessapps/.
+description: WorkIQ tools for Microsoft 365 workplace data and actions. Use for email, meetings, calendar, files, SharePoint, OneDrive, Teams, people, Planner, and connected work context. Triggers include gather requirements, summarize workplace discussions, manage meetings, create an upload session, send or draft replies, manage tasks, and discover paths or schemas. Retrieve context first with explicit Grounding when available and synthesize locally; use ask only for intentional delegation to Copilot or a known/discovered agent. Exact entities and writes stay on entity tools; WorkIQ files API transfers use the Files CLI reference. This skill contains instructions for the WorkIQ MCP tools and must be used beforehand to understand their usage. Use this skill also for Microsoft Business Applications requests involving CRM, ERP, Power Apps, or Dataverse records and workflows, including requests that reference paths under /businessapps/.
 compatibility: >
   Uses the hosted WorkIQ MCP endpoint. No local package is required for MCP
   tool calls.
@@ -30,7 +30,8 @@ before calling. Never guess aliases or derive prefixes from a skill folder.
 | Update fields / delete an existing entity | `update_entity` / `delete_entity` |
 | Execute an action (send, reply, createReply, forward, accept, decline) | `do_action` |
 | Call an OData function (delta, reminderView, named-file search) | `call_function` |
-| Download file or attachment bytes | `fetch_blob` |
+| WorkIQ file-transfer client action or file objects at `/api/beta/files/{id}` or `/api/files/{id}` | Read [Files CLI](references/workiq-files-cli.md); use the returned WorkIQ file ID/reference |
+| Download drive content or mail attachment bytes | `fetch_blob` |
 | Discover entity paths / inspect operation fields and body shape | `search_paths` / `get_schema` |
 | Discover or use structured records and workflows in CRM, ERP, or Power Apps | `search_paths` for unknown paths; then the exact entity or action tool — read [Business Applications](references/business-applications.md) first |
 
@@ -114,9 +115,7 @@ for exact IDs, attribution, and same-agent `conversationId` continuation.
 | Create an event | Resolve missing details if needed | `create_entity` `/me/events` |
 | Delete a named OneDrive file | `call_function` search; retain `parentReference.driveId` and item `id` | `delete_entity` `/drives/{driveId}/items/{itemId}` |
 
-WorkIQ cannot upload raw bytes yet; `upload_blob` is not released. Creating an
-upload session is not uploading content. See [download guidance](references/fetch-blob-work-iq.md)
-and the [file workflows](references/files-work-iq.md).
+`upload_blob` is not released for Graph content. Creating an upload session is not uploading content. See [download guidance](references/fetch-blob-work-iq.md) and the [file workflows](references/files-work-iq.md).
 
 ## URL and Body Format Rules
 

@@ -112,6 +112,8 @@ Use `ask` when the user explicitly requests Copilot's or a specific agent's answ
 
 `fetch_blob` downloads binary content up to 4 MB and returns it base64-encoded with metadata.
 
+File objects at `/api/beta/files/{id}` or `/api/files/{id}` use the skill's [Files CLI reference](./skills/workiq-preview/references/workiq-files-cli.md). The CLI requires Node.js 20+; installing the plugin does not install it or accept its terms. EULA acceptance requires explicit user permission.
+
 > ⚠️ `upload_blob` is not released. Creating an upload session is supported separately from sending bytes: “session created; no bytes uploaded” is not “file replaced.”
 
 ## Skills
@@ -128,7 +130,7 @@ owns operation-aware recovery.
 
 | Skill | Description |
 |-------|-------------|
-| [**workiq-preview**](./skills/workiq-preview/SKILL.md) | Retrieve-first context with explicit Grounding; intentional agent delegation; exact reads/writes/downloads on entity tools |
+| [**workiq-preview**](./skills/workiq-preview/SKILL.md) | Retrieve-first context with explicit Grounding; intentional agent delegation; exact reads/writes and Graph downloads on entity tools; WorkIQ files API transfers via Files CLI |
 
 ## Platform Support
 

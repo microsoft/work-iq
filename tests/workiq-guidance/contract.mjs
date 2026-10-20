@@ -53,7 +53,7 @@ export const requiredReferences = [
   'files-work-iq.md', 'calendar-work-iq.md', 'mail-work-iq.md',
   'teams-work-iq.md', 'tasks-work-iq.md', 'workflows-work-iq.md',
   'business-applications.md', 'troubleshooting.md', 'get-schema-work-iq.md',
-  'search-paths-work-iq.md'
+  'search-paths-work-iq.md', 'workiq-files-cli.md'
 ];
 
 export function retrievalProblems(args, supported = capabilities) {

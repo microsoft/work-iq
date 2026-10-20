@@ -191,3 +191,51 @@ test('search_paths examples validate query and legacy filter as exclusive inputs
   assert.match(exampleProblems(nullValue).join(' '), /must be a JSON object/);
   assert.match(exampleProblems(arrayValue).join(' '), /must be a JSON object/);
 });
+
+test('Work IQ Files documents core commands, explicit EULA permission, and secret protection', () => {
+  const filesReference = fs.readFileSync(path.join(skillRoot('workiq-preview'), 'references', 'workiq-files-cli.md'), 'utf8');
+  const { codes } = parseMarkdown(filesReference);
+  const commands = codes.map(code => code.value).join('\n');
+  for (const command of [
+    'npm install --global @microsoft/workiq-files@0.1.1 --registry=https://packagefeedproxy.microsoft.io/npm/',
+    'workiq-files --help', 'workiq-files eula show',
+    'workiq-files accept-eula', 'workiq-files auth login',
+    'workiq-files status --file-id', 'workiq-files download --file-id',
+    'workiq-files upload --file-id'
+  ]) {
+    assert.ok(commands.includes(command), `Missing verified command: ${command}`);
+  }
+  for (const code of codes.filter(code => code.value.includes('workiq-files accept-eula'))) {
+    assert.equal(code.value, 'workiq-files accept-eula', 'Acceptance must remain a separate command');
+  }
+  assert.match(filesReference, /explicit user permission/);
+  assert.match(filesReference, /accepts immediately without a confirmation prompt/);
+  assert.match(filesReference, /never automate acceptance, including after an error/i);
+  assert.match(filesReference, /Never expose tokens[\s\S]{0,100}signed URLs/);
+});
+
+test('preview file routing distinguishes WorkIQ files API objects from existing blob routes', () => {
+  const skill = fs.readFileSync(path.join(skillRoot('workiq-preview'), 'SKILL.md'), 'utf8');
+  const filesReference = fs.readFileSync(path.join(skillRoot('workiq-preview'), 'references', 'workiq-files-cli.md'), 'utf8');
+  for (const route of ['/api/beta/files/{id}', '/api/files/{id}']) {
+    assert.ok(skill.includes(route));
+    assert.ok(filesReference.includes(route));
+  }
+  const blobRow = skill.split('\n').find(line => line.startsWith('| Download drive content'));
+  assert.ok(blobRow);
+  assert.match(blobRow, /`fetch_blob`/);
+  assert.doesNotMatch(blobRow, /Files CLI|EULA/);
+  assert.match(filesReference, /Existing drive[\s\S]{0,200}without CLI setup or EULA acceptance/);
+  for (const field of ['_meta["com.microsoft.workiq/clientAction"]', 'kind: "file-transfer"',
+    'GET contentUrl', 'PUT contentUrl', 'GET statusUrl']) {
+    assert.ok(filesReference.includes(field), `Missing file-transfer contract: ${field}`);
+  }
+  assert.match(filesReference, /require WorkIQ authentication; they are not anonymous presigned links/);
+  assert.match(filesReference, /response conversion is disabled[\s\S]{0,80}original response is preserved/);
+  const blob = fs.readFileSync(path.join(skillRoot('workiq-preview'), 'references', 'fetch-blob-work-iq.md'), 'utf8');
+  for (const route of ['/me/drive/items/{itemId}/content',
+    '/drives/{driveId}/items/{itemId}/content',
+    '/me/messages/{messageId}/attachments/{attachmentId}/$value']) {
+    assert.ok(blob.includes(route), `Missing existing blob route: ${route}`);
+  }
+});
