@@ -17,11 +17,11 @@ https://login.microsoftonline.com/{your-tenant-id}/adminconsent?client_id=ba0816
 2. Sign in with your admin account
 3. Click **Accept** to grant consent for your entire organization
 
-That's it! Users with Copilot licenses can now install and use Work IQ. See the [Work IQ README](https://github.com/microsoft/work-iq-mcp/blob/main/README.md) for end-user installation instructions.
+Also complete the [separate Work IQ API prerequisite](#separate-work-iq-api-prerequisite) before treating tenant setup as complete. See the [Work IQ README](https://github.com/microsoft/work-iq-mcp/blob/main/README.md) for end-user installation instructions.
 
 > **⚠️ Known Issue – "Access Denied" on Quick Start URL**
 >
-> The Quick Start URL above may fail with an **Access Denied** or **AADSTS650052** error in some tenants. This happens because the Work IQ CLI app registration includes permissions that target the Work IQ Tools MCP Server resource, and the service principal for that resource is not automatically provisioned in your tenant.
+> The Quick Start URL above may fail with an **Access Denied** or **AADSTS650052** error in some tenants. One cause is that the Work IQ CLI app registration includes permissions targeting the Work IQ Tools MCP Server resource, whose service principal is not automatically provisioned in your tenant. Check the application ID named in the error: the standalone Work IQ resource has a [separate setup requirement](#separate-work-iq-api-prerequisite).
 >
 > **Diagnose (optional):** You can run the read-only verification script to see what's missing before making changes:
 >
@@ -41,6 +41,8 @@ That's it! Users with Copilot licenses can now install and use Work IQ. See the 
 > 2. Create or verify the Work IQ CLI service principal
 > 3. Grant admin consent for all required Microsoft Graph permissions
 > 4. Grant admin consent for all MCP Server permissions
+>
+> This script does not provision the standalone Work IQ API prerequisite. Follow the separate setup instructions if the verifier reports that prerequisite missing.
 
 ---
 
@@ -102,6 +104,16 @@ You need **one of the following roles** in Microsoft Entra ID:
 
 - Access to Microsoft Entra admin center (https://entra.microsoft.com)
 - Access to Microsoft 365 admin center (https://admin.microsoft.com)
+
+### Separate Work IQ API prerequisite
+
+The **Work IQ** service principal (`fdcc1f02-fc51-4226-8753-f668596af7f7`) is distinct from **Work IQ Tools** and **Work IQ CLI**. Having those other applications does not satisfy this prerequisite.
+
+Ask your Global Administrator to follow [Enable your tenant for Work IQ](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/work-iq/enable-work-iq) for the one-time setup and its billing/user-assignment prerequisites. `Enable-WorkIQToolsForTenant.ps1` does not create this separate principal. The verifier checks its existence without creating it or expecting an additional MCP permission grant.
+
+`Verify-WorkIQTenant.ps1` reports a missing principal separately from a failed lookup and does not report fully provisioned when either occurs. It does not validate billing, licenses or successful authentication. Read its diagnostics: reported issues do not change its existing process exit-code behavior. Although verification does not modify tenant configuration, it authenticates to Graph and can install missing Graph PowerShell modules.
+
+A failed lookup leaves this prerequisite **unknown**, not missing; setup advice applies only to a successful lookup that found no principal. Do not create a principal or grant consent based solely on a lookup failure or generic `403 Forbidden`. Explicit authentication, access or policy denial stops the affected check: do not bypass it with another tool, identity or endpoint. Resume only after the reported issue is resolved and authorization still applies. The verifier does not retry the standalone lookup; unrelated legacy checks retain their existing behavior.
 
 ---
 
@@ -293,8 +305,8 @@ For additional security, create a Conditional Access policy:
 
 | Issue                                        | Cause                                                         | Solution                                                                 |
 |----------------------------------------------|---------------------------------------------------------------|--------------------------------------------------------------------------|
-| "Access denied" / AADSTS error on consent URL | Work IQ Tools service principal not provisioned in tenant | Run [`Enable-WorkIQToolsForTenant.ps1`](scripts/Enable-WorkIQToolsForTenant.ps1) — see [Known Issue](#known-issue--access-denied-on-quick-start-url) |
-| Work IQ not visible in Enterprise Applications | Service principal not yet provisioned                         | Run [`Enable-WorkIQToolsForTenant.ps1`](scripts/Enable-WorkIQToolsForTenant.ps1) to provision it |
+| AADSTS650052 names a missing service principal | The resource named in the error is not provisioned | Run the verifier and follow its resource-specific diagnostics; Work IQ API requires [separate setup](#separate-work-iq-api-prerequisite) |
+| Work IQ API not visible in Enterprise Applications | Standalone Work IQ service principal not yet provisioned | Follow the [separate Work IQ API prerequisite](#separate-work-iq-api-prerequisite) |
 | "Admin approval required" prompt             | Admin consent not granted                                     | Use the Quick Start URL or Step 3 methods                                |
 | "Insufficient permissions" error             | Missing API permissions                                       | Verify all 7 required permissions are consented                          |
 | Users can't sign in                          | Conditional Access blocking                                   | Review Conditional Access policies                                       |

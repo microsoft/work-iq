@@ -102,6 +102,7 @@ plugins/<plugin-name>/
 
 - **Node.js 18+** — Required for the workiq MCP server (`npx`)
 - **Admin consent** — The WorkIQ MCP server requires tenant admin consent on first use. See the [Tenant Administrator Enablement Guide](./ADMIN-INSTRUCTIONS.md) for details.
+- **Tenant verification** — The verifier checks the standalone Work IQ API prerequisite separately from MCP grants; see the [admin guide](./ADMIN-INSTRUCTIONS.md#separate-work-iq-api-prerequisite) and [offline testing guidance](./CONTRIBUTING.md).
 
 ## Creating a New Plugin
 

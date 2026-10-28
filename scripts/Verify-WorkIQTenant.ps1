@@ -7,6 +7,8 @@
   Read-only script that checks for the existence of the required service principals
   and permission grants for Work IQ tools.
   Reports missing service principals and missing or incomplete permission grants.
+  The standalone Work IQ service principal is checked separately from MCP grants.
+  Missing prerequisites are reported without changing tenant configuration.
 
 .PARAMETER UseDeviceCode
   Use device code flow for authentication.
@@ -32,8 +34,10 @@ $context = Get-MgContext
 Write-Host "Connected to tenant: $($context.TenantId)" -ForegroundColor Green
 
 $issues = 0
+$workIqPrerequisiteIssue = $false
 
 # --- App IDs ---
+$WorkIqAppId = 'fdcc1f02-fc51-4226-8753-f668596af7f7'
 $WorkIqCliAppId = 'ba081686-5d24-4bc6-a0d6-d034ecffed87'
 
 $McpServers = @(
@@ -51,6 +55,26 @@ $McpServers = @(
 
 $expectedGraphScopes = @('Sites.Read.All','Mail.Read','People.Read.All','OnlineMeetingTranscript.Read.All','Chat.Read','ChannelMessage.Read.All','ExternalItem.Read.All')
 $expectedWorkIqToolsScopes = @('McpServers.CopilotMCP.All','McpServers.Me.All','McpServers.Mail.All','McpServers.Calendar.All','McpServers.Teams.All','McpServers.Word.All','McpServers.OneDriveSharepoint.All','McpServers.SharepointLists.All','McpServers.SharePoint.All','McpServers.OneDrive.All','McpServers.Dataverse.All','McpServers.M365Admin.All','McpServers.Management.All')
+
+# --- Verify standalone Work IQ service principal (not an MCP grant target) ---
+Write-Host "`n--- Work IQ Service Principal ---" -ForegroundColor Cyan
+try {
+    $workIqSp = Get-MgServicePrincipal -Filter "appId eq '$WorkIqAppId'" -ErrorAction Stop | Select-Object -First 1
+    if ($workIqSp) {
+        Write-Host "  [OK] Work IQ (Id: $($workIqSp.Id))" -ForegroundColor Green
+    } else {
+        Write-Host "  [MISSING] Work IQ (AppId: $WorkIqAppId)" -ForegroundColor Red
+        Write-Host "  Work IQ is a separate prerequisite; Enable-WorkIQToolsForTenant.ps1 does not provision it." -ForegroundColor Yellow
+        Write-Host "  Setup instructions: https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/work-iq/enable-work-iq" -ForegroundColor Yellow
+        $workIqPrerequisiteIssue = $true
+        $issues++
+    }
+} catch [System.Management.Automation.RuntimeException] {
+    Write-Host "  [ERROR] Could not verify Work IQ (AppId: $WorkIqAppId)." -ForegroundColor Red
+    Write-Host "  The prerequisite status is unknown. Stop this check; do not provision or grant consent based on this lookup failure." -ForegroundColor Yellow
+    $workIqPrerequisiteIssue = $true
+    $issues++
+}
 
 # --- Verify MCP Server service principals ---
 Write-Host "`n--- MCP Server Service Principals ---" -ForegroundColor Cyan
@@ -135,6 +159,8 @@ foreach ($server in $McpServers) {
 Write-Host "`n--- Summary ---" -ForegroundColor Cyan
 if ($issues -eq 0) {
     Write-Host "All checks passed. Work IQ is fully provisioned in this tenant." -ForegroundColor Green
+} elseif ($workIqPrerequisiteIssue) {
+    Write-Host "$issues issue(s) found. Follow the diagnostics above and ADMIN-INSTRUCTIONS.md to resolve them." -ForegroundColor Red
 } else {
     Write-Host "$issues issue(s) found. Run .\scripts\Enable-WorkIQToolsForTenant.ps1 to fix." -ForegroundColor Red
 }
