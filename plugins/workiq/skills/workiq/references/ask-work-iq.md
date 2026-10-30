@@ -2,11 +2,28 @@
 
 Query Microsoft 365 Copilot for workplace intelligence using natural language. This is the primary tool for all M365 data questions — it grounds answers in real organizational data via Microsoft Graph.
 
+## Bounded follow-ups
+
 > **⏱️ Latency:** Typical calls take 10–60 seconds; broad questions can run several minutes (hard limit ~300s). Don't chain many `ask` calls where one scoped call or a fast entity tool would do, and split overly broad questions into focused sub-questions.
 >
 > **Backoff:** If `ask` returns busy/throttled with `retryAfterSeconds`, never retry before that delay. Follow any documented bounded fallback immediately. Otherwise, make at most one identical retry only when the runtime can wait the full delay; if it cannot, report the transient failure. Do not retry immediately, alter the question, or fan out into broad entity fetches.
 >
 > **Grounding:** Synthesize your answer only from what the response actually contains. If `ask` reports no accessible results or weak evidence, say so — do not pad the answer with specifics the response doesn't support.
+
+## Summarizing status
+
+Before shortening an `ask` answer, identify which recorded unresolved scope
+boundaries, dependencies, blockers, owners, or approval conditions change the
+current status or next decision. Preserve each material qualifier in the final
+answer with its dated source citation; background and repeated history may be
+compressed instead. Do not merge distinct workstreams or classification
+boundaries, or imply that completion of one stage establishes completion of
+later stages. If completion or approval is not established by the evidence,
+say it is unconfirmed rather than definitely complete or still pending.
+
+Use the substantive content date, not just a newer forwarding or modification
+timestamp. Do not carry historical actions forward as current without evidence,
+or make extra calls solely to repeat facts already supported by the response.
 
 ## Parameters
 

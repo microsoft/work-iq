@@ -68,9 +68,7 @@ operation, or in-app MCP tool.
 
 ### Copy a named OneDrive file to a named folder
 
-Resolve the exact source file and target folder with two `call_function`
-searches. Retain the source item's `parentReference.driveId`, source `id`, and
-target folder `id`. The deployed copy contract is drive-scoped; do not use the
+The deployed copy contract is drive-scoped; do not use the
 policy-denied `/me/drive/items/{id}/copy` alias. This known contract does not
 need `search_paths`, `get_schema`, or a verification fetch. A `202` response
 confirms that the asynchronous copy was accepted.
@@ -320,19 +318,10 @@ Do not omit `tenantId` or substitute the chat resource's
 `lastUpdatedDateTime`. These are known deployed contracts; call them directly.
 
 ### Replace an existing file with an upload session
-Resolve the existing driveItem with one `call_function` exact-name search and
-retain both its `parentReference.driveId` and item `id`. Do not use `fetch` for
-this named OneDrive search and do not follow the successful search with another
-metadata read. The deployed action accepts an empty body for this operation. Do
+The deployed action accepts an empty body for this operation. Do
 not add an `item` wrapper: the current runtime can reject that otherwise
 schema-valid optional field with `400 invalidRequest`. This contract is already
 known, so skip `search_paths` and `get_schema`.
-
-```json
-{
-  "functionUrl": "/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,parentReference,file&$top=10"
-}
-```
 
 ```json
 {

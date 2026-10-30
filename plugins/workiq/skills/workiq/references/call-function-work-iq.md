@@ -14,7 +14,6 @@ Call an OData function via HTTP GET. Functions are **side-effect-free** named op
 
 - When you need a computed result that takes no request body (`delta`, `reminderView`)
 - Any time the OData path uses function call syntax `functionName(param=value)` and the operation is documented as GET
-- When resolving a OneDrive file by exact name with `/me/drive/root/search(q='...')`
 - **Any "what's new / what's changed / what was added or removed since X" question** — that is a
   delta query, and this tool is the only correct route for it
 
@@ -48,17 +47,3 @@ and more.
 ```json
 { "functionUrl": "/me/mailFolders/inbox/messages/delta" }
 ```
-
-### Get metadata for a named OneDrive file
-
-Use one function call. URL-encode the exact file name, select the metadata the
-user needs, and answer directly from the matching driveItem. Do not call
-`search_paths` or `get_schema`, and do not follow a successful search with
-`/me/drive/items/{id}`.
-
-```json
-{
-  "functionUrl": "/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,size,createdDateTime,lastModifiedDateTime,webUrl,file,folder,parentReference,createdBy,lastModifiedBy,fileSystemInfo,sharepointIds&$top=10"
-}
-```
-
