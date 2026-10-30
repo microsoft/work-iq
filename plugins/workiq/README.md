@@ -40,6 +40,11 @@ The MCP tool surface is served by the hosted WorkIQ endpoint above, so updating 
 
 The plugin exposes the WorkIQ MCP tool surface — read **and** write — from `https://workiq.svc.cloud.microsoft/mcp`.
 
+SharePoint IQ provider operations are exposed through the same endpoint and
+appear in `search_paths` under `/sharepoint/*`. The skill discovers the exact
+provider operation and reads its schema: advertised actions use `do_action`,
+functions use `call_function`. No separate SharePoint MCP endpoint is configured.
+
 ### Semantic queries (`ask`)
 
 ```
@@ -76,7 +81,12 @@ The plugin exposes the WorkIQ MCP tool surface — read **and** write — from `
 
 `fetch_blob` downloads binary content up to 4 MB and returns it base64-encoded with metadata.
 
-> ⚠️ `upload_blob` is documented for future reference but is not released in the current WorkIQ MCP surface. For uploads, direct the user to OneDrive / SharePoint until raw byte upload support is released.
+> ⚠️ `upload_blob` is documented for future reference but is not released as a
+> direct WorkIQ MCP tool. A provider-backed SharePoint/OneDrive upload requires
+> an available supported byte-transfer client and a converted WorkIQ ticket from
+> `getUploadFileDetails`; preparation alone does not upload bytes. See the
+> [file-transfer boundary](./skills/workiq/references/sharepoint-work-iq.md#file-transfer-boundary).
+> If that workflow is unavailable, use the OneDrive / SharePoint web UI.
 
 ## Skills
 

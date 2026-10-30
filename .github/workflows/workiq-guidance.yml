@@ -1,9 +1,12 @@
-name: WorkIQ preview guidance contracts
+name: WorkIQ guidance contracts
 
 on:
   pull_request:
     paths:
       - 'plugins/workiq-preview/**'
+      - 'plugins/workiq/README.md'
+      - 'plugins/workiq/skills/workiq/SKILL.md'
+      - 'plugins/workiq/skills/workiq/references/*.md'
       - '*.md'
       - 'marketplace.json'
       - '.claude-plugin/marketplace.json'
@@ -13,6 +16,9 @@ on:
     branches: [main]
     paths:
       - 'plugins/workiq-preview/**'
+      - 'plugins/workiq/README.md'
+      - 'plugins/workiq/skills/workiq/SKILL.md'
+      - 'plugins/workiq/skills/workiq/references/*.md'
       - '*.md'
       - 'marketplace.json'
       - '.claude-plugin/marketplace.json'

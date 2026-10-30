@@ -59,6 +59,10 @@ and providers automatically.
 `query` parameter. Do not send both and do not invent a tool variant or alternate backend. If no path is returned,
 report that WorkIQ did not confirm an enabled path for the request.
 
+For SharePoint, select a returned `/sharepoint/*` path matching the requested
+scope and use its advertised operation. Do not send natural-language SharePoint
+intent as a legacy regex.
+
 ## `fetch_blob` returns "tool does not exist"
 
 **Symptom:** A call to `fetch_blob` returns "tool does not exist", or the tool is missing from the available-tools list.
@@ -73,7 +77,14 @@ report that WorkIQ did not confirm an enabled path for the request.
 
 **Cause:** `upload_blob` is documented for future reference but is **not released in the current WorkIQ MCP surface**.
 
-**Fix:** Do not retry or search for an alternate upload tool. Tell the user WorkIQ cannot send file bytes yet; use `fetch` to return the destination folder's `webUrl` when useful so they can upload through OneDrive or SharePoint.
+**Fix:** Do not retry or invent another direct upload tool. A separately
+supported SharePoint/OneDrive prepared transfer requires an available client,
+an advertised `getUploadFileDetails` operation and schema, and a converted
+WorkIQ ticket. Apply the
+[file-transfer boundary](sharepoint-work-iq.md#file-transfer-boundary)
+before preparation. Otherwise return the destination folder's `webUrl` when
+useful and explain the missing prerequisite. Never switch tools after an
+authentication, consent, access, or policy denial.
 
 ## `ask` is slow or appears to hang
 

@@ -32,7 +32,16 @@ Distinguish from `fetch`: use `fetch_blob` when the path returns binary content 
 2. Use `fetch_blob` with the content path to download the binary data.
 3. Decode `base64Content` only when the host needs to materialize the returned bytes locally.
 
-For SharePoint file content, use the drive-scoped path `/drives/{driveId}/items/{itemId}/content`. Do not use `/me/drive` for SharePoint requests. Select a real file document; avoid home pages, SitePages entries, or other `.aspx` site pages unless the user explicitly asks for a SharePoint page.
+For supported SharePoint file downloads, use the resolved drive-scoped path
+`/drives/{driveId}/items/{itemId}/content`. Do not use `/me/drive` for SharePoint
+requests. Select a real file document, not a folder, home page, SitePages entry,
+or another `.aspx` page unless explicitly requested.
+
+The separate `/sharepoint/getDownloadFileDetails` workflow prepares a transfer
+but does not return file bytes. Discover its advertised operation and require
+the [file-transfer boundary](sharepoint-work-iq.md#file-transfer-boundary)
+before using it. Do not treat metadata instructions or a native URL as a
+download, or use `fetch_blob` as a fallback after a preparation error or denial.
 
 If the response reports that the payload is too large, do not retry path variants. The tool limits downloads to 4 MB; return the item's `webUrl` so the user can download it directly.
 

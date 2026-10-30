@@ -1,24 +1,65 @@
 # call_function
 
-Call an OData function via HTTP GET. Functions are **side-effect-free** named operations that return computed results — for example, `delta` (change tracking on a collection) or `reminderView` (computed list of upcoming reminders).
+Invoke a path advertised as a function. Graph-backed OData functions use HTTP GET and return computed results, for example `delta` (change tracking on a collection) or `reminderView` (computed list of upcoming reminders).
 
-**Use this tool only for true GET-shaped OData functions.** If the operation is invoked with a request body (e.g. `getSchedule`, `findMeetingTimes`, `sendMail`), it's an **action**, not a function — use `do_action` instead, even when the path looks function-like.
+For Graph-backed operations, body-based verbs such as `getSchedule`,
+`findMeetingTimes`, and `sendMail` are actions and use `do_action`.
+Provider-backed operations such as `/sharepoint/*` follow their advertised
+operation instead: a `function` uses `call_function` even when its request is
+body-based. Do not infer the projection from the HTTP method or presence of a
+body, or invoke a provider function as an action.
 
 ## Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `functionUrl` | string | Yes | The function path including any required inline parameters (e.g., `/me/reminderView(startDateTime='...',endDateTime='...')`). Must be a server-relative path — start with `/`, no scheme or authority (`https://graph.microsoft.com` ❌, `/me/reminderView(...)` ✅). URL-encode any special characters in inline parameter values. |
+| `jsonBody` | object | Only when supported by the connected tool and function schema | Provider function request body. Use the schema's exact fields; do not invent a body or inline-parameter transport. |
+
+## Provider-backed functions
+
+For `/sharepoint/*`, reuse the path, advertised operation, request schema, and
+target site's opaque siteKey already validated in the same conversation,
+connection, tenant, and user context. Discover only missing prerequisites;
+inspect a missing request schema with `get_schema.operationType: "function"`.
+Invoke using the argument transport advertised by the connected tool.
+If that host cannot invoke the advertised function or transport, report the
+incompatibility rather than switching to `do_action`.
+
+For example, after the live catalog and schema confirm this function and the
+tool supports `jsonBody`, a minimal known-library metadata read can use:
+
+```json
+{
+  "functionUrl": "/sharepoint/get_list_schema",
+  "jsonBody": {
+    "siteKey": "{returnedSiteKey}",
+    "listId": "{listId}",
+    "includeHidden": false,
+    "includeReadOnly": false,
+    "includeFields": false,
+    "includeContentTypes": false
+  }
+}
+```
+
+Only suppress expansions not needed by the request. Reuse contracts and keys,
+not the prior data response: perform a fresh call when current data is requested.
+Follow the [provider workflow](sharepoint-work-iq.md#provider-backed-sharepoint-operations)
+for context changes, prerequisites, and denial/mutation safeguards.
 
 ## When to Use
 
+- For a provider operation explicitly advertised as `function`, including its supported request-body transport
 - When you need a computed result that takes no request body (`delta`, `reminderView`)
 - Any time the OData path uses function call syntax `functionName(param=value)` and the operation is documented as GET
 - When resolving a OneDrive file by exact name with `/me/drive/root/search(q='...')`
 - **Any "what's new / what's changed / what was added or removed since X" question** — that is a
   delta query, and this tool is the only correct route for it
 
-If you're not sure whether something is a function or an action, run `get_schema` on the path with `operationType: "fetch"` first. If no `fetch` schema is returned but `action` is, route to `do_action`.
+If the operation type is unknown, use `search_paths` and inspect the advertised
+`operations`, then request only the matching schema if needed. Do not probe
+`fetch` and `action` variants to classify a provider operation.
 
 ## Delta queries (change tracking)
 
@@ -61,4 +102,3 @@ user needs, and answer directly from the matching driveItem. Do not call
   "functionUrl": "/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,size,createdDateTime,lastModifiedDateTime,webUrl,file,folder,parentReference,createdBy,lastModifiedBy,fileSystemInfo,sharepointIds&$top=10"
 }
 ```
-

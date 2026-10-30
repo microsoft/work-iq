@@ -2,7 +2,7 @@
 
 Retrieve the OpenAPI schema for a WorkIQ path or operation — fields available on an entity, query parameters, body shape for create/update/action.
 
-> **Routing rule:** call `get_schema` once with `path` set to the path of interest AND the right `operationType`:
+> **Routing rule:** when the needed schema is not already known, call `get_schema` once with `path` set to the path of interest AND the right `operationType`. The following examples describe Graph-backed operations:
 >
 > - **Collection reads** (`/me/messages`, `/me/events`) → `operationType: "fetch"`
 > - **Creates** (POST to a collection, e.g. `/me/events`, `/me/messages`) → `operationType: "create"`
@@ -11,23 +11,41 @@ Retrieve the OpenAPI schema for a WorkIQ path or operation — fields available 
 >
 > Each path supports only the values matching its real operations — wrong values return precise errors like `No 'create' operation for path: me/sendMail`. When that happens, **do not** retry blindly; the mapping above is correct. Do not fall back to a related entity path (e.g. `/me/messages`) for an action-verb schema — the wrapper shape differs.
 
+## Provider contracts and reuse
+
+For `/sharepoint/*`, use the operation advertised by the connected catalog,
+not a Graph verb heuristic: an `action` uses `operationType: "action"` and
+`do_action`; a `function` uses `operationType: "function"` and `call_function`,
+including body-based provider functions. If the host cannot inspect that
+projection, report the incompatibility instead of trying other operation types.
+
+Reuse a request schema already validated for that path and operation in the
+same conversation, connection, tenant, and user context. Do not call
+`get_schema` before every invocation or reload the skill to repeat the read.
+If only the schema is missing and the path/operation are already confirmed,
+call `get_schema` directly; do not repeat `search_paths`.
+Changing the target site does not by itself invalidate an operation schema.
+This request-contract reuse is not a cache of list columns, authorization, or
+business data. Follow the [provider workflow](sharepoint-work-iq.md#provider-backed-sharepoint-operations)
+for revalidation and fresh field-identity requirements.
+
 ## Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `path` | string | **Yes** | Entity path (`/me/messages`). Server-relative, starts with `/`. |
-| `operationType` | string | **Yes** | One of `fetch` (GET), `create` (POST to collection), `update` (PATCH), `action` (action verb body). Each path supports only the matching subset; wrong values error like `No 'create' operation for path: me/sendMail`. |
+| `operationType` | string | **Yes** | Use the path's advertised operation. Graph examples include `fetch`, `create`, `update`, and `action`; provider paths may advertise `function`. Each path and connected host supports only its matching subset. |
 | `format` | string | No | `jsonschema`, `typescript`, or `cddl`. Defaults to `cddl`. |
 
 > **⚠️ Parameter shape gotchas.**
-> - `operationType` is the **only** way to pick the operation flavor — no `httpMethod`, `method`, `verb`, `apiVersion`, `operationIds`, or `backend` param exists on `get_schema`. `fetch`→GET, `create`→POST to a collection, `update`→PATCH, `action`→action verb body.
+> - `operationType` is the **only** way to pick the operation flavor — no `httpMethod`, `method`, `verb`, `apiVersion`, `operationIds`, or `backend` param exists on `get_schema`. Do not infer provider projections from an HTTP verb.
 
 ## Request schema vs response schema
 
 `get_schema` is request-oriented for writes:
 
 - `fetch` describes the entity/response shape available to a GET operation.
-- `create`, `update`, and `action` describe the request body used to invoke that operation.
+- `create`, `update`, `action`, and body-based provider `function` schemas describe the request used to invoke that operation.
 - In particular, `operationType: "action"` returns the action request-body schema. It does
   **not** expose the action's response resource schema.
 
@@ -47,7 +65,7 @@ returned `uploadSession` resource or fields such as `uploadUrl`, `expirationDate
 
 ## When to Use
 
-- Before `create_entity` / `update_entity` to confirm body shape
+- Before `create_entity` / `update_entity` when the body shape is not already known
 - When `fetch` returns unfamiliar fields
 - To check supported OData query params (`$filter`, `$select`, `$orderby`)
 - To check `beta` fields not in `v1.0`
@@ -100,4 +118,3 @@ Do **not**:
 - The same pattern applies to other state-driven entities surfaced primarily through action verbs.
 
 **Rule:** when `search_paths` reports an action verb (`/me/presence/setPresence`, `/me/messages/{id}/send`, `/me/events/{id}/accept`) for a state change, route to `do_action` against that verb. Do NOT use the schema for the parent entity as license to `update_entity` — schema availability for `update` is a Graph metadata artifact, not a permission grant.
-

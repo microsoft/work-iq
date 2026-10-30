@@ -9,6 +9,126 @@ import { root, skillRoot, markdownFiles, parseMarkdown, frontmatterProblems, lin
 const check = errors => assert.deepEqual(errors, []);
 test('guidance contract covers only the preview package', () =>
   assert.deepEqual(packages, ['workiq-preview']));
+
+test('stable WorkIQ provider additions retain workload discovery and skill activation', () => {
+  const text = fs.readFileSync(path.join(skillRoot('workiq'), 'SKILL.md'), 'utf8');
+  check(frontmatterProblems(text, 'workiq'));
+  const { frontmatter } = parseMarkdown(text);
+  assert.match(frontmatter.description, /must be used beforehand to understand their usage/);
+  assert.match(frontmatter.description, /Business Applications/);
+  assert.match(frontmatter.description, /create an upload session/);
+});
+
+test('SharePoint provider routing follows advertised action or function operations', () => {
+  for (const relative of ['SKILL.md', 'references/sharepoint-work-iq.md', 'references/search-paths-work-iq.md']) {
+    const text = fs.readFileSync(path.join(skillRoot('workiq'), relative), 'utf8');
+    assert.match(text, /advertised[\s\S]{0,100}operation/i);
+    assert.match(text, /function[\s\S]{0,100}call_function|call_function[\s\S]{0,100}function/i);
+    assert.match(text, /action[\s\S]{0,100}do_action|do_action[\s\S]{0,100}action/i);
+    assert.match(text, /siteKey/);
+  }
+});
+
+test('SharePoint provider discovery distinguishes query intents from legacy regex', () => {
+  const text = fs.readFileSync(path.join(skillRoot('workiq'), 'references/search-paths-work-iq.md'), 'utf8');
+  check(exampleProblems(text));
+  const inputs = parseMarkdown(text).codes.filter(code => code.language === 'json').map(code => JSON.parse(code.value));
+  assert.ok(inputs.some(input => typeof input.query === 'string' && /SharePoint move/.test(input.query)));
+  assert.ok(inputs.some(input => input.filter === '^/sharepoint/'));
+  assert.match(text, /results can be bounded/i);
+});
+
+test('SharePoint provider transfers require client readiness and converted tickets', () => {
+  const text = fs.readFileSync(path.join(skillRoot('workiq'), 'references/sharepoint-work-iq.md'), 'utf8');
+  for (const concept of [
+    /available[\s\S]{0,60}byte-transfer client/i,
+    /converted WorkIQ[\s\S]{0,30}ticket/i,
+    /contentUrl/, /statusUrl/, /clientAction/,
+    /same tenant, user, OAuth application, environment/,
+    /not[\s\S]{0,50}(?:execute|executed)[\s\S]{0,50}(?:metadata|instructions)/i,
+    /Never replay[\s\S]{0,50}uncertain upload/i,
+  ]) assert.match(text, concept);
+});
+
+test('SharePoint discovery uses a complete candidate path without appended prose', () => {
+  const text = fs.readFileSync(path.join(skillRoot('workiq'), 'references/search-paths-work-iq.md'), 'utf8');
+  check(exampleProblems(text));
+  const inputs = parseMarkdown(text).codes.filter(code => code.language === 'json').map(code => JSON.parse(code.value));
+  assert.ok(inputs.some(input => input.query === '/sharepoint/get_list_schema'));
+  assert.ok(inputs.some(input => input.filter === '^/sharepoint/get_list_schema$'));
+  assert.match(text, /candidate, not proof/);
+  assert.match(text, /Never append prose to a path/);
+  assert.doesNotMatch(text, /\/sharepoint library by ID/);
+  assert.match(text, /complete path, operations, and description[\s\S]{0,100}result preview/);
+});
+
+test('SharePoint warm reads reuse contracts and siteKeys only in the validated context', () => {
+  for (const relative of ['SKILL.md', 'references/sharepoint-work-iq.md']) {
+    const text = fs.readFileSync(path.join(skillRoot('workiq'), relative), 'utf8');
+    assert.match(text, /same connection, tenant, and user/);
+    assert.match(text, /Do not repeat[\s\S]{0,70}search_paths[\s\S]{0,30}get_schema/);
+    assert.match(text, /siteKey[\s\S]{0,100}exact target site/);
+    assert.match(text, /reconnect, identity\/routing change, or announced catalog change/);
+    assert.match(text, /fresh read/);
+    assert.match(text, /fresh field identities/);
+    assert.match(text, /Do not\s+reload the skill or references solely/);
+    assert.match(text, /(?:never retry|rather than retrying) an uncertain mutation/i);
+  }
+});
+
+test('SharePoint metadata reads avoid list enumeration and unnecessary expansions', () => {
+  const text = fs.readFileSync(path.join(skillRoot('workiq'), 'references/sharepoint-work-iq.md'), 'utf8');
+  for (const relative of ['SKILL.md', 'references/sharepoint-work-iq.md']) {
+    const guidance = fs.readFileSync(path.join(skillRoot('workiq'), relative), 'utf8');
+    assert.match(guidance, /cold discovery\s+query is exactly `\/sharepoint\/get_list_schema`/);
+    assert.doesNotMatch(guidance, /\/sharepoint library by ID/);
+  }
+  assert.match(text, /known list ID, do not enumerate lists/);
+  assert.match(text, /includeFields: false/);
+  assert.match(text, /includeContentTypes: false/);
+  assert.match(text, /Do not suppress fields needed/);
+  assert.match(text, /do not add a verification read/i);
+});
+
+test('SharePoint partial reuse resolves only the missing prerequisite', () => {
+  const text = fs.readFileSync(path.join(skillRoot('workiq'), 'references/sharepoint-work-iq.md'), 'utf8');
+  assert.match(text, /Path and advertised operation, but no request schema[\s\S]{0,100}get_schema[\s\S]{0,60}do not repeat `search_paths`/);
+  assert.match(text, /Same operation, different site[\s\S]{0,100}resolve only the new site's key/);
+  assert.match(text, /New operation, same site[\s\S]{0,100}resolve only the new operation contract/);
+  assert.match(text, /independent read-only prerequisites in parallel/);
+});
+
+test('stable function and schema guidance supports advertised body-based provider functions', () => {
+  const functionText = fs.readFileSync(path.join(skillRoot('workiq'), 'references/call-function-work-iq.md'), 'utf8');
+  const schemaText = fs.readFileSync(path.join(skillRoot('workiq'), 'references/get-schema-work-iq.md'), 'utf8');
+  const inputs = parseMarkdown(functionText).codes.filter(code => code.language === 'json').map(code => JSON.parse(code.value));
+  assert.ok(inputs.some(input => input.functionUrl === '/sharepoint/get_list_schema' &&
+    input.jsonBody?.includeFields === false && input.jsonBody?.includeContentTypes === false));
+  assert.match(functionText, /Do not infer the projection from the HTTP method/);
+  assert.doesNotMatch(functionText, /Use this tool only for true GET-shaped/);
+  assert.match(schemaText, /operationType: "function"[\s\S]{0,50}call_function/);
+  assert.match(schemaText, /do not repeat `search_paths`/);
+  assert.match(schemaText, /not a cache of list columns, authorization/);
+});
+
+test('SharePoint provider site search does not narrow cross-site requests', () => {
+  const text = fs.readFileSync(path.join(skillRoot('workiq'), 'references/sharepoint-work-iq.md'), 'utf8');
+  assert.match(text, /site-scoped[\s\S]{0,100}search_site/i);
+  assert.match(text, /Do not narrow[\s\S]{0,100}cross-site/i);
+  assert.match(text, /denial[\s\S]{0,100}(?:stop|fallback)|(?:stop|fallback)[\s\S]{0,100}denial/i);
+});
+
+for (const relative of ['SKILL.md', '../../README.md', ...[
+  'do-action-work-iq.md', 'fetch-blob-work-iq.md', 'search-paths-work-iq.md',
+  'call-function-work-iq.md', 'get-schema-work-iq.md',
+  'sharepoint-library-metadata.md', 'sharepoint-work-iq.md', 'troubleshooting.md',
+  'upload-blob-work-iq.md',
+].map(file => `references/${file}`)]) {
+  test(`stable WorkIQ provider guidance ${relative}: local links and anchors`, () => {
+    const file = path.join(skillRoot('workiq'), relative);
+    check(linkProblems(file, fs.readFileSync(file, 'utf8')));
+  });
+}
 for (const name of packages) {
   const directory = skillRoot(name);
   test(`${name}: parsed frontmatter and description limit`, () => {

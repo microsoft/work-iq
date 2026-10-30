@@ -255,7 +255,8 @@ test('CI is narrow, read-only, pinned and separates evidence layers', () => {
   for (const trigger of ['pull_request', 'push']) {
     assert.ok(!workflow.on[trigger].paths.includes('plugins/workiq/**'));
     for (const pattern of ['plugins/workiq-preview/**', '*.md', 'tests/workiq-guidance/**',
-      'marketplace.json', '.claude-plugin/marketplace.json']) {
+      'marketplace.json', '.claude-plugin/marketplace.json',
+      'plugins/workiq/skills/workiq/SKILL.md', 'plugins/workiq/skills/workiq/references/*.md']) {
       assert.ok(workflow.on[trigger].paths.includes(pattern));
     }
   }
