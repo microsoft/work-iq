@@ -181,6 +181,25 @@ test('static example and policy lint reject policy mutations without paragraph s
     '| Access denied | Unknown reason | Try a different path |').some(e => e.includes('alternate path')));
   assert.deepEqual(exampleProblems('```json\n{"actionUrl":"/search/query","jsonBody":{"query":{"queryString":"synthetic"}}}\n```'), []);
 });
+test('Teams formatting policy distinguishes simple text from structured HTML', () => {
+  const file = fileURLToPath(new URL(
+    '../../plugins/workiq-preview/skills/workiq-preview/references/teams-work-iq.md',
+    import.meta.url
+  ));
+  const guidance = fs.readFileSync(file, 'utf8');
+  const formattingProblems = text =>
+    policyProblems('references/teams-work-iq.md', text).filter(problem => problem.startsWith('D.teams-format'));
+
+  assert.deepEqual(formattingProblems(guidance), []);
+  for (const changed of [
+    guidance.replace('simple one-line', 'every'),
+    guidance.replace('contentType: "html"', 'contentType: "text"'),
+    guidance.replace('<ul><li>', '<p>'),
+    guidance.replace('Unicode bullets', 'bullets')
+  ]) {
+    assert.ok(formattingProblems(changed).length, 'Formatting policy mutation was accepted.');
+  }
+});
 test('path-discovery query strings are not confused with retrieval query arrays', () => {
   const example = value => `# search_paths\n\n\`\`\`json\n${JSON.stringify(value)}\n\`\`\`\n`;
   assert.deepEqual(exampleProblems(example({ query: '/me/people' })), []);
