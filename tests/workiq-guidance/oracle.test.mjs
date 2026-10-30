@@ -255,7 +255,9 @@ test('CI is narrow, read-only, pinned and separates evidence layers', () => {
   for (const trigger of ['pull_request', 'push']) {
     assert.ok(!workflow.on[trigger].paths.includes('plugins/workiq/**'));
     for (const pattern of ['plugins/workiq-preview/**', '*.md', 'tests/workiq-guidance/**',
-      'marketplace.json', '.claude-plugin/marketplace.json']) {
+      'marketplace.json', '.claude-plugin/marketplace.json',
+      'plugins/workiq/skills/workiq/SKILL.md', 'scripts/download-file.*',
+      'scripts/upload-file.*', 'scripts/workiq-file-common.ps1']) {
       assert.ok(workflow.on[trigger].paths.includes(pattern));
     }
   }
@@ -263,4 +265,5 @@ test('CI is narrow, read-only, pinned and separates evidence layers', () => {
   assert.ok(steps.filter(s => s.uses).every(s => /@[a-f0-9]{40}$/.test(s.uses)));
   assert.ok(steps.some(s => s.run === 'npm run test:oracle'));
   assert.ok(steps.some(s => s.run === 'npm run test:static'));
+  assert.ok(steps.some(s => s.run === 'node --test file-transfer-guidance.test.mjs download-file.test.mjs upload-file.test.mjs'));
 });

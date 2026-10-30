@@ -3,7 +3,8 @@ name: workiq
 description: WorkIQ tools for Microsoft 365 workplace data and actions. Use for email, calendar events and meetings, files, SharePoint, OneDrive, Teams, people, Planner, and other M365 requests. Triggers include cancel meeting or event, accept or decline meetings, create or update events, create an upload session or replace an existing OneDrive file, find or summarize workplace content, send or reply to mail, manage or download files, manage tasks, read SharePoint library metadata or columns, filter/count/group/sort files by metadata, and discover M365 paths or schemas. Prefer `ask` for synthesis and structured entity tools for exact reads, writes, SharePoint library metadata, and binary downloads with `fetch_blob`. This skill contains instructions for the WorkIQ MCP tools and must be used beforehand to understand their usage. Use this skill also for Microsoft Business Applications requests involving CRM, ERP, Power Apps, or Dataverse records and workflows, including requests that reference paths under /businessapps/.
 compatibility: >
   Uses the hosted WorkIQ MCP endpoint. No local package is required for MCP
-  tool calls.
+  tool calls. Prepared file transfers additionally require PowerShell 7.2+
+  and the scripts directory from a trusted checkout of this repository.
 ---
 
 # WorkIQ
@@ -297,7 +298,7 @@ per-result error handling, answer delivery, and arithmetic checks.
 | Business Applications | `/businessapps/` | use `fetch` for known structural paths and `search_paths` with natural language for semantic discovery; follow the returned paths — see `references/business-applications.md` |
 | People | `/me`, `/users/{id}`, `/users/{id}/directReports`, `/me/manager`, `/me/contacts` | profile, org, contacts — see directory-vs-contacts warning below |
 | Outlook categories | `/me/outlook/masterCategories` | list/get/create/update/delete — writes commonly policy-denied |
-| Files | `/me/drive`, `/drives/{id}`, `/sites/{id}` | for named-file metadata, call `call_function` once with `/me/drive/root/search(q='{urlEncodedExactName}')` and do not follow with `/me/drive/items/{id}`; use `fetch_blob` for binary content after resolving the item ID — see `references/fetch-blob-work-iq.md`; uploads are not released yet |
+| Files | `/me/drive`, `/drives/{id}`, `/sites/{id}` | for named-file metadata, call `call_function` once with `/me/drive/root/search(q='{urlEncodedExactName}')` and do not follow with `/me/drive/items/{id}`; use supported `fetch_blob` routes or the prepared file-transfer workflows below; `upload_blob` is not released |
 | Change tracking | `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta` | "what's new/changed since" — via `call_function` only, never `fetch` |
 
 > **Server may deny families by policy.** Tenants can disable specific path families
@@ -340,7 +341,7 @@ and structured file reads succeed; it is faster than `ask` and gives you exact m
 | List the drive's top level | `/drives/{driveId}/root` → take its `id` → `/drives/{driveId}/items/{id}/children` |
 | List a folder | `/drives/{driveId}/items/{folderId}/children` |
 | Item metadata | `/drives/{driveId}/items/{itemId}` |
-| File bytes | `fetch_blob` `/drives/{driveId}/items/{itemId}/content` |
+| File bytes | Supported `fetch_blob` `/drives/{driveId}/items/{itemId}/content`, or the prepared file-transfer workflow below when available |
 
 Two invariants: **a name goes in `q=` of a search, never in a URL segment**, and **every id
 comes from a tool result in this conversation** — never assembled, guessed, or all-zeros.
@@ -365,16 +366,35 @@ Re-sending a denied shape with a different folder, `$select`, or casing fails id
 Cache the templates and reuse them.
 
 
+### Script-based SharePoint and OneDrive file transfers
+
+When the connected provider exposes `getDownloadFileDetails` or
+`getUploadFileDetails` and converts its response into a WorkIQ transfer ticket,
+follow the [download workflow](references/download-file-work-iq.md) or
+[upload workflow](references/upload-file-work-iq.md). Use the PowerShell 7.2+
+scripts in the repository-root `scripts` directory, not an external file CLI.
+They are not inside the installed plugin: first locate a trusted repository
+checkout with the entry point and `workiq-file-common.ps1`.
+
+Discover the deployed preparation schema/projection before invoking it; download
+may be an action or a function, while upload uses `do_action`. Require the same
+tenant, user, OAuth application, environment, and explicit routing for preparation
+and transfer. Downloads request `WorkIQ.Read`, uploads `WorkIQ.Act`; Ask-only
+tokens are insufficient. Confirm the exact upload source, destination, and
+conflict behavior before preparing once. A ticket is not completed byte transfer.
+Stop on missing conversion or denial: do not use native URLs, change identities,
+enable flights, or switch tools as a workaround. Never replay an uncertain upload.
+
 ### Binary downloads use `fetch_blob`; `upload_blob` is not released
 
 Use `fetch_blob` for file content in OneDrive/SharePoint, attachment payloads for messages, calendar events, and profile photos. It accepts a relative WorkIQ `path`, returns up to 4 MB as base64 with content metadata, and supports an optional `format` conversion value on compatible drive-content endpoints. Use `fetch` first only when you need to resolve an item or attachment ID. You should also help the user decode the base64 into a file with the correct extension and MIME type if needed.
 
-`upload_blob` is documented for future reference but **is not part of the current WorkIQ MCP surface**. Attempting to call it returns `tool does not exist`. Do not call it, search for an alternate upload tool, or invent a similar name such as `put_file`.
+`upload_blob` is documented for future reference but **is not part of the current WorkIQ MCP surface**. Attempting to call it returns `tool does not exist`. Do not call it or invent a similar byte-upload tool such as `put_file`. The prepared-ticket workflow above is separate from uploading byte bodies through MCP.
 
 When the user asks to upload a local file:
 
-1. Tell the user WorkIQ cannot upload raw byte payloads yet.
-2. Use `fetch` to resolve and return the destination folder's `webUrl` when useful, so the user can upload through OneDrive or SharePoint.
+1. Use the script-based upload workflow above only when the connected provider returns a converted WorkIQ ticket and the repository scripts are available.
+2. Otherwise explain that byte upload is unavailable through the connected deployment. Use `fetch` to resolve and return the destination folder's `webUrl` when useful, so the user can upload through OneDrive or SharePoint.
 3. Do not claim the upload succeeded without a confirmed write response.
 
 For detailed download paths and examples, read `references/fetch-blob-work-iq.md`. For the unreleased upload contract, see `references/upload-blob-work-iq.md`.

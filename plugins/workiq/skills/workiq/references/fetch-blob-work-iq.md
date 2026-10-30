@@ -2,6 +2,11 @@
 
 Download binary content from a WorkIQ path. The tool returns up to 4 MB of file bytes as base64 plus content type, file name, and size metadata. Use this for file content, email attachments, document downloads, profile photos, and other binary Microsoft 365 resources.
 
+When the provider exposes `getDownloadFileDetails` and WorkIQ ticket conversion,
+the separate [script-based file workflow](download-file-work-iq.md) downloads a
+prepared file through the repository-root scripts. It does not replace attachment
+or format-conversion paths, and is not a fallback after an access/policy denial.
+
 ## Parameters
 
 | Parameter | Type | Required | Description |

@@ -1,9 +1,13 @@
 # WorkIQ preview guidance contract checks
 
-This contract covers **`workiq-preview` only**. The public `workiq` routing
-policy, metadata, and version remain unchanged. Its SharePoint metadata guidance
+The retrieval/trace contract covers **`workiq-preview` only**. Stable `workiq`
+does not adopt that policy. Its SharePoint metadata guidance
 is consolidated into the existing reference as a separate documentation cleanup,
 not an adoption of preview policy; cross-package policy parity is not required.
+
+Separate file-transfer checks exercise the repository-root `scripts` and stable
+`workiq` upload/download references. They do not broaden the preview policy
+contract, change package versions, or call live Microsoft 365 endpoints.
 
 The preview contract is **agent-host-neutral**. Logical tool behavior is shared across
 compatible agents; host adapters normalize actual tool names and event formats
@@ -16,17 +20,25 @@ Run from the repository root with Node 22+:
 npm ci --prefix tests/workiq-guidance --ignore-scripts --no-audit --no-fund
 npm --prefix tests/workiq-guidance run test:oracle
 npm --prefix tests/workiq-guidance run test:static
+node --test tests/workiq-guidance/file-transfer-guidance.test.mjs tests/workiq-guidance/download-file.test.mjs tests/workiq-guidance/upload-file.test.mjs
 npm --prefix tests/workiq-guidance test
 ```
 
 Dependencies and the lockfile are test-only; the preview plugin gains no runtime dependencies.
-CI runs the two layers separately and performs no model calls, plugin installation,
+CI runs the policy layers and file-transfer checks separately and performs no model calls, plugin installation,
 Microsoft 365 operations, or live evaluations.
 
 [`baseline.json`](baseline.json) records the unchanged-guidance red run: 244 oracle
 self-tests pass; 24 of 132 documentation checks fail for enumerated old-policy/link
 causes. That historical run covered both packages before this PR was narrowed to
 preview only. Its counts are not the current suite's scope or results.
+
+The file-transfer tests require PowerShell 7.2+ (`pwsh`) and compile in-memory
+HTTP handlers. They cover ticket-origin validation, Read/Act scope selection,
+explicit routing, download integrity/cleanup, and upload preflight, sequential
+chunks, acknowledgments, completion, and fail-closed behavior. Authentication
+and HTTP are mocked: these passes do not establish live deployment availability
+or successful end-to-end file transfer.
 
 ## Canonical contract and evidence layers
 

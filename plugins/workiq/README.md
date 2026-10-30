@@ -76,7 +76,19 @@ The plugin exposes the WorkIQ MCP tool surface — read **and** write — from `
 
 `fetch_blob` downloads binary content up to 4 MB and returns it base64-encoded with metadata.
 
-> ⚠️ `upload_blob` is documented for future reference but is not released in the current WorkIQ MCP surface. For uploads, direct the user to OneDrive / SharePoint until raw byte upload support is released.
+For SharePoint/OneDrive providers exposing `getDownloadFileDetails` or
+`getUploadFileDetails` with converted WorkIQ transfer tickets, use the
+[download workflow](./skills/workiq/references/download-file-work-iq.md) or
+[upload workflow](./skills/workiq/references/upload-file-work-iq.md). PowerShell
+7.2+ scripts live in the repository-root [scripts directory](../../scripts),
+not inside the installed plugin. Obtain a trusted repository checkout before
+preparing a transfer; plugin installation alone may not include these scripts.
+Use the same tenant, user, OAuth application, environment, and explicit routing
+as preparation. An upload requires source/destination/conflict confirmation,
+sequential acknowledgments, and confirmed completion; uncertain writes are not
+replayed. Attachment downloads remain on `fetch_blob`.
+
+> ⚠️ `upload_blob` is not released. The separate script workflow requires a converted WorkIQ ticket; native upload-session URLs are not supported. If that workflow is unavailable, direct the user to the OneDrive / SharePoint web UI.
 
 ## Skills
 

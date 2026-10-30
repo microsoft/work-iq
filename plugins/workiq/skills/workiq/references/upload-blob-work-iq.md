@@ -1,6 +1,6 @@
 # upload_blob
 
-> ⚠️ **Not released yet.** `upload_blob` is documented here for future reference but is **not part of the current WorkIQ MCP surface**. Calling it today returns `tool does not exist`. When a user asks to upload a local file, tell them WorkIQ can't accept raw byte payloads yet and ask them to upload through the OneDrive / SharePoint web UI — see the [Binary downloads and uploads](../SKILL.md) section in `SKILL.md`.
+> ⚠️ **Not released yet.** `upload_blob` is documented here for future reference but is **not part of the current WorkIQ MCP surface**. Calling it today returns `tool does not exist`. For approved local files, use the separate [script-based upload workflow](upload-file-work-iq.md) only when `getUploadFileDetails` returns a converted WorkIQ ticket and the repository-root scripts are available. Otherwise direct the user to the OneDrive / SharePoint web UI. The examples below describe the unreleased tool, not a substitute for the ticket workflow.
 
 Upload a local file to a WorkIQ path via HTTP PUT. Use this to upload files to OneDrive or SharePoint.
 

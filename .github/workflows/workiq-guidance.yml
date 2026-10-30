@@ -1,9 +1,16 @@
-name: WorkIQ preview guidance contracts
+name: WorkIQ guidance and file-transfer contracts
 
 on:
   pull_request:
     paths:
       - 'plugins/workiq-preview/**'
+      - 'plugins/workiq/README.md'
+      - 'plugins/workiq/skills/workiq/SKILL.md'
+      - 'plugins/workiq/skills/workiq/references/*-file-work-iq.md'
+      - 'plugins/workiq/skills/workiq/references/*-blob-work-iq.md'
+      - 'scripts/download-file.*'
+      - 'scripts/upload-file.*'
+      - 'scripts/workiq-file-common.ps1'
       - '*.md'
       - 'marketplace.json'
       - '.claude-plugin/marketplace.json'
@@ -13,6 +20,13 @@ on:
     branches: [main]
     paths:
       - 'plugins/workiq-preview/**'
+      - 'plugins/workiq/README.md'
+      - 'plugins/workiq/skills/workiq/SKILL.md'
+      - 'plugins/workiq/skills/workiq/references/*-file-work-iq.md'
+      - 'plugins/workiq/skills/workiq/references/*-blob-work-iq.md'
+      - 'scripts/download-file.*'
+      - 'scripts/upload-file.*'
+      - 'scripts/workiq-file-common.ps1'
       - '*.md'
       - 'marketplace.json'
       - '.claude-plugin/marketplace.json'
@@ -42,4 +56,7 @@ jobs:
         working-directory: tests/workiq-guidance
       - name: Static documentation and contract checks
         run: npm run test:static
+        working-directory: tests/workiq-guidance
+      - name: Stable file-transfer guidance and scripts (offline HTTP handlers)
+        run: node --test file-transfer-guidance.test.mjs download-file.test.mjs upload-file.test.mjs
         working-directory: tests/workiq-guidance
