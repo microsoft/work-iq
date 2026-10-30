@@ -83,6 +83,24 @@ Description and parameters...
 - Test your MCP server starts correctly
 - Ensure your skill documentation is accurate
 
+For tenant-verification changes, run the isolated synthetic prerequisite checks
+(no Graph modules, authentication or tenant access required):
+
+```powershell
+pwsh -NoProfile -File .\tests\Verify-WorkIQTenant.Prerequisites.Tests.ps1
+```
+
+Use `-ScriptPath <path-to-verifier>` to run the same checks against a reviewed
+baseline or composed verifier. The seven unchanged-behavior controls should
+pass the pre-fix baseline; the six standalone-prerequisite regressions should
+fail it. The candidate must pass all thirteen. Tests cover typed, permission-denied,
+generic-403 and nonterminating lookup errors, including unknown status without
+unsupported setup or retry advice, but do not exercise the real Graph SDK or
+standalone process exit codes.
+
+Do not run the tenant scripts themselves as an offline test; they authenticate
+to Graph and can install modules or, for the enablement script, change the tenant.
+
 For `workiq-preview` guidance changes, use Node 22+:
 
 ```bash
