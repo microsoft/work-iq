@@ -367,3 +367,9 @@ session, report only non-secret metadata such as `expirationDateTime` and
 | `404` on `actionUrl` | The entity ID embedded in the path is stale, or the action verb does not exist on this resource family. | Stop. Re-`fetch` to get the current ID, OR re-check `search_paths` for the right action verb. |
 
 **Especially for `/me/presence/*`:** if the first `setPresence` or `setUserPreferredPresence` POST returns 403, the second will too. Both verbs share the `Presence.ReadWrite[.All]` scope gate. Stop after one 403, surface the failure, and identify the missing consent scope if the error body names one.
+
+## Validated task recipes
+
+| User Question Pattern | Example | Action |
+|-----------------------|---------|--------|
+| Sending mail, accepting/declining meetings | "Send this draft", "Accept the 2pm meeting" | `do_action` |

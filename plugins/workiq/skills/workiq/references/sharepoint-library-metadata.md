@@ -418,3 +418,9 @@ of items you actually retrieved. If they disagree, the table wins — recount an
 correct the summary. For any breakdown over ~20 rows, prefer using an available
 code-writing or calculation tool to compute the tallies instead of counting in
 prose.
+
+## Validated task recipes
+
+| User Question Pattern | Example | Action |
+|-----------------------|---------|--------|
+| Reading, filtering, counting, grouping, or sorting files by SharePoint library columns | "Which documents have Owner = HR Team?", "Count files by Status" | `fetch` on `/sites/{siteId}/lists/{listId}/items?$expand=fields` — never `ask` alone; see `sharepoint-library-metadata.md` |

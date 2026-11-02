@@ -109,3 +109,24 @@ do not call `ask`, inspect schemas, run discovery, or switch to `createReplyAll`
    `fetch`/`search_paths`/`ask` calls.
 4. Once you have the id, call the mutation directly. Finding the message is not the goal;
    performing the requested action is.
+
+## Validated task recipes
+
+| User Question Pattern | Example | Action |
+|-----------------------|---------|--------|
+| Listing emails with concrete filters | "Show my unread emails from Rob this week" | `fetch` (`/me/messages`) |
+| Downloading the first file attachment from Inbox | "Find the first inbox email with a file attachment and download that attachment" | Use exactly two calls. First, `fetch` `/me/mailFolders/inbox/messages?$filter=hasAttachments%20eq%20true&$top=10&$select=id,subject,receivedDateTime,hasAttachments&$expand=attachments($select=id,name,contentType,size,isInline)`; do not combine this filter with `$orderby` and do not use `$skip`. In returned order, select the first message containing a file attachment and its first file attachment. Then call `fetch_blob` `/me/messages/{messageId}/attachments/{attachmentId}/$value`. Insert the complete `message.id` and selected `fileAttachment.id` directly from the structured response without retyping, shortening, normalizing, or reconstructing either value. Before the single `fetch_blob` call, compare both path segments character-for-character with their source fields and correct any mismatch before calling. The suffix is the literal `/$value` with no space between `/` and `$`; construct the path once and do not retry formatting variants. When the user requests raw content, include the returned `base64Content` in the final answer, or the actual materialized file path when the host wrote the bytes to disk; do not merely state that the content was downloaded. If the bounded page contains no file attachment, report not found instead of enumerating the mailbox, following `@odata.nextLink`, or retrying alternate filters. |
+| Summarizing an exact mail thread and creating a reply draft | "Summarize the named thread, then create a reply draft starting with the requested marker" | Use exactly two calls. First, `fetch` `/me/messages?$search=%22{urlEncodedExactSubject}%22&$select=id,subject,conversationId,from,toRecipients,ccRecipients,receivedDateTime,body,bodyPreview,isDraft&$top=5`; select the latest non-draft exact-subject match and summarize only facts supported by its evidence. Then call `do_action` `/me/messages/{messageId}/createReply` with `{"Comment":"{requestedMarkerAndGroundedReplyBody}"}`. Use `createReply`, never `createReplyAll`, and never send. Skip `ask`, `get_schema`, and a second fetch. Use the returned message id verbatim without proactive encoding or double-encoding; if an opaque id containing reserved characters is rejected by path transport, report that failure instead of exploring alternate encodings. Do not invent decisions, owners, dates, or completed actions that the thread leaves unspecified. |
+| List or manage Outlook categories | "What Outlook categories do I have?" | `fetch` (`/me/outlook/masterCategories`); writes subject to server policy |
+
+
+## Resolve then act
+
+After required confirmation and target resolution, complete the requested action; a preparatory lookup alone is not completion.
+
+| User request | Step 1: resolve | Step 2: act (required) |
+|---|---|---|
+| "Mark email as read" | `fetch` to find the message | `update_entity` `/me/messages/{id}` with `{"isRead": true}` |
+| "Forward email to X" | `fetch` to find the message | `do_action` `/me/messages/{id}/forward` |
+| "Send email to X" | — | `do_action` `/me/sendMail` |
+| "Create draft and send" | `create_entity` to draft | `do_action` `/me/messages/{id}/send` |

@@ -134,3 +134,41 @@ App-scoped paths intentionally differ from environment table paths:
 - For metadata-only questions with an unknown path, use `search_paths`, then fetch the returned resource. For known
   structural inventory, use its direct `fetch` path instead, especially `/businessapps/environments/` for environment
   listing. For exact data reads/writes, use the environment/table/app paths directly after discovery.
+
+## Validated task recipes
+
+| User Question Pattern | Example | Action |
+|-----------------------|---------|--------|
+| Structured records or workflows in CRM, ERP, or Power Apps | "Qualify a lead", "Update the open service case" | start with `search_paths` using a natural-language description in the parameter named in `inputSchema.required` (`query` or `filter`), then follow the returned app and operation paths — read `business-applications.md` first |
+
+
+## Resolve then act
+
+After required confirmation and target resolution, complete the requested action; a preparatory lookup alone is not completion.
+
+| User request | Step 1: resolve | Step 2: act (required) |
+|---|---|---|
+| "Qualify a lead" | `search_paths` with `qualify a lead` in the `query` or `filter` parameter named in `inputSchema.required` to resolve the app, environment, and operation path | `get_schema`, then `do_action` on the exact returned app-scoped operation |
+
+
+## Business Applications (`/businessapps`)
+
+WorkIQ exposes business-application environments, data, apps, skills, APIs, and operations under `/businessapps/`,
+which is distinct from Microsoft Graph application registrations. Business Applications are systems of record for
+structured operational data and workflows, such as customer and sales records in CRM, finance or supply-chain
+records in ERP, and line-of-business data in Power Apps. Route intent tied to records or workflows in a business
+system to `/businessapps`; use Graph for Microsoft 365 collaboration and directory content such as mail, Teams,
+calendars, files, and people. Read `business-applications.md` before handling a Business Applications
+request. Make one focused `search_paths` call with a concise natural-language description of the needed record,
+workflow, or app, using only fields accepted by the connected WorkIQ tool schema. Use only returned
+`/businessapps/...` paths, environment IDs, and application IDs. If no Business Applications path is returned, do
+not repeat or broaden the search: fetch `/businessapps/environments/`, resolve only the exact requested environment,
+and inspect only its relevant returned collection. For known structural inventory, call `fetch` directly on
+`/businessapps/environments/`. Do not use `do_action` for
+discovery: it is a POST action and may be denied based on the calling client's trust classification and the tenant's
+effective mutation policy.
+Every Business Applications resource — environments, apps, tables, records, skills, and APIs — is discovered with
+`search_paths` or read from a known structural path; take each identifier from the returned paths. Business skills
+are addressed as resources under
+`/businessapps/environments/{environmentId}/skills/{skillName}` and are readable with `fetch` and writable with
+`create_entity`, `update_entity`, and `delete_entity`.

@@ -102,3 +102,9 @@ user needs, and answer directly from the matching driveItem. Do not call
   "functionUrl": "/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,size,createdDateTime,lastModifiedDateTime,webUrl,file,folder,parentReference,createdBy,lastModifiedBy,fileSystemInfo,sharepointIds&$top=10"
 }
 ```
+
+## Validated task recipes
+
+| User Question Pattern | Example | Action |
+|-----------------------|---------|--------|
+| What's new/changed/removed since a point in time | "What's new in my Inbox since this morning?", "What's changed on my calendar since yesterday?", "What's been added to my contacts recently?" | `call_function` (delta — `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta`, `/teams/{teamId}/channels/{channelId}/messages/delta`). **Never call delta via `fetch`** — see `call-function-work-iq.md` |
