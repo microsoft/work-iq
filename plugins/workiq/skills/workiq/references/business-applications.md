@@ -50,6 +50,8 @@ policy-denied before any grounded path is returned, ending the workflow before
 | Update a business skill | `update_entity` on `/businessapps/environments/{environmentId}/skills/{skillName}` with changed fields |
 | Delete a business skill | `delete_entity` on `/businessapps/environments/{environmentId}/skills/{skillName}` |
 | Run an app-scoped operation | `do_action` on the exact `.../apps/{appName}/.../operations/{operationName}` path returned by `get_schema` |
+| List an app's custom operations | `get_schema` on the app path `/businessapps/environments/{environmentId}/apps/{appName}`; its app-level operations are the app's custom operations |
+| Invoke an app custom operation | `get_schema` then `do_action` on the exact `/businessapps/environments/{environmentId}/apps/{appName}/operations/{operationName}` path, with the operation's inputs in `jsonBody` |
 | Invoke a Custom API | `do_action` on the exact `/businessapps/environments/{environmentId}/customapis/{apiName}` path returned by discovery, with API inputs in `jsonBody` |
 | Invoke an in-app MCP tool | `do_action` on the exact `/businessapps/environments/{environmentId}/mcp/{serverName}/tools/{toolName}` path |
 
@@ -116,9 +118,14 @@ App-scoped paths intentionally differ from environment table paths:
   `/businessapps/environments/{environmentId}/tables/{tableName}/records`
 - App table:
   `/businessapps/environments/{environmentId}/apps/{appName}/tables/{tableName}`
-- App operations are directly under the app table or record path and **omit `/records/`**. Use only operation names
-  returned by `get_schema`, such as `view`, `read`, `prepare_create`, `submit_create`, `prepare_update`,
-  `submit_update`, `prepare_delete`, or `submit_delete`.
+- App operations come only from `get_schema`; use only operation names it returns. They **omit `/records/`** and
+  exist at two levels:
+  - **Table-level** (built-in record operations):
+    `.../apps/{appName}/tables/{tableName}/operations/{operationName}`, such as `view`, `read`, `prepare_create`,
+    `submit_create`, `prepare_update`, `submit_update`, `prepare_delete`, or `submit_delete`.
+  - **App-level** (custom operations a maker added to the app, not tied to a table):
+    `.../apps/{appName}/operations/{operationName}`, listed by `get_schema` on the app path. Send their inputs in
+    `jsonBody`.
 - Use `view` for bounded/form-aware app record browsing. Use `prepare_*` then `submit_*` when the schema exposes
   that two-step operation.
 
