@@ -5,6 +5,12 @@ policy, metadata, and version remain unchanged. Its SharePoint metadata guidance
 is consolidated into the existing reference as a separate documentation cleanup,
 not an adoption of preview policy; cross-package policy parity is not required.
 
+Separate stable `workiq` provider-routing checks run in the static suite. They
+validate loadable frontmatter, changed-document links, schema-driven discovery
+and action/function routing, cross-site search scope, and the prepared-transfer
+client/ticket boundary. They do not impose preview retrieval policy on stable
+WorkIQ, execute SharePoint actions, or establish live byte-transfer success.
+
 The preview contract is **agent-host-neutral**. Logical tool behavior is shared across
 compatible agents; host adapters normalize actual tool names and event formats
 without changing policy. The CLI below is a Node-based trace validator, not a

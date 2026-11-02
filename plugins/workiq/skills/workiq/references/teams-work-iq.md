@@ -262,3 +262,25 @@ instead of claiming every exposed property can be supplied on create.
   not replay it; fetch the current presence when possible and otherwise report
   the outcome as indeterminate. Do not cycle through alternate presence
   endpoints.
+
+## Validated task recipes
+
+| User Question Pattern | Example | Action |
+|-----------------------|---------|--------|
+| Listing my Teams chats | "Show my Teams chats" | Call `fetch` exactly once on `/me/chats?$expand=members` and answer from the returned `topic`, `chatType`, and `members`. Do not add member `$select` fields such as `email` or `userId`, construct or follow `$skip`, fetch members per chat, or make enrichment calls. |
+| Listing members of a named Teams channel | "List the members of General in the DevX team" | Use at most three `fetch` calls: resolve the team with exactly `/me/joinedTeams?$select=id,displayName` — do not append `$top` to this call; resolve the exact channel; then fetch `/teams/{teamId}/channels/{channelId}/members`. Do not add `$top` or select `email`/`userId` on the members call; those options are unsupported on the deployed endpoint. Answer from returned `displayName` and identity data, and do not retry query variants after a 400. |
+| Summarizing exact marker messages in a shared Teams channel | "In General, summarize only messages containing exact marker `[Eval] Project X abc123`" | Do not use `ask`: shared history adds noise and newly posted messages may not be semantically indexed. Use three structured `fetch` calls: `/me/joinedTeams?$select=id,displayName`; `/teams/{teamId}/channels?$select=id,displayName`; then `/teams/{teamId}/channels/{channelId}/messages?$select=id,createdDateTime,body`. Do not add `$top` or `$orderby`; filter locally to the exact marker and do not fetch replies unless requested. |
+| Summarizing supplied exact Teams message URLs | "Summarize these two exact channel messages" | Use one batched `fetch` containing every supplied `/teams/{teamId}/channels/{channelId}/messages/{messageId}` URL, then synthesize locally. Do not use `ask` or search broader channel history. |
+| Inventorying Teams chat API paths | "What chat paths support creating chats, members, messages, updates, and read state?" | Call `search_paths` once with the exact query `/chats`, report every returned operation, and state when a requested category was not confirmed. Do not make a second path or schema call. |
+| Inventorying Teams channel API paths | "What channel paths support creation, updates, members, messages, files, and archive?" | Call `search_paths` once with the exact query `/teams/{team-id}/channels`, report every returned operation, and state when a requested category was not confirmed. Do not make a second path or schema call. |
+| Sending/replying/reacting in Teams, setting presence | "Send a chat to Alex", "Post in the Daily channel", "React with 👍", "Set me to Busy" | entity tools on `/chats/...` or `/teams/...` — see `teams-work-iq.md` |
+
+
+## Resolve then act
+
+After required confirmation and target resolution, complete the requested action; a preparatory lookup alone is not completion.
+
+| User request | Step 1: resolve | Step 2: act (required) |
+|---|---|---|
+| "Set presence to busy" | — | `do_action` `/me/presence/setUserPreferredPresence` — see `teams-work-iq.md` |
+| "React to Teams message" | `fetch` to find the message | `do_action` `/teams/{teamId}/channels/{channelId}/messages/{messageId}/setReaction` |

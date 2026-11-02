@@ -194,3 +194,10 @@ Then use the returned site `id` in exactly one of these reads:
 ```json
 { "entityUrls": ["/teams/{teamId}/channels"] }
 ```
+
+## Validated task recipes
+
+| User Question Pattern | Example | Action |
+|-----------------------|---------|--------|
+| Rolling up exact Mail, Calendar, and Teams entity URLs | "Use these exact entities to summarize status and blockers" | Use one batched `fetch` containing every supplied entity URL, then synthesize locally. Do not use `ask`, tenant-wide search, path discovery, or additional source lookups. |
+| Fetching a known entity by ID | "Get event `AAMk...` details" | `fetch` |

@@ -3,6 +3,21 @@
 Use this reference when a user asks about SharePoint library columns or wants
 files filtered, counted, grouped, sorted, or compared by metadata.
 
+This reference's Graph-backed list-item reads remain authoritative for metadata
+analysis. For any mutation, discover and use the matching provider-backed
+`/sharepoint/*` action instead of constructing a Graph write:
+
+- create items: `/sharepoint/create_list_items_v2`
+- update items: `/sharepoint/update_list_items_v2`
+- bulk update by query: `/sharepoint/update_batch_list_items`
+- delete items: `/sharepoint/delete_list_item`
+- create or update the list/library schema: `/sharepoint/create_or_update_list`
+
+Call `search_paths` with the exact intent, inspect the returned action schema,
+resolve `siteKey` and any user/lookup/taxonomy prerequisites it requires, then
+invoke it with `do_action`. The live catalog and schema override this example
+list.
+
 ## Routing boundary
 
 **OOB-first routing rule:** preserve the OOB 0817 workflow unless the user
@@ -403,3 +418,9 @@ of items you actually retrieved. If they disagree, the table wins — recount an
 correct the summary. For any breakdown over ~20 rows, prefer using an available
 code-writing or calculation tool to compute the tallies instead of counting in
 prose.
+
+## Validated task recipes
+
+| User Question Pattern | Example | Action |
+|-----------------------|---------|--------|
+| Reading, filtering, counting, grouping, or sorting files by SharePoint library columns | "Which documents have Owner = HR Team?", "Count files by Status" | `fetch` on `/sites/{siteId}/lists/{listId}/items?$expand=fields` — never `ask` alone; see `sharepoint-library-metadata.md` |

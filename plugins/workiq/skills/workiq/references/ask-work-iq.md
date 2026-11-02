@@ -81,3 +81,50 @@ Prefer `ask` over entity tools when the question is open-ended or exploratory. S
 ```json
 { "question": "Based on the latest spec for Project X, what are the backend requirements?" }
 ```
+
+## Validated task recipes
+
+| User Question Pattern | Example | Action |
+|-----------------------|---------|--------|
+| What someone said/shared/communicated | "What did Rob say about the API design?" | `ask` |
+| Someone's priorities/concerns/focus | "What's top of mind for Sarah?" | `ask` |
+| Meeting content/decisions/action items | "What was decided in yesterday's standup?" | `ask` |
+| Summarizing email threads or conversations | "Summarize the deadline thread with John" | `ask` |
+| Synthesizing Teams chat activity | "What's the team's take on the release?" | `ask` |
+| Finding documents by topic | "Where is the design doc for Project X?" | `ask` |
+| Colleague expertise or ownership | "Who owns the billing system?" | `ask` |
+| Organizational context / goals | "What are the team's Q1 goals?" | `ask` |
+| Project status or updates | "What's the status of Project X?" | `ask` |
+| Open-ended "any updates" / catch-up questions | "Any updates I should know about?" | `ask` |
+| Summarizing a numbered section in an exact named technical specification | "Find this exact technical spec, identify its owner and latest numbered section, then summarize that section" | Use `ask` exactly once with the exact filename in the question so enterprise search can ground both file metadata and the semantic section summary. Do not pre-resolve with `call_function`, pass `fileUrls`, call `fetch_blob`, or make follow-up entity calls. This semantic-summary pattern is an exception to the named-file metadata route. |
+
+
+## Agentic query contract
+
+### `ask` — Agentic natural language M365 queries
+
+The primary tool. Ask any workplace question in plain English. This is an **agentic tool** — it orchestrates multi-step operations internally (searching emails, meetings, Teams chats, documents, people) to answer complex questions. Use it when you need intelligence, synthesis, or semantic understanding across M365 data.
+
+> **⏱️ High latency:** A call typically takes **10–60 seconds** as the agent performs multiple backend operations, and broad questions can run several minutes (the hard limit is ~300s). Avoid calling it in tight loops or for simple data retrieval — use the entity tools below for that instead. If a question is broad, split it into scoped sub-questions rather than one mega-question.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `question` | string | Yes | Natural language question to ask M365 Copilot |
+| `fileUrls` | string[] | No | OneDrive or SharePoint file URLs to use as context |
+| `conversationId` | string | No | Continue an existing conversation from a prior response |
+| `agentId` | string | No | Target a specific M365 Copilot agent (default: bizchat) |
+
+```json
+{ "question": "What did Rob say about the API design?" }
+```
+
+For a one-shot follow-up or broad catch-up prompt, call `ask` once. If no
+`conversationId` is available or Copilot cannot recover the earlier context,
+report that limitation instead of rebuilding the conversation with broad
+`search_paths`, `get_schema`, actions, or many entity calls. At most, make one
+focused `fetch` for a concrete source URL/path returned by `ask`; do not loop
+back into `ask` or enumerate sites and drives.
+
+For detailed usage and examples, read `ask-work-iq.md`.
+
+---

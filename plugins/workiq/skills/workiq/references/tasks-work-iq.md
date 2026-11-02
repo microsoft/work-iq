@@ -76,3 +76,10 @@ Planner task body fields: `planId`, `title`, `bucketId`, `assignments`, `dueDate
 { "entityUrl": "/planner/tasks/{taskId}",
   "jsonBody": "{\"percentComplete\":100}" }
 ```
+
+## Validated task recipes
+
+| User Question Pattern | Example | Action |
+|-----------------------|---------|--------|
+| Listing tasks/plans/buckets in Planner | "List my Planner tasks due this week" | `fetch` — see `tasks-work-iq.md` avoid `ask` |
+| Listing / creating / completing Planner tasks | "Add a task to follow up with finance", "Mark my task done", "List my Planner tasks" | entity tools on `/planner/...` — see `tasks-work-iq.md` |

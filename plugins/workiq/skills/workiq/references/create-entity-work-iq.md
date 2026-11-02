@@ -50,3 +50,9 @@ POST a new WorkIQ entity to a collection — calendar events, draft emails, task
   "jsonBody": "{\"planId\":\"{planId}\",\"title\":\"Update client list\"}"
 }
 ```
+
+## Validated task recipes
+
+| User Question Pattern | Example | Action |
+|-----------------------|---------|--------|
+| Creating a calendar event, draft, or task | "Create a calendar event Friday at 3pm" | `create_entity` |

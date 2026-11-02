@@ -201,7 +201,13 @@ runtime; never reuse a literal date from this example.
 
 ### Search documents across SharePoint team sites
 
-Use Microsoft Search for a bounded cross-site document query. This response can
+For a site-scoped request, discover a matching `/sharepoint/search_site` action,
+inspect its schema, resolve `siteKey` when required, and invoke it with
+`do_action`. Do not narrow a cross-site request to that site-scoped operation
+merely because it was returned.
+
+Only for a genuinely cross-site search that is not covered by a returned
+provider path, use Microsoft Search for a bounded document query. This response can
 contain results from multiple SharePoint-backed locations and does not provide
 team-site display names, so derive each site slug from its SharePoint `webUrl`,
 then make one batched `fetch` to
@@ -242,9 +248,10 @@ folder, home page, SitePages entry, or another `.aspx` site page unless the
 user explicitly asks for a page. Prefer typical document extensions such as
 `.docx`, `.pptx`, `.xlsx`, `.pdf`, and `.txt`.
 
-This is a known action contract. Do not call `ask`, `search_paths`, or
-`get_schema` first. See `references/sharepoint-work-iq.md` for the full
-SharePoint route.
+See `references/sharepoint-work-iq.md` for the complete provider routing rule.
+The documented Microsoft Search payload is a known action contract; it does not
+require an additional schema call. Neither route is a fallback after an access
+or policy denial.
 
 ### Set my Teams presence to Busy
 ```json
@@ -360,3 +367,9 @@ session, report only non-secret metadata such as `expirationDateTime` and
 | `404` on `actionUrl` | The entity ID embedded in the path is stale, or the action verb does not exist on this resource family. | Stop. Re-`fetch` to get the current ID, OR re-check `search_paths` for the right action verb. |
 
 **Especially for `/me/presence/*`:** if the first `setPresence` or `setUserPreferredPresence` POST returns 403, the second will too. Both verbs share the `Presence.ReadWrite[.All]` scope gate. Stop after one 403, surface the failure, and identify the missing consent scope if the error body names one.
+
+## Validated task recipes
+
+| User Question Pattern | Example | Action |
+|-----------------------|---------|--------|
+| Sending mail, accepting/declining meetings | "Send this draft", "Accept the 2pm meeting" | `do_action` |
