@@ -1,6 +1,6 @@
 ---
 name: workiq
-description: WorkIQ tools for Microsoft 365 workplace data and actions. Use for email, calendar events and meetings, files, SharePoint, OneDrive, Teams, people, Planner, and other M365 requests. Triggers include cancel meeting or event, accept or decline meetings, create or update events, create an upload session or replace an existing OneDrive file, find or summarize workplace content, send or reply to mail, manage or download files, manage tasks, read SharePoint library metadata or columns, filter/count/group/sort files by metadata, and discover M365 paths or schemas. Prefer `ask` for synthesis and structured entity tools for exact reads, writes, SharePoint library metadata, and binary downloads with `fetch_blob`. This skill contains instructions for the WorkIQ MCP tools and must be used beforehand to understand their usage. Use this skill also for Microsoft Business Applications requests involving CRM, ERP, Power Apps, or Dataverse records and workflows, including requests that reference paths under /businessapps/.
+description: "WorkIQ for Microsoft 365 data and actions: email, calendars, meetings, Teams, people, Planner, OneDrive, SharePoint, and CRM/ERP/Power Apps under /businessapps/. Use before WorkIQ tools. For SharePoint URLs, files, sites, libraries, columns, search, questions, summaries, comparisons, outlines, pages, images, and authorized changes, use native /sharepoint/ functions and actions. Prefer semantic passages and structured document text (Botdoc), not original-file downloads; download originals only when explicitly requested. Outside SharePoint, use ask for synthesis and entity tools for exact reads/writes. Triggers include send/reply, create/update/cancel/accept/decline meetings, manage tasks/files, uploads, downloads, paths, and schemas."
 compatibility: >
   Uses the hosted WorkIQ MCP endpoint. No local package is required for MCP
   tool calls.
@@ -10,6 +10,34 @@ compatibility: >
 
 WorkIQ connects AI agents to Microsoft 365 Copilot for workplace intelligence grounded in organizational data. This skill teaches the model how to use the full WorkIQ toolset: the agentic `ask` tool for semantic questions and the fast **entity tools** for direct structured access to M365 data (`fetch`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`, `search_paths`, `get_schema`).
 
+## SharePoint routing takes precedence
+
+For **any SharePoint operation**, including a supplied SharePoint URL without
+the word "SharePoint", use the native `/sharepoint/` capability before generic
+`ask`, Graph `/sites` or `/drives` recipes, or Microsoft Search.
+**Before choosing a SharePoint tool, read
+[SharePoint native operations](references/sharepoint-work-iq.md).**
+
+Resolve `siteKey` with `/sharepoint/get_site_key` and preserve it exactly.
+Discover unknown files with `find_items`; answer focused passage questions with
+`semantic_search`; read/summarize/compare documents with `get_structured_text`.
+Use `files` to batch two or more structured-text reads. Use outline/page/image
+operations for the requested portion. For columns and totals, read
+`get_list_schema` then `list_items`, not document content.
+
+These are provider paths: use `call_function(functionUrl, jsonBody)` for a
+function and `do_action(actionUrl, jsonBody)` for an action. Inspect the exact
+request with `get_schema`, including `operationType: "function"` for native
+functions. Do not pass a native path to `fetch` or guess a request body.
+
+For ordinary SharePoint reading/search/summaries, **no `fetch_blob`, download
+preparation, `/content`, `/$value`, direct HTTP, or shell download**. Prefer
+native processed text/passages. Honor an explicit original-file request and
+distinguish prepared transfers from completed downloads. On access denial,
+stop rather than trying another route. The SharePoint policy overrides generic
+semantic and file guidance below; personal OneDrive and mail attachments keep
+their existing workflows.
+
 ## 🛑 STOP — Read This Before Your First Tool Call
 
 The tools in this skill are documented by their **logical names** (`ask`, `fetch`, etc.), but your MCP host almost certainly exposes them under a **prefixed** name.
@@ -18,7 +46,7 @@ The tools in this skill are documented by their **logical names** (`ask`, `fetch
 
 ❌ **DO NOT** derive a prefix from this skill's name or folder.
 ❌ **DO NOT** call `ask` verbatim and assume it will work.
-✅ **DO** scan your available tools list for an entry whose name **ends with** `ask` and call that exact name. In Copilot CLI this will be `workiq-ask`.
+**DO** resolve the selected logical tool by its suffix in the connected WorkIQ catalog: for example `workiq-call_function` for a native SharePoint function or `workiq-ask` for semantic delegation outside SharePoint.
 
 See [Resolving tool names in your host](#resolving-tool-names-in-your-host) below for the full resolution algorithm. If you skip this step, your first tool call will fail with "tool does not exist."
 
@@ -28,7 +56,7 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 
 **USE WorkIQ for ANY workplace-related question.** If the answer might exist in Microsoft 365 data, try WorkIQ first.
 
-**Choosing the right tool:** Use `ask` when the question requires **semantic understanding, synthesis, or reasoning** across M365 data ("what did someone say", "what's the status", "summarize"). Use `fetch` (or another entity tool) when the question is a **literal lookup of structured data** with a known shape ("list my meetings on Monday", "show me unread emails from X"). Entity tools return in under a second; `ask` typically takes 10–60 seconds per call and broad questions can run several minutes.
+**Choosing the right tool outside SharePoint:** Use `ask` when the question requires **semantic understanding, synthesis, or reasoning** across M365 data ("what did someone say", "what's the status", "summarize"). Use `fetch` (or another entity tool) when the question is a **literal lookup of structured data** with a known shape ("list my meetings on Monday", "show me unread emails from X"). Entity tools return in under a second; `ask` typically takes 10–60 seconds per call and broad questions can run several minutes.
 
 **ALWAYS use WorkIQ when the user asks about:**
 
@@ -39,9 +67,9 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 | Meeting content/decisions/action items | "What was decided in yesterday's standup?" | `ask` |
 | Summarizing email threads or conversations | "Summarize the deadline thread with John" | `ask` |
 | Synthesizing Teams chat activity | "What's the team's take on the release?" | `ask` |
-| Finding documents by topic | "Where is the design doc for Project X?" | `ask` |
+| Finding documents by topic | "Where is the design doc for Project X?" | For SharePoint scope, native `find_items`; outside SharePoint, `ask` |
 | Colleague expertise or ownership | "Who owns the billing system?" | `ask` |
-| Reading, filtering, counting, grouping, or sorting files by SharePoint library columns | "Which documents have Owner = HR Team?", "Count files by Status" | `fetch` on `/sites/{siteId}/lists/{listId}/items?$expand=fields` — never `ask` alone; see `references/sharepoint-library-metadata.md` |
+| Reading, filtering, counting, grouping, or sorting files by SharePoint library columns | "Which documents have Owner = HR Team?", "Count files by Status" | Native `get_list_schema` then `list_items`; read `references/sharepoint-library-metadata.md` first |
 | Organizational context / goals | "What are the team's Q1 goals?" | `ask` |
 | Project status or updates | "What's the status of Project X?" | `ask` |
 | Open-ended "any updates" / catch-up questions | "Any updates I should know about?" | `ask` |
@@ -58,7 +86,7 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 | Inventorying Teams channel API paths | "What channel paths support creation, updates, members, messages, files, and archive?" | Call `search_paths` once with the exact query `/teams/{team-id}/channels`, report every returned operation, and state when a requested category was not confirmed. Do not make a second path or schema call. |
 | Sending/replying/reacting in Teams, setting presence | "Send a chat to Alex", "Post in the Daily channel", "React with 👍", "Set me to Busy" | entity tools on `/chats/...` or `/teams/...` — see `references/teams-work-iq.md` |
 | Fetching a known entity by ID | "Get event `AAMk...` details" | `fetch` |
-| Listing files in a OneDrive/SharePoint folder | "List files in my OneDrive 'Specs' folder" | `fetch` |
+| Listing files in a personal OneDrive folder | "List files in my OneDrive Specs folder" | `fetch`; SharePoint folders instead use native `list_items` |
 | Listing tasks/plans/buckets in Planner | "List my Planner tasks due this week" | `fetch` — see `references/tasks-work-iq.md` avoid `ask` |
 | Listing / creating / completing Planner tasks | "Add a task to follow up with finance", "Mark my task done", "List my Planner tasks" | entity tools on `/planner/...` — see `references/tasks-work-iq.md` |
 | Structured records or workflows in CRM, ERP, or Power Apps | "Qualify a lead", "Update the open service case" | start with `search_paths` using a natural-language description in the parameter named in `inputSchema.required` (`query` or `filter`), then follow the returned app and operation paths — read `references/business-applications.md` first |
@@ -80,13 +108,13 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 | Copying a named OneDrive file to a named folder | "Copy Q3 plan.txt to Shared" | Use two `call_function` calls to `/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,parentReference,file,folder&$top=10`, retain the source `parentReference.driveId`, then `do_action` `/drives/{driveId}/items/{sourceId}/copy` with `{"parentReference":{"driveId":"{driveId}","id":"{folderId}"}}`. Skip `search_paths`, `get_schema`, and verification fetches. |
 | Renaming a OneDrive file | "Rename Draft.txt to Final.txt" | `call_function` once with `/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,parentReference,file&$top=10` to resolve the exact driveItem and retain `parentReference.driveId` plus item `id`, then `update_entity` `/drives/{driveId}/items/{itemId}` with `{"name":"Final.txt"}`. Skip `search_paths` and `get_schema`; do not PATCH `/me/drive/items/{id}`. |
 | Deleting a named OneDrive file | "Remove Q3 plan.txt from my drive" | `call_function` once with `/me/drive/root/search(q='{urlEncodedExactName}')?$select=id,name,parentReference,file&$top=10`, select the exact file-name match, and copy its `parentReference.driveId` and `id` verbatim without truncating, reconstructing, or normalizing either value. Then call `delete_entity` exactly once on `/drives/{driveId}/items/{itemId}`. Do not add `eTag` or `@odata.etag` to `$select`; only when the normal lookup response includes an eTag, pass that returned value as `If-Match`. If a newly created file is not indexed yet, use at most one bounded `/me/drive/root/children` fallback before the same drive-scoped delete. Do not use `/me/drive/items/{id}`, `search_paths`, or malformed-id retries. |
-| Summarizing a numbered section in an exact named technical specification | "Find this exact technical spec, identify its owner and latest numbered section, then summarize that section" | Use `ask` exactly once with the exact filename in the question so enterprise search can ground both file metadata and the semantic section summary. Do not pre-resolve with `call_function`, pass `fileUrls`, call `fetch_blob`, or make follow-up entity calls. This semantic-summary pattern is an exception to the named-file metadata route. |
-| Reading the first accessible SharePoint site's default drive or lists | "Show the first site's drive metadata", "List the first site's lists" | `fetch` `/sites?search=*&$select=id,displayName,name,webUrl&$top=1`, treat the first returned item as "first accessible", then `fetch` `/sites/{siteId}/drive` or `/sites/{siteId}/lists`. The parameter is `search=*`, **not** `$search=*`; do not use `ask`, guessed search terms, or an empty search. See `references/sharepoint-work-iq.md`. |
-| Finding a named group-backed SharePoint site's metadata | "Find the Contoso Research SharePoint site and return its exact display name and URL" | Use exactly two `fetch` calls: first resolve the backing group with `/groups?$filter=displayName%20eq%20'{odataEscapedAndUrlEncodedSiteName}'&$select=id,displayName&$top=1`, then fetch `/groups/{groupId}/drive?$select=id,webUrl,sharePointIds`. Return the group's exact `displayName` and `sharePointIds.siteUrl`. Do not call `/groups/{groupId}/sites/root`, `search_paths`, broaden into `/sites?search` retries, infer the site URL, or fetch the site again. If `sharePointIds.siteUrl` is absent, report that limitation. |
-| Listing documents from a named group-backed SharePoint team site | "List documents from the Contoso Research SharePoint team site" | Resolve the backing group by the user's complete, exact site display name: `fetch` `/groups?$filter=displayName%20eq%20'{odataEscapedAndUrlEncodedSiteName}'&$select=id,displayName&$top=1` (do not remove prefix words from the supplied name). Then use exactly `fetch` `/groups/{groupId}/drive?$expand=root` without adding `$select` or nested-expand variants. Copy the returned drive `id` and `root.id` verbatim, then call exactly `fetch` `/drives/{driveId}/items/{rootId}/children?$select=id,name,webUrl,file,folder,parentReference&$top=5`. For this basic drive-item listing workflow, do not use `/root/children`, Microsoft Search, `search_paths`, list/listItem fallbacks, or malformed-id retries. The no-list-fallback rule does not apply when the user requests SharePoint library columns or metadata filtering/aggregation; use the metadata route above for those requests. Use this workflow for named Microsoft 365 group-backed team sites, especially when site search fails or the name contains characters that OData `$search` rejects. See `references/sharepoint-work-iq.md`. |
-| Downloading an explicitly requested SharePoint site-page file | "Download the named .aspx page from a named site-page library" | Use exactly six calls. Resolve the backing group by the complete exact site name; fetch `/groups/{groupId}/drive?$select=id,webUrl,sharePointIds`; fetch `/sites/{sharePointIds.siteId}/lists?$filter=displayName%20eq%20'{odataEscapedAndUrlEncodedLibraryName}'&$select=id,displayName,webUrl,list&$top=10`; fetch `/sites/{siteId}/lists/{listId}/items?$select=id,webUrl&$expand=fields($select=FileLeafRef,Title)&$top=50` and select the exact requested filename; fetch `/sites/{siteId}/lists/{listId}/items/{itemId}/driveItem?$select=id,name,webUrl,parentReference,file,size`; then `fetch_blob` `/drives/{parentReference.driveId}/items/{driveItemId}/content`. For the download item segment, use `driveItem.id`, not the list item id, and insert the complete structured-response value without retyping, shortening, normalizing, or reconstructing it. Before the single `fetch_blob` call, compare that item segment character-for-character with `driveItem.id` and correct any mismatch before calling rather than retrying after failure. Copy every other returned id verbatim. Do not use site search, `/sites/{id}/drives`, root-children guesses, Microsoft Search, `search_paths`, or download-path retries. |
-| Searching or downloading documents across SharePoint team sites | "Find a SharePoint document and download its raw content", "List documents from SharePoint team sites" | `do_action` `/search/query` for `driveItem` documents, choose a file document (not a folder, home page, SitePages entry, or another `.aspx` page unless explicitly requested), then call `fetch_blob` `/drives/{driveId}/items/{itemId}/content` when raw bytes are requested. Return exact file name, site display name when required, and `webUrl`; see `references/sharepoint-work-iq.md` and `references/do-action-work-iq.md`. |
-| Listing all recent documents in one SharePoint site | "List every document modified in one site since a date; include editor and date" | Call `do_action` `/search/query` exactly once. Use a `driveItem` query combining the exact team-site `path`, `IsDocument=true`, and `lastModifiedTime>=YYYY-MM-DD`; set `size` to `500` (the deployed maximum; `501` is rejected), and request `name`, `webUrl`, `lastModifiedDateTime`, `lastModifiedBy`, `createdBy`, and `parentReference`. Do not probe a larger size or retry. Search may return duplicate hits for one driveItem: de-duplicate by driveItem identity or `webUrl`, state raw-hit and unique-document counts separately, and list each unique document exactly once. |
+| Summarizing a numbered section in an exact named technical specification | "Find this exact technical spec, identify its owner and latest numbered section, then summarize that section" | In SharePoint scope, discover with `find_items`, resolve the outline/pages or native text, and summarize the retrieved content. Outside SharePoint, use `ask` once with the exact filename; do not download raw bytes for a summary. |
+| Browsing SharePoint sites and lists | "Show the site libraries" | Resolve site context, then native `find_site` or `discover_sharepoint_lists`; report missing scope instead of inventing a site |
+| Finding a named SharePoint site | "Find the Research SharePoint site" | Native `find_site` in resolved site/tenant context; return the exact name and URL from results |
+| Listing documents from a SharePoint site | "List documents from the Research team site" | Native `discover_sharepoint_lists` then scoped `list_items` or `find_items` |
+| Downloading an explicitly requested SharePoint site-page file | "Download the original named .aspx page" | Native discovery and `getDownloadFileDetails`, then complete the returned transfer; preparation alone is not a download |
+| Searching or explicitly downloading SharePoint documents | "Find a SharePoint document" | Native discovery and `find_items`; obtain original bytes only when explicitly requested, using the native transfer instructions |
+| Listing all recent documents in one SharePoint site | "List every document modified since a date" | Native scoped discovery/listing with schema-supported filtering and complete coverage; do not claim all from a truncated result |
 | Creating a calendar event, draft, or task | "Create a calendar event Friday at 3pm" | `create_entity` |
 
 **DO NOT say "I don't have access to emails/meetings/messages"** - use WorkIQ instead!
@@ -106,8 +134,8 @@ Follow the user's request through to completion. A discovery or read call **alon
 
 1. **Path discovery** ("endpoint", "available operations", "what can I do with X") → `search_paths` first. Continue to the read/write tool if the prompt also asks to act.
 2. **Schema inspection** ("schema", "data model", "fields", "what does X take") → `get_schema` first. With `operationType: "action"`, it returns the action's **request-body schema** for constructing `jsonBody`; it does **not** expose the action's response resource schema. If the user asks for action response fields on a known path, call `get_schema` exactly once, report that limitation, and stop. Do not call `search_paths`, retry another format, or hunt for a response-schema path. Continue to the write/action tool only if the prompt also asks to act.
-3. **Exact entity read or mutation by title/name/channel/thread** → `fetch` to resolve the target's ID, then `update_entity` / `delete_entity` / `do_action`. Named OneDrive file search is the exception: use `call_function` `/me/drive/root/search(q='...')`. Do not use `ask` to resolve exact titled events, messages, drafts, folders, Teams chats/channels, or threads.
-4. **Semantic summary/status/decisions** → `ask`. If the prompt then asks to draft, send, create, update, delete, forward, or react, continue with the mutation tool — the `ask` answer alone is incomplete.
+3. **Exact non-SharePoint entity read or mutation by title/name/channel/thread** → `fetch` to resolve the target's ID, then `update_entity` / `delete_entity` / `do_action`. Named OneDrive file search is the exception: use `call_function` `/me/drive/root/search(q='...')`. Do not use `ask` to resolve exact titled events, messages, drafts, folders, Teams chats/channels, or threads.
+4. **Semantic summary/status/decisions outside SharePoint** → `ask`. If the prompt then asks to draft, send, create, update, delete, forward, or react, continue with the mutation tool — the `ask` answer alone is incomplete.
 
 ### Resolve-then-act — concrete examples
 
@@ -234,7 +262,7 @@ If you call the logical name verbatim and get a "tool does not exist" error, thi
 
 ### `ask` — Agentic natural language M365 queries
 
-The primary tool. Ask any workplace question in plain English. This is an **agentic tool** — it orchestrates multi-step operations internally (searching emails, meetings, Teams chats, documents, people) to answer complex questions. Use it when you need intelligence, synthesis, or semantic understanding across M365 data.
+The semantic delegation tool outside SharePoint. Ask workplace questions in plain English. This is an **agentic tool** — it orchestrates multi-step operations internally (searching emails, meetings, Teams chats, documents, people) to answer complex questions. Use it when you need intelligence, synthesis, or semantic understanding across M365 data.
 
 > **⏱️ High latency:** A call typically takes **10–60 seconds** as the agent performs multiple backend operations, and broad questions can run several minutes (the hard limit is ~300s). Avoid calling it in tight loops or for simple data retrieval — use the entity tools below for that instead. If a question is broad, split it into scoped sub-questions rather than one mega-question.
 
@@ -268,23 +296,18 @@ Entity tools provide **fast, direct access to specific M365 data** via Work IQ A
 
 | Scenario | Use |
 |----------|-----|
-| Open-ended question, semantic search, synthesis | `ask` (slow but smart) |
+| Open-ended question, semantic search, synthesis outside SharePoint | `ask` (slow but smart) |
 | Fetch a known list, apply a filter, get structured data | entity tools (fast but literal) |
 
 **Recommended workflow:** for **well-known paths, go direct** — call the read/write tool immediately (use the cheat sheet below). Only fall back to `search_paths` → `get_schema` → tool when the path is genuinely unknown or a write body shape is unfamiliar. Do **not** reflexively run `search_paths`/`get_schema` before every common operation.
 
-### 🛑 SharePoint document-library metadata
+### SharePoint document-library metadata
 
-Use `fetch` on SharePoint list-item `fields` only when the user explicitly asks
-about library columns or metadata, or to filter/count/group/sort/compare files by
-them. `ask` and content search cannot substantiate library-column values.
-Otherwise preserve the existing semantic-owner and content-summary workflows;
-mentioning "owner" in a technical-spec summary does not itself select this route.
-
-**Before handling a library-metadata request, read
-[SharePoint document-library metadata](references/sharepoint-library-metadata.md).**
-That reference owns column resolution, grounding, enumeration and completeness,
-per-result error handling, answer delivery, and arithmetic checks.
+Read [SharePoint library metadata](references/sharepoint-library-metadata.md)
+before column queries or aggregates. Use native `get_list_schema` and
+`list_items` with resolved internal field names, CAML, custom `viewFields`,
+and complete enumeration. Content search and document prose cannot substantiate
+library-column values. Content owners and library Owner fields remain distinct.
 
 ### 🗺️ Known paths — go direct, skip discovery
 
@@ -297,7 +320,7 @@ per-result error handling, answer delivery, and arithmetic checks.
 | Business Applications | `/businessapps/` | use `fetch` for known structural paths and `search_paths` with natural language for semantic discovery; follow the returned paths — see `references/business-applications.md` |
 | People | `/me`, `/users/{id}`, `/users/{id}/directReports`, `/me/manager`, `/me/contacts` | profile, org, contacts — see directory-vs-contacts warning below |
 | Outlook categories | `/me/outlook/masterCategories` | list/get/create/update/delete — writes commonly policy-denied |
-| Files | `/me/drive`, `/drives/{id}`, `/sites/{id}` | for named-file metadata, call `call_function` once with `/me/drive/root/search(q='{urlEncodedExactName}')` and do not follow with `/me/drive/items/{id}`; use `fetch_blob` for binary content after resolving the item ID — see `references/fetch-blob-work-iq.md`; uploads are not released yet |
+| Personal OneDrive files | `/me/drive`, `/drives/{id}` | Keep named-file `call_function` search and explicitly requested binary `fetch_blob` workflows; SharePoint uses the native routing section above |
 | Change tracking | `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta` | "what's new/changed since" — via `call_function` only, never `fetch` |
 
 > **Server may deny families by policy.** Tenants can disable specific path families
@@ -307,77 +330,34 @@ per-result error handling, answer delivery, and arithmetic checks.
 > `/me/todo/*`, `/me/contacts`, and writes on `/me/outlook/masterCategories` are commonly
 > affected — `search_paths` confirms what's exposed for the connected tenant.
 >
-> **Metadata-only SharePoint read exception:** while executing an explicit
-> document-library column or metadata workflow, an access-denied result for a
-> `/sites/...` or `/drives/...` read can indicate an unsupported URL shape
-> rather than missing user permission. In that metadata workflow only, follow
-> the bounded addressing ladder in
-> `references/sharepoint-library-metadata.md` (at most three total attempts,
-> each materially different). For every non-metadata request, follow the
-> immediately preceding **Server may deny families by policy** rule: stop after
-> the denied call, do not retry or switch to another path, do not call `ask` as
-> a workaround, and tell the user that the path is policy-denied. Never broaden
-> into unbounded discovery or retry unrelated policy-denied families.
 
-### 🗂️ Reaching a SharePoint or OneDrive file — the working sequence
+### Personal OneDrive file addressing
 
-Files are reachable in **two hops**: resolve the drive, then address items **by id**. Run this
-and structured file reads succeed; it is faster than `ask` and gives you exact metadata.
+The personal OneDrive recipes above remain unchanged: resolve a named file
+with `call_function` on `/me/drive/root/search(q='...')`, retain the returned
+`parentReference.driveId` and item id, and use the exact drive-scoped operation
+required by the user's request. Never invent ids or confuse list-item ids with
+drive-item ids. For folder browsing, use supported returned folder identities.
 
-**Hop 1 — get a `driveId`** (one `fetch`, pick the row that matches your source):
-
-| You have | Call | Keep |
-|---|---|---|
-| A SharePoint site id | `/sites/{siteId}/drive` | its `id` = `driveId` |
-| The user's own OneDrive | `/me/drive` | its `id` = `driveId` |
-| A browser URL | the hostname + site name from it → `/sites/{host}:/sites/{siteName}` → then `/sites/{siteId}/drive` | `siteId`, then `driveId` |
-
-**Hop 2 — address items by id, never by name:**
-
-| Goal | Call |
-|---|---|
-| Find a file by name | `call_function` with `/drives/{driveId}/root/search(q='{urlEncodedExactName}')` — URL-encode the name; this is a function call, not a `fetch` path |
-| List the drive's top level | `/drives/{driveId}/root` → take its `id` → `/drives/{driveId}/items/{id}/children` |
-| List a folder | `/drives/{driveId}/items/{folderId}/children` |
-| Item metadata | `/drives/{driveId}/items/{itemId}` |
-| File bytes | `fetch_blob` `/drives/{driveId}/items/{itemId}/content` |
-
-Two invariants: **a name goes in `q=` of a search, never in a URL segment**, and **every id
-comes from a tool result in this conversation** — never assembled, guessed, or all-zeros.
-
-Within SharePoint drive/item addressing, these variants are **not allowlisted** and fail, so
-skip them and use the sequence above: a pasted browser URL; a folder or library name as a path
-segment (`/sites/{siteId}/Shared%20Documents/...`); a colon path (`/root:/Folder/File`);
-`/root/children` (children hang off `/items/{id}`); and `/sites/{siteId}/drive/items/...`,
-which is a lookup rather than a prefix — switch to `/drives/{driveId}/...`.
-
-Prefer the drive-scoped `/drives/{driveId}/items/...` form for SharePoint content. The
-`/me/drive/...` forms remain the documented OneDrive convention (see
-`references/fetch-blob-work-iq.md` and `references/call-function-work-iq.md`); they are
-unreliable for SharePoint-hosted items, not invalid everywhere.
-
-**Anything else — discover, never guess.** For a `/sites/` or `/drives/` path not covered
-above, or on any `Access denied` this section does not cover, call `search_paths` once
-with the parameter named in `inputSchema.required`: use a path-keyword pattern such as
-`sites|drives` for `filter`, or an equivalent natural-language description for `query`.
-Use only a `uriTemplate` it returned.
-Re-sending a denied shape with a different folder, `$select`, or casing fails identically.
-Cache the templates and reuse them.
-
+For SharePoint, use [native operations](references/sharepoint-work-iq.md)
+instead of translating browser links into Graph drive routes. Read document
+content through native semantic search or structured text, not original bytes.
 
 ### Binary downloads use `fetch_blob`; `upload_blob` is not released
 
-Use `fetch_blob` for file content in OneDrive/SharePoint, attachment payloads for messages, calendar events, and profile photos. It accepts a relative WorkIQ `path`, returns up to 4 MB as base64 with content metadata, and supports an optional `format` conversion value on compatible drive-content endpoints. Use `fetch` first only when you need to resolve an item or attachment ID. You should also help the user decode the base64 into a file with the correct extension and MIME type if needed.
+Use `fetch_blob` for explicitly requested original file content in personal OneDrive, attachment payloads for messages, calendar events, and profile photos. It accepts a relative WorkIQ `path`, returns up to 4 MB as base64 with content metadata, and supports an optional `format` conversion value on compatible drive-content endpoints. Use `fetch` first only when you need to resolve an item or attachment ID. You should also help the user decode the base64 into a file with the correct extension and MIME type if needed.
 
 `upload_blob` is documented for future reference but **is not part of the current WorkIQ MCP surface**. Attempting to call it returns `tool does not exist`. Do not call it, search for an alternate upload tool, or invent a similar name such as `put_file`.
 
-When the user asks to upload a local file:
+When the user asks to upload a local file to personal OneDrive:
 
 1. Tell the user WorkIQ cannot upload raw byte payloads yet.
 2. Use `fetch` to resolve and return the destination folder's `webUrl` when useful, so the user can upload through OneDrive or SharePoint.
 3. Do not claim the upload succeeded without a confirmed write response.
 
-For detailed download paths and examples, read `references/fetch-blob-work-iq.md`. For the unreleased upload contract, see `references/upload-blob-work-iq.md`.
+For SharePoint transfers, follow the native reference: `getUploadFileDetails` prepares a session but does not upload bytes, and `getDownloadFileDetails` is only for explicitly requested originals.
+
+For detailed personal OneDrive/attachment download paths and examples, read `references/fetch-blob-work-iq.md`. For the unreleased upload contract, see `references/upload-blob-work-iq.md`.
 
 ### ⚠️ Directory users and personal contacts are different stores
 
@@ -415,20 +395,19 @@ above) and call the MCP tool.
   when the runtime can wait the full delay; if it cannot, report the transient failure. Do not
   retry immediately, alter the question, or fan out into broad fetches.
 
-**Do:** use the path patterns in this document to route directly to the correct tool in 1–2
-calls. If you need the entity ID first, one `fetch` to resolve, then one write tool call.
+**Do:** use known paths directly and reuse resolved identities. SharePoint workflows may require native scope, discovery, schema, and content steps; do not skip prerequisites merely to meet a 1-2-call target. If you need the entity ID first, one `fetch` to resolve, then one write tool call.
 
 ### Missing information — use `fetch` to disambiguate, don't give up
 
 When the user's request is missing a required piece of information (e.g., "delete my draft" with
 no subject named, an empty title, or a generic "the meeting"):
 
-1. Use `fetch` to list the available options (e.g., `fetch` `/me/events`, `/me/messages`, `/me/mailFolders`).
+1. Use the domain-appropriate structured read (native discovery/listing for SharePoint, `fetch` otherwise) to list the available options (e.g., `fetch` `/me/events`, `/me/messages`, `/me/mailFolders`).
 2. Ask the user to pick from the results.
 3. Do **not** silently abandon the request with zero tool calls.
 4. Do **not** proceed with a write operation using empty or invented data.
 
-### 🔁 Resolve-then-act — do not loop searches
+### Resolve-then-act outside SharePoint - do not loop searches
 
 To act on a named entity ("the X email", "my Y task", "the Z draft"):
 
@@ -451,7 +430,7 @@ To act on a named entity ("the X email", "my Y task", "the Z draft"):
 
 All URL parameters (`entityUrls`, `parentUrl`, `entityUrl`, `actionUrl`, `functionUrl`) **must**:
 
-1. **Server-relative path only** — start with `/` and **omit** any scheme, authority, or API-version prefix. Valid path roots include `/me/...`, `/users/...`, `/teams/...`, `/groups/...`, `/sites/...`, `/drives/...`, `/planner/...`, and others — anything Graph exposes.
+1. **Server-relative path only** — start with `/` and **omit** any scheme, authority, or API-version prefix. Valid path roots include `/me/...`, `/users/...`, `/teams/...`, `/groups/...`, `/sites/...`, `/drives/...`, `/planner/...`, `/sharepoint/...`, and others — anything Graph exposes.
    - ❌ `https://graph.microsoft.com/v1.0/me/messages`
    - ❌ `/v1.0/me/messages`
    - ✅ `/me/messages`
@@ -461,7 +440,7 @@ All URL parameters (`entityUrls`, `parentUrl`, `entityUrl`, `actionUrl`, `functi
    - ✅ `$orderby=receivedDateTime%20desc`
    - **Exception:** OData property paths (the `/` separator between navigation properties, e.g. `start/dateTime`, `from/emailAddress/address`) are **not** encoded. The `/` only gets encoded when it appears inside a string literal value.
 
-### `jsonBody` Format Rules (write tools)
+### `jsonBody` Format Rules (writes and provider functions)
 
 `create_entity`, `update_entity`, `do_action`, and `call_function` accept a `jsonBody` parameter. **Both shapes are accepted** — a JSON object or a JSON-encoded string. Pick whichever your runtime makes easier; both produce the same result.
 
@@ -513,9 +492,9 @@ body, not the resource returned after the action succeeds.
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
 | `search_paths` | Discover available API paths | exactly one required search input from the current schema: `filter` or `query` |
-| `get_schema` | Inspect an operation schema: fetch entity/response shape, or create/update/action request body | `path`, `operationType` (`fetch`/`create`/`update`/`action`), `format` |
+| `get_schema` | Inspect the advertised operation request/response contract | `path`, `operationType` (`fetch`/`create`/`update`/`action`/`function`), `format` |
 | `fetch` | Fetch entities by path (GET) | `entityUrls[]` — supports OData (`$filter`, `$select`, `$top`) |
-| `call_function` | Call named OData functions — GET-shaped, side-effect-free, parenthesised inline params (e.g. `delta`, `reminderView`) | `functionUrl` with inline function params |
+| `call_function` | Graph OData functions and enabled native provider functions | `functionUrl`, optional `jsonBody` for provider request parameters |
 | `create_entity` | Create a new entity (POST to collection) | `parentUrl`, `jsonBody` |
 | `update_entity` | Update fields on an existing entity (PATCH) | `entityUrl` with ID, `jsonBody` |
 | `delete_entity` | Delete an entity (DELETE) | `entityUrl` with ID |
@@ -526,12 +505,13 @@ Read the relevant reference file for full parameter details and examples:
 - `references/search-paths-work-iq.md` — if you need to discover what paths are available
 - `references/get-schema-work-iq.md` — if you need to understand an entity's fields before reading or writing
 - `references/fetch-work-iq.md` — if you need to fetch structured or filtered M365 data
-- `references/call-function-work-iq.md` — if the path uses OData function call syntax (e.g., `reminderView(...)`, `delta`)
+- `references/call-function-work-iq.md` - Graph OData functions and native provider functions with JSON bodies
 - `references/create-entity-work-iq.md` — if you need to create a new calendar event, email draft, task, etc.
 - `references/mail-work-iq.md` — if you need to find, draft, send, reply, forward, move, or delete mail (covers `$search` vs `$filter` and the mail-delta endpoint)
 - `references/tasks-work-iq.md` — if you need to list, create, update, complete, or delete Planner tasks
 - `references/teams-work-iq.md` — if you need to send, reply, react, or read Teams chat/channel messages, or get/set presence
-- `references/sharepoint-work-iq.md` — if you need to resolve SharePoint sites, group-backed team sites, document libraries, document search results, or raw SharePoint file content
+- `references/sharepoint-work-iq.md` - required native dispatch for every SharePoint task
+- `references/sharepoint-document-text.md` - native semantic passages, structured text, batching, pages, outlines, and images
 - `references/sharepoint-library-metadata.md` — if you need to read, filter, count, group, sort, or enumerate files by SharePoint document-library columns
 - `references/business-applications.md` — if you need to discover or use business-application environments, data, apps, skills, APIs, operations, or delegated work
 - `references/update-entity-work-iq.md` — if you need to update fields on an existing entity

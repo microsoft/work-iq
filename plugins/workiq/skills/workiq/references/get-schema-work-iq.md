@@ -4,6 +4,7 @@ Retrieve the OpenAPI schema for a WorkIQ path or operation — fields available 
 
 > **Routing rule:** call `get_schema` once with `path` set to the path of interest AND the right `operationType`:
 >
+> - **Native provider functions** (`/sharepoint/get_structured_text`, `/sharepoint/semantic_search`) -> `operationType: "function"` for their JSON request body
 > - **Collection reads** (`/me/messages`, `/me/events`) → `operationType: "fetch"`
 > - **Creates** (POST to a collection, e.g. `/me/events`, `/me/messages`) → `operationType: "create"`
 > - **Updates** (PATCH on a specific item, e.g. `/me/messages/{id}`) → `operationType: "update"`
@@ -16,18 +17,18 @@ Retrieve the OpenAPI schema for a WorkIQ path or operation — fields available 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `path` | string | **Yes** | Entity path (`/me/messages`). Server-relative, starts with `/`. |
-| `operationType` | string | **Yes** | One of `fetch` (GET), `create` (POST to collection), `update` (PATCH), `action` (action verb body). Each path supports only the matching subset; wrong values error like `No 'create' operation for path: me/sendMail`. |
+| `operationType` | string | **Yes** | One of `fetch` (GET), `create` (POST to collection), `update` (PATCH), `action` (action verb body), or `function` (provider-function request body). Each path supports only the matching subset; wrong values error like `No 'create' operation for path: me/sendMail`. |
 | `format` | string | No | `jsonschema`, `typescript`, or `cddl`. Defaults to `cddl`. |
 
 > **⚠️ Parameter shape gotchas.**
-> - `operationType` is the **only** way to pick the operation flavor — no `httpMethod`, `method`, `verb`, `apiVersion`, `operationIds`, or `backend` param exists on `get_schema`. `fetch`→GET, `create`→POST to a collection, `update`→PATCH, `action`→action verb body.
+> - `operationType` is the **only** way to pick the operation flavor — no `httpMethod`, `method`, `verb`, `apiVersion`, `operationIds`, or `backend` param exists on `get_schema`. `fetch` -> GET, `create` -> POST to a collection, `update` -> PATCH, `action` -> action body, `function` -> advertised provider-function body.
 
 ## Request schema vs response schema
 
 `get_schema` is request-oriented for writes:
 
 - `fetch` describes the entity/response shape available to a GET operation.
-- `create`, `update`, and `action` describe the request body used to invoke that operation.
+- `create`, `update`, `action`, and provider `function` describe the request body used to invoke that operation.
 - In particular, `operationType: "action"` returns the action request-body schema. It does
   **not** expose the action's response resource schema.
 

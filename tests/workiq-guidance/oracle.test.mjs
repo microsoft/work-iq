@@ -249,12 +249,12 @@ test('trace CLI refuses missing/unsupported evidence and describes trusted scena
   assert.equal(JSON.parse(description.stdout).scenarioHash, scenarioHash(cases[0].scenario));
   assert.deepEqual(Object.keys(JSON.parse(description.stdout).packageHashes), ['workiq-preview']);
 });
-test('CI is narrow, read-only, pinned and separates evidence layers', () => {
+test('CI covers both guidance suites, stays read-only and pinned, and separates evidence layers', () => {
   const workflow = parseDocument(fs.readFileSync(new URL('../../.github/workflows/workiq-guidance.yml', import.meta.url), 'utf8')).toJS();
   assert.deepEqual(workflow.permissions, { contents: 'read' });
   for (const trigger of ['pull_request', 'push']) {
-    assert.ok(!workflow.on[trigger].paths.includes('plugins/workiq/**'));
-    for (const pattern of ['plugins/workiq-preview/**', '*.md', 'tests/workiq-guidance/**',
+    for (const pattern of ['plugins/workiq/**', 'plugins/workiq-preview/**', '*.md',
+      'tests/workiq-guidance/**', 'tests/workiq-sharepoint/**',
       'marketplace.json', '.claude-plugin/marketplace.json']) {
       assert.ok(workflow.on[trigger].paths.includes(pattern));
     }
@@ -263,4 +263,6 @@ test('CI is narrow, read-only, pinned and separates evidence layers', () => {
   assert.ok(steps.filter(s => s.uses).every(s => /@[a-f0-9]{40}$/.test(s.uses)));
   assert.ok(steps.some(s => s.run === 'npm run test:oracle'));
   assert.ok(steps.some(s => s.run === 'npm run test:static'));
+  assert.ok(steps.some(s => s.run === 'npm test' && s['working-directory'] === 'tests/workiq-sharepoint'));
+  assert.ok(!steps.some(s => /\bcopilot\b|eval\.mjs|\b--model\b/.test(s.run ?? '')));
 });

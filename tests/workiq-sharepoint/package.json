@@ -1,0 +1,12 @@
+{
+  "name": "workiq-sharepoint-routing",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test *.test.mjs",
+    "matrix": "node eval.mjs list",
+    "report": "node eval.mjs report"
+  }
+}

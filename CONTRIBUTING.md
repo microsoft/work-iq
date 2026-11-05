@@ -102,6 +102,21 @@ host's supported mechanism. Offline checks do not prove agent compliance, live
 endpoint behavior, or support across hosts; any loading evidence applies only to
 the host and version actually exercised.
 
+For public `workiq` SharePoint routing changes, also run:
+
+```powershell
+npm --prefix tests\workiq-sharepoint test
+node tests\workiq-sharepoint\eval.mjs list
+```
+
+The [public SharePoint evaluation](tests/workiq-sharepoint/README.md) contains a
+frozen natural-language matrix, captured native request schemas, stateful mock
+workflows, and an opt-in fresh-session model runner. Its offline tests reuse the
+existing test-only parsers installed above. CI never calls models or Microsoft
+365. Keep raw observed traces outside the checkout; record package/protocol
+hashes and report mock routing separately from live completion. Do not tune on
+the final holdout or treat helper-only calls and blocked downloads as successes.
+
 ## 📋 Pull Request Checklist
 
 - [ ] Plugin directory created under `plugins/`

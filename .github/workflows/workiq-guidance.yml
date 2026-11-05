@@ -1,22 +1,26 @@
-name: WorkIQ preview guidance contracts
+name: WorkIQ guidance contracts
 
 on:
   pull_request:
     paths:
+      - 'plugins/workiq/**'
       - 'plugins/workiq-preview/**'
       - '*.md'
       - 'marketplace.json'
       - '.claude-plugin/marketplace.json'
       - 'tests/workiq-guidance/**'
+      - 'tests/workiq-sharepoint/**'
       - '.github/workflows/workiq-guidance.yml'
   push:
     branches: [main]
     paths:
+      - 'plugins/workiq/**'
       - 'plugins/workiq-preview/**'
       - '*.md'
       - 'marketplace.json'
       - '.claude-plugin/marketplace.json'
       - 'tests/workiq-guidance/**'
+      - 'tests/workiq-sharepoint/**'
       - '.github/workflows/workiq-guidance.yml'
   workflow_dispatch:
 
@@ -43,3 +47,6 @@ jobs:
       - name: Static documentation and contract checks
         run: npm run test:static
         working-directory: tests/workiq-guidance
+      - name: Public SharePoint routing infrastructure tests (not observed model behavior)
+        run: npm test
+        working-directory: tests/workiq-sharepoint

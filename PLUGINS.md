@@ -77,7 +77,7 @@ copilot plugin uninstall workiq-productivity
 
 | # | Plugin | Skills | Description |
 |---|--------|--------|-------------|
-| 1 | [**workiq**](#workiq) | 1 | Full WorkIQ tool surface — agentic queries plus direct M365 reads and writes |
+| 1 | [**workiq**](#workiq) | 1 | Native-first SharePoint search/text plus agentic queries and direct M365 reads/writes |
 | 2 | [**workiq-preview**](#workiq-preview) | 1 | Preview retrieve-first context, intentional delegation, and exact M365 reads and writes |
 | 3 | [**microsoft-365-agents-toolkit**](#microsoft-365-agents-toolkit) | 4 | Toolkit for building M365 Copilot declarative agents |
 | 4 | [**workiq-productivity**](#workiq-productivity) | 10 | Read-only productivity insights across M365 |
@@ -87,6 +87,12 @@ copilot plugin uninstall workiq-productivity
 ## workiq
 
 > Full WorkIQ tool surface for GitHub Copilot CLI: agentic semantic queries via `ask` **plus** direct, structured reads and writes against Microsoft 365 — emails, meetings, calendar, documents, Teams messages, OneDrive/SharePoint files, and people.
+
+SharePoint workflows prefer native file discovery, semantic passage search,
+structured document text and authoritative library metadata. Original-file
+downloads are reserved for explicit original/byte requests, not ordinary
+document questions. See the [routing evidence](./tests/workiq-sharepoint/RESULTS.md)
+for measured model/mock outcomes and live-service limits.
 
 **Install:** `/plugin install workiq@work-iq`
 **Source:** [`plugins/workiq/`](./plugins/workiq/)
@@ -101,7 +107,7 @@ copilot plugin uninstall workiq-productivity
 
 | Skill | Description |
 |-------|-------------|
-| [**workiq**](./plugins/workiq/skills/workiq/SKILL.md) | Guides usage of the full WorkIQ tool surface — `ask` for semantic questions plus entity tools for fast, structured M365 reads and writes |
+| [**workiq**](./plugins/workiq/skills/workiq/SKILL.md) | Native-first SharePoint discovery, passages, document text and metadata; `ask` and entity tools for other M365 workflows |
 
 ### Example prompts
 
@@ -112,13 +118,15 @@ copilot plugin uninstall workiq-productivity
 "Accept the 2pm meeting from Rob"
 "Send the draft email to the engineering distribution list"
 "Show me the channels in the DevX team"
+"Find rollback-approval passages in these SharePoint files"
+"Compare these SharePoint documents without downloading originals"
 ```
 
 ---
 
 ## workiq-preview
 
-> **Preview build.** Agent-host-neutral guidance for retrieve-first context with explicit Grounding when available, intentional agent delegation via `ask`, and exact entity reads, writes, and downloads. The public `workiq` skill retains its existing policy.
+> **Preview build.** Agent-host-neutral guidance for retrieve-first context with explicit Grounding when available, intentional agent delegation via `ask`, and exact entity reads, writes, and downloads. This policy is independent of the public plugin's SharePoint-native guidance.
 
 **Install:** `/plugin install workiq-preview@work-iq`
 **Source:** [`plugins/workiq-preview/`](./plugins/workiq-preview/)

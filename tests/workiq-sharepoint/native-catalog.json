@@ -1,0 +1,566 @@
+{
+  "schemaVersion": 1,
+  "source": "Captured hosted WorkIQ search_paths catalog. Advertisement does not prove availability or success.",
+  "paths": [
+    {
+      "description": "Add or insert a comment on a plain-text file, optionally anchored to a known text selection.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/add_comment"
+    },
+    {
+      "description": "Creates shortcuts to one or more files or folders across one or more source-to-destination pairs. Supports shortcuts from multiple source libraries to multiple destination folders in a single call.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/add_shortcut"
+    },
+    {
+      "description": "Use for visual formatting of one SharePoint field: pills, icons, data bars, urgency cues, people chips, or styled links.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/apply_column_formatting_v2"
+    },
+    {
+      "description": "Manage a source-grounded knowledge base (aka wiki) end to end: register sources, compile or refresh pages, build navigation and audit history, validate quality, govern knowledge base health and adoption, and search or answer from the knowledge base. Use when creating, updating, maintaining, measuring, validating, or querying a knowledge base, including source ingestion, page generation, index rebuilding, audit logging, staleness checks, and search analytics.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/apply_knowledge_base_instructions"
+    },
+    {
+      "description": "Use for visual formatting across a SharePoint view: rows/cards, gallery/board layouts, group/footer summaries, row highlights, or calendar event styling.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/apply_view_formatting_v2"
+    },
+    {
+      "description": "Archives or reactivates (unarchives) one or more files or folders from a SharePoint document library by changing their archive state. Selected via the `action` parameter: \"archive\" moves items to cold storage; \"reactivate\" or \"unarchive\" restores previously archived items to normal storage. Files and folders only — not generic list items. Read-only with respect to content — it only changes archive state. Does not delete, move, or archive sites.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/archive_items"
+    },
+    {
+      "description": "Cancels an eSign agreement by ID. Irreversible: stops signing and notifies participants. Only the creator can cancel pending agreements.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/cancel_esign_agreement"
+    },
+    {
+      "description": "Checks whether specified recipients have access to one or more items in a SharePoint list or document library.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/check_permissions"
+    },
+    {
+      "description": "Enable, disable, or configure SharePoint's built-in approvals for a list or document library. This is the default tool for standard approve/reject behavior, approval routing, and approval status tracking. Enabling approvals adds and uses `_ApprovalStatus` and can set default approvers.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/configure_approvals_v2"
+    },
+    {
+      "description": "Called when creating, updating, or deleting a Quick Steps column in a SharePoint list or document library. Configures which quick steps appear in a Quick Steps column.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/configure_quick_step_columns"
+    },
+    {
+      "description": "Copy files or folders from one or more source libraries to one or more destination folders. Supports operations within the same document library, across different SharePoint sites, or to/from the user's OneDrive.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/copy_items"
+    },
+    {
+      "description": "Creates a new request in SharePoint's built-in approvals system for a list item or document, using the native approval experience instead of custom status-field updates.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/create_approval_request_v2"
+    },
+    {
+      "description": "Creates ONE new document collection form on a confirmed document LIBRARY (base template 101) and folder target — NOT a generic SharePoint list; for regular list forms use create_form — or updates ONE existing doc-collection form when its formId/formName is supplied. The form has a mandatory fixed file-upload field and optional metadata fields. On update the existing form is preserved and ONLY the parameters you supply are changed.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/create_doc_collection_form"
+    },
+    {
+      "description": "Creates the template and form in the current SharePoint document library, collects submissions in the opened folder (or a new one), then prompts the user to continue in Word to review the template and insert the fields to collect.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/create_document_form"
+    },
+    {
+      "description": "Creates one or more folders in a document library or SharePoint list, optionally at a specific path and (libraries / OneDrive only) with a color.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/create_folder"
+    },
+    {
+      "description": "Creates ONE new SharePoint LIST form (target must be a SharePoint list, NOT a document library — for document libraries use create_doc_collection_form), or updates ONE existing list form when its formId/formName is supplied. On update the existing form is preserved and ONLY the parameters you supply are changed. Optimize for beauty/delight, response-friendly labels/order, and exact reuse of existing fields without duplicate columns.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/create_form"
+    },
+    {
+      "description": "Creates one or more new items in a SharePoint list in a single call using an items array.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/create_list_items_v2"
+    },
+    {
+      "description": "Creates a new SharePoint list or document library, or updates an existing one (columns, views, settings).",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/create_or_update_list"
+    },
+    {
+      "description": "Creates a new quick step or updates an existing SharePoint quick step in a SharePoint list or document library.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/create_or_update_quick_step"
+    },
+    {
+      "description": "Creates a new SharePoint site through the existing SharePoint site creation APIs, then polls until the site is ready and returns the created site details. Also supports a read-only `sitecreationprecheckOnly` mode that checks the site address, group email alias, and tenant sensitivity-label options without creating anything.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/create_site"
+    },
+    {
+      "description": "Permanently deletes one or more fields (columns) from a SharePoint list. All data in those fields is lost.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/delete_field"
+    },
+    {
+      "description": "Deletes one or more files or folders from a SharePoint document library by recycling them. Requires a single document library URL and relative paths for all items.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/delete_items"
+    },
+    {
+      "description": "Permanently deletes a SharePoint list or document library (moves to recycle bin).",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/delete_list"
+    },
+    {
+      "description": "Deletes one or more items from a SharePoint list by item ID.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/delete_list_item"
+    },
+    {
+      "description": "Deletes a specific quickstep (manual rule) from a SharePoint list or document library.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/delete_quickstep"
+    },
+    {
+      "description": "Permanently deletes one or more views from a SharePoint list. This operation cannot be undone.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/delete_view"
+    },
+    {
+      "description": "Discovers all lists and document libraries in a SharePoint site. Returns list ID, title, description, template type, item count, server-relative URL, and author (creator) for each.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/discover_sharepoint_lists"
+    },
+    {
+      "description": "Finds files/folders by name pattern (e.g., *.docx) or literal content keywords (contentHints) — the indexed pre-filter for narrowing libraries before content search. Like Unix find.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/find_items"
+    },
+    {
+      "description": "Find SharePoint sites accessible to the user. This tool can either find specific sites based on a search query you pass it, or find the top 20 relevant sites accessible by the user if you don't pass it a search query. Pagination: returns up to 20 items per call; pass nextPageCursor back unchanged as pageCursor with the same searchQuery to fetch the next page. For top relevant sites, omit searchQuery on every page.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/find_site"
+    },
+    {
+      "description": "Prepares a download from a SharePoint or OneDrive document library and returns file-transfer details for WorkIQ. Use the returned transfer instructions to download the file bytes; this tool does not download bytes.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/getDownloadFileDetails"
+    },
+    {
+      "description": "Prepares a resumable upload session in a SharePoint or OneDrive document library and returns file-transfer details for WorkIQ. Use the returned transfer instructions to upload the file bytes; this tool does not upload bytes.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/getUploadFileDetails"
+    },
+    {
+      "description": "Checks whether SharePoint's built-in approvals are enabled on a list or document library before designing, configuring, or duplicating an approval process.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_approval_enabled_v2"
+    },
+    {
+      "description": "Gets SharePoint built-in approval request details for a specific list item or document, including current state, approvers, and action history. Use this instead of custom Status fields for approval state.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_approval_request"
+    },
+    {
+      "description": "Get/list comments, or return active author/@mention/creation-date-filtered comments for direct resolution.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_comments"
+    },
+    {
+      "description": "Retrieves site-level content types or site columns from a SharePoint site. Site columns are reusable column definitions defined at the site level (not list-specific columns). This is a read-only discovery tool for inspecting site-level schema metadata — it returns definitions, NOT content or search results.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_content_types"
+    },
+    {
+      "description": "Returns the current date/time when no date is supplied, or converts an ISO 8601 date/time value into a formatted display string. You must call this tool to get the current date before performing any relative date calculation.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_datetime_info"
+    },
+    {
+      "description": "Get images embedded in one document, such as charts, diagrams or photos, using the image_… labels that appear in its text.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_document_images"
+    },
+    {
+      "description": "Get the text of specific pages of one document. A page is a slide in a presentation and a sheet in a workbook. Use it when you already know which pages you need.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_document_pages"
+    },
+    {
+      "description": "Retrieves detailed information for a specific e-signature agreement by ID. Returns metadata including name, status, creator, dates, signing mode, documents, and recipients.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_esign_agreement_details"
+    },
+    {
+      "description": "Enumerates every form (list form or document collection form) defined on a SharePoint list or document library. Returns each form's formId, title, description, creator, field count, up to 20 field labels, and the full parsed form schema — enough for the model to disambiguate similarly-named forms, inspect the current definition, and pick one to update.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_forms"
+    },
+    {
+      "description": "Retrieves the complete schema and metadata for a SharePoint list or library (SharePoint or OneDrive): settings, field definitions, item count, content types, and (on request) its views — the list of views and a single view's full definition (CAML query, displayed fields, sort/filter, row limit). Does NOT return item data.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_list_schema"
+    },
+    {
+      "description": "Resolves lookup field values into the proper format for SharePoint Lookup fields. REQUIRED before create_list_items_v2 or update_list_items_v2 when any field is a Lookup type.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_lookup_info"
+    },
+    {
+      "description": "Retrieves the current user's OneDrive site URL, document library URL, site/web/list identifiers, and storage quota information.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_onedrive_details"
+    },
+    {
+      "description": "Retrieves the current user's favorited OneDrive and SharePoint items, up to 500 fetched items inline.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_onedrive_favorites"
+    },
+    {
+      "description": "Get thumbnails of specific pages of one document. A page is a slide in a presentation and a sheet in a workbook. Use it when you already know which page thumbnails you need. Supported file types: PDF (.pdf), Word (.docx), PowerPoint (.pptx) and DocuWorks (.xdw).",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_page_thumbnails"
+    },
+    {
+      "description": "Retrieves all quicksteps (manual actions) defined for a SharePoint list or document library.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_quicksteps"
+    },
+    {
+      "description": "Retrieves the current user's recently accessed OneDrive and SharePoint files, sorted by last access time. Returns up to 500 fetched items inline.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_recent_items"
+    },
+    {
+      "description": "Retrieves recycle bin items for a SharePoint web. Returns fetched items inline, including the IDs needed for restore operations.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_recycle_bin_contents"
+    },
+    {
+      "description": "Retrieves SharePoint lists and document libraries currently in the recycle bin that can be restored.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_restoreable_lists"
+    },
+    {
+      "description": "Retrieves OneDrive and SharePoint files shared with the user, most recently shared first. Returns up to 500 fetched items inline.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_shared_items"
+    },
+    {
+      "description": "Resolves a SharePoint site and returns an opaque siteKey required by every other tool and will return the site’s onboarding context and available skills if they exist.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_site_key"
+    },
+    {
+      "description": "Returns the full text of one or more files, such as Word documents, PDFs, spreadsheets, presentations, text files or pages. Office files and PDFs are converted to text automatically, and embedded images appear as image_… labels. Very large files are truncated.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_structured_text"
+    },
+    {
+      "description": "Get the outline of one document: its headings, their nesting, and the pages each section covers. Use it to understand how a large document is organized before reading parts of it.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_table_of_contents"
+    },
+    {
+      "description": "Single entry point for SharePoint taxonomy / managed metadata. operation=\"resolve\" matches term labels and returns a write-safe formattedValue (REQUIRED before create_list_items_v2/update_list_items_v2 on Taxonomy or TaxonomyFieldTypeMulti fields). operation=\"browse\" explores the term-store hierarchy; browse ids are NOT write-safe.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_taxonomy"
+    },
+    {
+      "description": "Returns the published fields that can be filled when generating a document from a template.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_template_fields"
+    },
+    {
+      "description": "Resolves person names or email addresses into the proper format for SharePoint User/UserMulti fields. REQUIRED before create_list_items_v2 or update_list_items_v2 when any field is a User type.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_user_info"
+    },
+    {
+      "description": "Retrieves the complete definition of one or more SharePoint list views, including CAML query, displayed fields, sorting, filtering, row limits, and aggregations.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_view_definition"
+    },
+    {
+      "description": "Retrieves all views defined for a SharePoint list or document library, including view IDs, titles, default status, and visibility.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/get_views_of_list"
+    },
+    {
+      "description": "Performs a SharePoint Wiki operation on a SharePoint site. Supports provisioning, skill status, source management, user-scoped compile locks, deterministic verification, and staleness checks.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/knowledge_base_operations"
+    },
+    {
+      "description": "Get the full description, usage guidance, and parameter details for one or more tools. The tool list advertises only a brief summary and bare parameter names/types — call learn before using a tool whose slim listing isn't enough. Omit the argument to list all tools.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/learn"
+    },
+    {
+      "description": "Retrieves e-signature agreement requests that the current user has sent in a card format.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/list_esign_requests"
+    },
+    {
+      "description": "Enumerates all versions of one or more SharePoint list items, including editor info, timestamps, sizes, and field-level changes. Use when itemId and listId are known.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/list_item_versions"
+    },
+    {
+      "description": "Lists, counts, or filters items in a SharePoint list or library. Supports metadata filtering via CAML.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/list_items"
+    },
+    {
+      "description": "Loads a site-level skill by name from the AgentAssets/Skills library on the current SharePoint site. Returns the full markdown instructions for the agent to follow.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/load_skill"
+    },
+    {
+      "description": "Move files or folders from one or more source libraries to one or more destination folders. Supports operations within the same document library, across different SharePoint sites, or to/from the user's OneDrive.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/move_items"
+    },
+    {
+      "description": "Renames one or more files or folders in a SharePoint document library. Requires listFullUrl and parallel arrays of libraryRelativePaths and newNames.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/rename_item"
+    },
+    {
+      "description": "Approves, rejects, or cancels a SharePoint built-in approval request for a list item or document. Use this for native approval outcomes instead of custom Approval Status or Status field edits.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/resolve_approval_request"
+    },
+    {
+      "description": "Restores a previous version of one or more SharePoint list items or files as the current version. Restore creates a new version from old content (does NOT edit fields in place). Also use to undo changes when a user says \"undo\", \"go back\", or \"revert\".",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/restore_item_version"
+    },
+    {
+      "description": "Restores one or more SharePoint lists or document libraries from the site recycle bin.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/restore_list"
+    },
+    {
+      "description": "Restores items (files, folders) from the SharePoint web recycle bin to their original locations using their recycle bin item IDs.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/restore_recycle_bin_items"
+    },
+    {
+      "description": "Find passages that match a topic or question by meaning, even when the wording differs, within files you specify. Returns the matching passages ranked by relevance. It does not find files on its own.",
+      "operations": [
+        "function"
+      ],
+      "path": "/sharepoint/semantic_search"
+    },
+    {
+      "description": "Invites named recipients to a SharePoint list with read, contribute, or edit access.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/send_invite_for_list"
+    },
+    {
+      "description": "Sets or changes the color of one or more existing folders in a SharePoint document library.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/set_folder_color"
+    },
+    {
+      "description": "Set, change, downgrade, or remove a sensitivity label on a supported file.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/set_sensitivity_label_on_file"
+    },
+    {
+      "description": "Sets an existing SharePoint page or published HTMLHost page as the site's home page by updating RootFolder.WelcomePage. If the target .aspx page is an unpublished draft, it is published automatically first. HTML files must be published and in a Web Page Library.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/set_site_homepage"
+    },
+    {
+      "description": "Shares a SharePoint file by creating a sharing link and sending an email notification to one or more specified recipients. Also handles requests phrased as \"grant access\", \"give access\", \"give permissions to\", or \"let X edit/view this file\". Accepts multiple recipients in a single call.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/share_file"
+    },
+    {
+      "description": "Removes a specific user's directly-granted access to a SharePoint file (direct ACL and specific-people sharing links). Does not affect group-based access or org/anyone links.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/unshare_file"
+    },
+    {
+      "description": "Updates multiple list items matching a CAML query with specified field values in a single batch operation. Efficient for bulk updates based on filter criteria.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/update_batch_list_items"
+    },
+    {
+      "description": "Updates one or more existing items in a SharePoint list in a single call using an items array. Each item specifies an ID, field names, and new values.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/update_list_items_v2"
+    },
+    {
+      "description": "Adds or removes one or more items from the current user's OneDrive favorites. Supports multiple items across different document libraries in a single call.",
+      "operations": [
+        "action"
+      ],
+      "path": "/sharepoint/update_onedrive_favorite"
+    }
+  ]
+}

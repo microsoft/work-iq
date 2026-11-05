@@ -1,24 +1,36 @@
 # call_function
 
-Call an OData function via HTTP GET. Functions are **side-effect-free** named operations that return computed results — for example, `delta` (change tracking on a collection) or `reminderView` (computed list of upcoming reminders).
+Invoke an advertised function through WorkIQ. There are two contracts:
 
-**Use this tool only for true GET-shaped OData functions.** If the operation is invoked with a request body (e.g. `getSchedule`, `findMeetingTimes`, `sendMail`), it's an **action**, not a function — use `do_action` instead, even when the path looks function-like.
+- Graph/OData functions are GET-shaped, side-effect-free, with parameters in
+  the function URL, such as `delta`, `reminderView(...)`, or file search.
+- Enabled provider functions, including native `/sharepoint/` functions,
+  accept structured parameters in `jsonBody`. Their advertised operation and
+  request schema, not the presence of a body, determine the wrapper.
 
-## Parameters
+Use `functionUrl` as a server-relative WorkIQ path. Optional `jsonBody` may
+be an object or JSON-encoded string when the provider supports it. A browser
+file URL belongs in the native body, not in `functionUrl`.
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `functionUrl` | string | Yes | The function path including any required inline parameters (e.g., `/me/reminderView(startDateTime='...',endDateTime='...')`). Must be a server-relative path — start with `/`, no scheme or authority (`https://graph.microsoft.com` ❌, `/me/reminderView(...)` ✅). URL-encode any special characters in inline parameter values. |
+For native SharePoint request bodies use `get_schema` with the exact path and
+`operationType: "function"`. Use `do_action` for advertised actions, such as
+Graph `getSchedule`, `findMeetingTimes`, and `sendMail`, or native SharePoint
+mutations. Never infer an action just because a provider accepts JSON.
 
-## When to Use
+Read [SharePoint native operations](sharepoint-work-iq.md) for site keys,
+document passages, structured text, metadata, and the original-file boundary.
+For example:
 
-- When you need a computed result that takes no request body (`delta`, `reminderView`)
-- Any time the OData path uses function call syntax `functionName(param=value)` and the operation is documented as GET
-- When resolving a OneDrive file by exact name with `/me/drive/root/search(q='...')`
-- **Any "what's new / what's changed / what was added or removed since X" question** — that is a
-  delta query, and this tool is the only correct route for it
+```json
+{
+  "functionUrl": "/sharepoint/get_site_key",
+  "jsonBody": { "siteUrl": "https://contoso.sharepoint.com/teams/Research" }
+}
+```
 
-If you're not sure whether something is a function or an action, run `get_schema` on the path with `operationType: "fetch"` first. If no `fetch` schema is returned but `action` is, route to `do_action`.
+For Graph functions, retain the established inline-parameter contracts below.
+Use the known route directly; discover/schema-check only genuinely unknown
+operations, using the actual operation advertised by the catalog.
 
 ## Delta queries (change tracking)
 

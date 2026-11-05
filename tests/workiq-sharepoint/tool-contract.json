@@ -1,0 +1,1500 @@
+{
+  "schemaVersion": 1,
+  "source": "Captured hosted WorkIQ MCP definitions; only the transport prefix is removed.",
+  "tools": [
+    {
+      "name": "ask",
+      "description": "Ask a question to Microsoft 365 Copilot for information about emails, meetings, files, and other M365 data. Returns the answer text in both content and structured content (under 'answer'), with conversationId in structured content. For follow-up calls in the same conversation, pass the conversationId returned by the previous ask call to preserve conversation state; omit it to start a new conversation. Use this tool to call an agent, optionally selected by agent ID; for grounding and information retrieval, use retrieve instead.",
+      "inputSchema": {
+        "properties": {
+          "agentId": {
+            "default": null,
+            "description": "Optional agent ID to target a specific agent. Defaults to bizchat-as-gpt-scenario.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "capabilities": {
+            "default": null,
+            "description": "Optional DA grounding capabilities for this turn: People, Meetings, OneDriveAndSharePoint, Email, TeamsMessages, Dataverse, or GraphConnectors, with their DA scope fields. Requires enable_ask_scoping_v2. Cannot be combined with a custom agent or dataSources. Omit or pass an empty array to preserve default behavior. Resend on each scoped turn; prior conversation context is not erased. At most 7 capabilities; each capability may contain at most 100 scope entries total across all nested arrays.",
+            "items": {
+              "anyOf": [
+                {
+                  "properties": {
+                    "include_related_content": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "name": {
+                      "const": "People"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "items_by_id": {
+                      "items": {
+                        "properties": {
+                          "id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "is_series": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "is_series"
+                        ],
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "maxItems": 100,
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "name": {
+                      "const": "Meetings"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "items_by_sharepoint_ids": {
+                      "items": {
+                        "properties": {
+                          "list_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "part_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "part_type": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "search_associated_sites": {
+                            "type": [
+                              "boolean",
+                              "null"
+                            ]
+                          },
+                          "site_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "unique_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "web_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "maxItems": 100,
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "items_by_url": {
+                      "items": {
+                        "properties": {
+                          "url": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "maxItems": 100,
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "name": {
+                      "const": "OneDriveAndSharePoint"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "folders": {
+                      "items": {
+                        "properties": {
+                          "folder_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "folder_id"
+                        ],
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "maxItems": 100,
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "group_mailboxes": {
+                      "items": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "maxItems": 100,
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "name": {
+                      "const": "Email"
+                    },
+                    "shared_mailbox": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "name": {
+                      "const": "TeamsMessages"
+                    },
+                    "urls": {
+                      "items": {
+                        "properties": {
+                          "url": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "url"
+                        ],
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "maxItems": 100,
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "connections": {
+                      "items": {
+                        "properties": {
+                          "additional_search_terms": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "connection_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "items_by_container_name": {
+                            "items": {
+                              "properties": {
+                                "container_name": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "container_name"
+                              ],
+                              "type": [
+                                "object",
+                                "null"
+                              ]
+                            },
+                            "maxItems": 100,
+                            "type": [
+                              "array",
+                              "null"
+                            ]
+                          },
+                          "items_by_container_url": {
+                            "items": {
+                              "properties": {
+                                "container_url": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "container_url"
+                              ],
+                              "type": [
+                                "object",
+                                "null"
+                              ]
+                            },
+                            "maxItems": 100,
+                            "type": [
+                              "array",
+                              "null"
+                            ]
+                          },
+                          "items_by_external_id": {
+                            "items": {
+                              "properties": {
+                                "item_id": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "item_id"
+                              ],
+                              "type": [
+                                "object",
+                                "null"
+                              ]
+                            },
+                            "maxItems": 100,
+                            "type": [
+                              "array",
+                              "null"
+                            ]
+                          },
+                          "items_by_external_url": {
+                            "items": {
+                              "properties": {
+                                "url": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "url"
+                              ],
+                              "type": [
+                                "object",
+                                "null"
+                              ]
+                            },
+                            "maxItems": 100,
+                            "type": [
+                              "array",
+                              "null"
+                            ]
+                          },
+                          "items_by_path": {
+                            "items": {
+                              "properties": {
+                                "path": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "path"
+                              ],
+                              "type": [
+                                "object",
+                                "null"
+                              ]
+                            },
+                            "maxItems": 100,
+                            "type": [
+                              "array",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "connection_id"
+                        ],
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "maxItems": 100,
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "name": {
+                      "const": "GraphConnectors"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "knowledge_sources": {
+                      "items": {
+                        "properties": {
+                          "host_name": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "skill": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "tables": {
+                            "items": {
+                              "properties": {
+                                "table_name": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "type": [
+                                "object",
+                                "null"
+                              ]
+                            },
+                            "maxItems": 100,
+                            "type": [
+                              "array",
+                              "null"
+                            ]
+                          }
+                        },
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "maxItems": 100,
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "name": {
+                      "const": "Dataverse"
+                    }
+                  }
+                }
+              ],
+              "required": [
+                "name"
+              ],
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "maxItems": 7,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "conversationId": {
+            "default": null,
+            "description": "Optional conversation ID to continue an existing conversation",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fileUrls": {
+            "default": null,
+            "description": "Optional list of OneDrive or SharePoint file URLs to use as context",
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "question": {
+            "description": "The question to ask",
+            "type": "string"
+          },
+          "resources": {
+            "default": null,
+            "description": "Optional Add content resources using the faceted entity-reference shape. Each item must contain exactly one of: person { upn }, file/site/event/message/emailConversation { url, optional id, optional displayName }, chat/channel { url, optional displayName }, or external { url } / external { itemId, contentSource }. Chat/channel ids are derived from Teams URL thread ids.",
+            "items": {
+              "properties": {
+                "channel": {
+                  "properties": {
+                    "displayName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": [
+                    "object",
+                    "null"
+                  ]
+                },
+                "chat": {
+                  "properties": {
+                    "displayName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": [
+                    "object",
+                    "null"
+                  ]
+                },
+                "emailConversation": {
+                  "properties": {
+                    "displayName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": [
+                    "object",
+                    "null"
+                  ]
+                },
+                "event": {
+                  "properties": {
+                    "displayName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": [
+                    "object",
+                    "null"
+                  ]
+                },
+                "external": {
+                  "properties": {
+                    "contentSource": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "itemId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": [
+                    "object",
+                    "null"
+                  ]
+                },
+                "file": {
+                  "properties": {
+                    "displayName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": [
+                    "object",
+                    "null"
+                  ]
+                },
+                "message": {
+                  "properties": {
+                    "displayName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": [
+                    "object",
+                    "null"
+                  ]
+                },
+                "person": {
+                  "properties": {
+                    "upn": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": [
+                    "object",
+                    "null"
+                  ]
+                },
+                "site": {
+                  "properties": {
+                    "displayName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": [
+                    "object",
+                    "null"
+                  ]
+                }
+              },
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "timeZone": {
+            "default": null,
+            "description": "An IANA time zone identifier matching the user's current UTC offset (from the datetime provided), preferring the most populous zone for that offset (e.g., -04:00 → 'America/New_York', +08:00 → 'Asia/Shanghai'). Do not pass a raw offset or abbreviation. Omit if no offset is available; times will be returned in UTC.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "call_function",
+      "description": "Call a read-only WorkIQ function. Graph functions use HTTP GET; provider functions may accept structured JSON parameters. Functions compute or synthesize data rather than simply reading entities — e.g., delta sync (/me/messages/delta(), /me/contacts/delta()), reminderView, and drive search (/me/drive/root/search(q='budget')). Pass parameters in the path. WorkIQ entity paths borrow from the conventions of Microsoft Graph.",
+      "inputSchema": {
+        "properties": {
+          "agentId": {
+            "default": null,
+            "description": "Optional agent ID to target a specific agent.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "functionUrl": {
+            "description": "WorkIQ function path to call (e.g., /me/messages/delta(), /me/drive/root/search(q='budget'), /me/reminderView(startDateTime='...',endDateTime='...')). Must be a relative path — do not include a base URL.",
+            "type": "string"
+          },
+          "jsonBody": {
+            "default": null,
+            "description": "OPTIONAL — structured parameters for a provider function. Available only when enabled for the caller. Supply as a JSON object or JSON-encoded string."
+          }
+        },
+        "required": [
+          "functionUrl"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "create_entity",
+      "description": "Create a new WorkIQ entity by POSTing JSON to a parent collection path. Call it directly for standard Graph payloads (e.g. event subject/start/end, message subject/body/toRecipients, mailFolder displayName, contact names); use get_schema only if you do not know the required fields or the create returns 400. Returns the created entity JSON. WorkIQ entity paths borrow from the conventions of Microsoft Graph. Every value in jsonBody must come from the user's request or from data you fetched; never invent placeholder content (e.g., a subject like 'New event', made-up times, names or IDs). If a required field is missing, ask the user instead of calling this tool. A jsonBody that is empty or contains only @odata.type is not a valid create: if the request does not give the values the new item needs (e.g., title, name, times, members, owner), ask the user for them instead of calling this tool.",
+      "inputSchema": {
+        "properties": {
+          "agentId": {
+            "default": null,
+            "description": "Optional agent ID to target a specific agent.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "jsonBody": {
+            "description": "JSON body for the new entity, supplied as a JSON object (e.g., {\"subject\":\"Hi\"}) or a JSON-encoded string"
+          },
+          "parentUrl": {
+            "description": "WorkIQ parent collection path to POST to (e.g., /me/messages, /me/events). Must be a relative path — do not include a base URL.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parentUrl",
+          "jsonBody"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "delete_entity",
+      "description": "Delete a WorkIQ entity by path. Sends HTTP DELETE to the entity path. Returns confirmation with status code on success. WorkIQ entity paths borrow from the conventions of Microsoft Graph. If the path or ID is supplied, don't fetch the item just to verify it exists; fetch only to resolve an item the user names, or for a Planner ETag. The host's confirmation policy for deletes still applies.",
+      "inputSchema": {
+        "properties": {
+          "agentId": {
+            "default": null,
+            "description": "Optional agent ID to target a specific agent.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "entityUrl": {
+            "description": "WorkIQ entity path to delete (e.g., /me/messages/{id}, /me/events/{id}). Must be a relative path — do not include a base URL.",
+            "type": "string"
+          },
+          "headers": {
+            "additionalProperties": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "default": null,
+            "description": "Optional HTTP request headers. If the operation's schema declares an `If-Match` header parameter, you MUST set it to the `@odata.etag` value from the latest read of the same entity.",
+            "type": [
+              "object",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "entityUrl"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "do_action",
+      "description": "Execute a WorkIQ action via HTTP POST. Actions perform complex operations like sending mail, copying items, or moving resources. Call it directly for standard Graph actions (sendMail, reply, replyAll, forward, move, copy, accept, decline, tentativelyAccept, getSchedule, snoozeReminder, setReaction); use get_schema only if you do not know the parameters or the action returns 400. WorkIQ entity paths borrow from the conventions of Microsoft Graph. Many actions require body values (e.g., labelId for assignSensitivityLabel, storageLocation for exportPersonalData, attachment name and size for createUploadSession, recipients and content for sendMail). If a required value is not in the request or fetched data, ask the user rather than sending an empty or invented body. If the target IDs/path are supplied, don't fetch the item just to verify it exists; the host's confirmation policy for sending, deleting or moving still applies. Other people's free/busy or availability -> /me/calendar/getSchedule; suggested meeting slots -> /me/findMeetingTimes (both POST actions, not fetch). Do not send an empty jsonBody to an action that takes parameters; ask the user for the missing values instead.",
+      "inputSchema": {
+        "properties": {
+          "actionUrl": {
+            "description": "WorkIQ action path to invoke (e.g., /me/sendMail, /me/messages/{id}/copy, /me/drive/items/{id}/copy). Must be a relative path — do not include a base URL.",
+            "type": "string"
+          },
+          "agentId": {
+            "default": null,
+            "description": "Optional agent ID to target a specific agent.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "jsonBody": {
+            "description": "REQUIRED — pass {} for actions without parameters. Most actions take a body (e.g. sendMail {message}, move {destinationId}, accept {sendResponse}). When provided, supply as a JSON object (e.g., {\"comment\":\"...\"}) or a JSON-encoded string."
+          }
+        },
+        "required": [
+          "actionUrl",
+          "jsonBody"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "fetch",
+      "description": "Fetch one or more WorkIQ entities by path. Use well-known Microsoft Graph paths directly, e.g. /me/messages, /me/events/{id}, /me/calendarView?startDateTime=...&endDateTime=..., /me/manager, /me/chats. To act on an item the user names by subject, title or name, first fetch its collection with $filter or $search and $select=id,... to resolve the ID. Citation IDs and resourceId values from ask or retrieve are not entity IDs. Returns a JSON array with results for each path. WorkIQ entity paths borrow from Microsoft Graph conventions. Always include a $select query parameter with only the fields you need to reduce response size, for example /me/messages?$select=id,subject,from. For collection endpoints, include $top to limit results, for example /me/messages?$select=id,subject&$top=10. Some APIs do not support $top, such as /me/chats/{id}/members; omit $top for those. For file content such as documents, images, photos, /content, or $value endpoints, use fetch_blob instead. Listing a collection is a lookup step, not the answer, when the request names an item's sub-resource or action (e.g. 'move the email to Archive', 'the launch plan's tasks'): resolve the item, then continue to its /{id}/... path or the matching tool; ask only when several items fit equally well. A missing ID is not a reason to stop a read: list or search the collection (e.g. /me/messages?$search=..., /users?$search=..., /me/people) and use or show the candidates. Short requests such as 'chat apps', 'group threads' or 'my photo' refer to the user's Microsoft 365 data; answer them with a WorkIQ call, not general knowledge.",
+      "inputSchema": {
+        "properties": {
+          "agentId": {
+            "default": null,
+            "description": "Optional agent ID to target a specific agent.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "entityUrls": {
+            "description": "List of WorkIQ entity paths to fetch (e.g., /me/messages, /me/events/{id}). Paths must be relative — do not include a base URL.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "entityUrls"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "fetch_blob",
+      "description": "Fetch a binary file (document, image, photo) from a WorkIQ path — PDFs, Office files, profile photos, etc. Up to 4 MB for the raw file. Returns the file's bytes base64-encoded plus metadata. To read the file, decode the base64 data and extract its contents using a supported file reader or code with a suitable parser.",
+      "inputSchema": {
+        "properties": {
+          "agentId": {
+            "default": null,
+            "description": "Optional agent ID to target a specific agent.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "format": {
+            "default": null,
+            "description": "Optional. Forwarded as $format to convert the item on download (e.g. \"pdf\"); honored only on drive-content endpoints that accept it.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "path": {
+            "description": "Relative WorkIQ path to the binary content, e.g. /me/photo/$value or /drives/{id}/items/{id}/content. Must be a relative path — do not include a base URL.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_schema",
+      "description": "Get the request/response schema for a WorkIQ path and operation (CDDL by default; 'jsonschema' or 'typescript' on request). Only needed when you do not know the fields for a write, or a write returned 400. Not needed before reads or for standard Graph payloads. Also use it to answer questions about an entity's fields, data model or request body.",
+      "inputSchema": {
+        "properties": {
+          "agentId": {
+            "default": null,
+            "description": "Optional agent ID to target a specific agent.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "format": {
+            "default": null,
+            "description": "Schema output format: 'jsonschema', 'typescript', or 'cddl'. Defaults to 'cddl'.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "operationType": {
+            "default": null,
+            "description": "Operation type: 'fetch', 'create', 'update', 'action', or 'function'. Required.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "path": {
+            "default": null,
+            "description": "Entity path (e.g., '/me/messages'). Use paths from prior fetch/ask/search_paths calls.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "name": "list_agents",
+      "description": "List available Microsoft 365 Copilot agents. Returns agent IDs that can be passed to ask's agentId parameter.",
+      "inputSchema": {
+        "properties": {},
+        "type": "object"
+      }
+    },
+    {
+      "name": "retrieve",
+      "description": "Search the user's M365 data (emails, files, meetings, Teams messages, people) and connected enterprise sources, returning raw per-source retrieval hits plus a model-friendly grounding markdown with inline [^id] citations. Each hit carries structured metadata (URL, sensitivity label). Ground your answer on the 'markdown' field. To delegate a task to an agent, optionally selected by agent ID, use ask instead. Not for resolving the ID of an item you will then read, modify, reply to, move or delete; use fetch with $filter or $search for that.",
+      "inputSchema": {
+        "properties": {
+          "agentId": {
+            "default": "bizchat-as-gpt-scenario",
+            "description": "Agent ID to target a specific agent. Defaults to 'bizchat-as-gpt-scenario'.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "capabilities": {
+            "default": null,
+            "description": "Optional capability allow-list for this retrieval request using the Declarative Agent capability shape. Cannot be combined with a non-default agent ID. Supported names are 'People', 'Meetings', 'OneDriveAndSharePoint', 'Email', 'TeamsMessages', 'Dataverse', and 'GraphConnectors', including their capability-specific scope fields. Omit it or pass an empty list to search all sources available to the selected agent. 'Dataverse' and 'GraphConnectors' cannot be combined with the 'grounding' strategy.",
+            "items": {
+              "anyOf": [
+                {
+                  "properties": {
+                    "include_related_content": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "name": {
+                      "const": "People"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "items_by_id": {
+                      "items": {
+                        "properties": {
+                          "id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "is_series": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "is_series"
+                        ],
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "name": {
+                      "const": "Meetings"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "items_by_sharepoint_ids": {
+                      "items": {
+                        "properties": {
+                          "list_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "part_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "part_type": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "search_associated_sites": {
+                            "type": [
+                              "boolean",
+                              "null"
+                            ]
+                          },
+                          "site_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "unique_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "web_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "items_by_url": {
+                      "items": {
+                        "properties": {
+                          "url": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "name": {
+                      "const": "OneDriveAndSharePoint"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "folders": {
+                      "items": {
+                        "properties": {
+                          "folder_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "folder_id"
+                        ],
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "group_mailboxes": {
+                      "items": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "name": {
+                      "const": "Email"
+                    },
+                    "shared_mailbox": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "name": {
+                      "const": "TeamsMessages"
+                    },
+                    "urls": {
+                      "items": {
+                        "properties": {
+                          "url": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "url"
+                        ],
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "connections": {
+                      "items": {
+                        "properties": {
+                          "additional_search_terms": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "connection_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "items_by_container_name": {
+                            "items": {
+                              "properties": {
+                                "container_name": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "container_name"
+                              ],
+                              "type": [
+                                "object",
+                                "null"
+                              ]
+                            },
+                            "type": [
+                              "array",
+                              "null"
+                            ]
+                          },
+                          "items_by_container_url": {
+                            "items": {
+                              "properties": {
+                                "container_url": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "container_url"
+                              ],
+                              "type": [
+                                "object",
+                                "null"
+                              ]
+                            },
+                            "type": [
+                              "array",
+                              "null"
+                            ]
+                          },
+                          "items_by_external_id": {
+                            "items": {
+                              "properties": {
+                                "item_id": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "item_id"
+                              ],
+                              "type": [
+                                "object",
+                                "null"
+                              ]
+                            },
+                            "type": [
+                              "array",
+                              "null"
+                            ]
+                          },
+                          "items_by_external_url": {
+                            "items": {
+                              "properties": {
+                                "url": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "url"
+                              ],
+                              "type": [
+                                "object",
+                                "null"
+                              ]
+                            },
+                            "type": [
+                              "array",
+                              "null"
+                            ]
+                          },
+                          "items_by_path": {
+                            "items": {
+                              "properties": {
+                                "path": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "path"
+                              ],
+                              "type": [
+                                "object",
+                                "null"
+                              ]
+                            },
+                            "type": [
+                              "array",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "connection_id"
+                        ],
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "name": {
+                      "const": "GraphConnectors"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "knowledge_sources": {
+                      "items": {
+                        "properties": {
+                          "host_name": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "skill": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "tables": {
+                            "items": {
+                              "properties": {
+                                "table_name": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "type": [
+                                "object",
+                                "null"
+                              ]
+                            },
+                            "type": [
+                              "array",
+                              "null"
+                            ]
+                          }
+                        },
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "name": {
+                      "const": "Dataverse"
+                    }
+                  }
+                }
+              ],
+              "required": [
+                "name"
+              ],
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "includeDeveloperCard": {
+            "default": false,
+            "description": "When true, requests orchestration diagnostics (agent metadata, tool invocation details, retrieval summary) from the backend. Defaults to false.",
+            "type": "boolean"
+          },
+          "query": {
+            "description": "A natural-language query describing what to search for. A non-empty, non-whitespace string is required.",
+            "type": "string"
+          },
+          "strategy": {
+            "default": null,
+            "description": "Retrieval strategy, chosen by where the data lives. 'grounding' (default) searches M365 indexed content only (SharePoint, OneDrive, Teams, Outlook) — use it when the request is fully satisfiable from the M365 index. 'copilot' searches M365 indexed content PLUS federated connectors, external data sources, and MCP tools — use it when data may live beyond the M365 index or the location is unknown. Any other value is rejected.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "search_paths",
+      "description": "Search for available WorkIQ entity paths and supported operations using a semantic natural-language query. Use this before fetch, fetch_blob, create_entity, update_entity, delete_entity, do_action, or call_function when you need to discover the right path for a user request. If you already know a path prefix, search with it directly, for example '/me/people'.",
+      "inputSchema": {
+        "properties": {
+          "query": {
+            "description": "Natural-language query describing the resource and action to discover, e.g. 'recent emails', 'reply to email', 'calendar events', 'channel members', or a path prefix like '/me/people'.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "update_entity",
+      "description": "Update an existing WorkIQ entity by writing JSON to its path. Call it directly for standard fields (e.g. isRead, flag, subject, location, start/end, displayName); use get_schema only if you do not know the fields or the update returns 400. Provide the fields the operation requires; some paths replace the entity, so include all fields the schema marks required. If the path is supplied, don't fetch the item just to verify it exists. Returns the updated entity JSON. WorkIQ entity paths borrow from the conventions of Microsoft Graph. Only write values the user supplied or you fetched; if the new value is not specified, ask the user instead of guessing.",
+      "inputSchema": {
+        "properties": {
+          "agentId": {
+            "default": null,
+            "description": "Optional agent ID to target a specific agent.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "entityUrl": {
+            "description": "WorkIQ entity path to update (e.g., /me/messages/{id}, /me/events/{id}). Must be a relative path — do not include a base URL.",
+            "type": "string"
+          },
+          "headers": {
+            "additionalProperties": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "default": null,
+            "description": "Optional HTTP request headers. If the operation's schema declares an `If-Match` header parameter, you MUST set it to the `@odata.etag` value from the latest read of the same entity.",
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "jsonBody": {
+            "description": "JSON body for the update, supplied as a JSON object (e.g., {\"isRead\":true}) or a JSON-encoded string"
+          }
+        },
+        "required": [
+          "entityUrl",
+          "jsonBody"
+        ],
+        "type": "object"
+      }
+    }
+  ]
+}
