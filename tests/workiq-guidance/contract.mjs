@@ -1,6 +1,6 @@
-// Preview synthetic contract: G = grounding/ownership; R = workflow reliability.
+// Stable 3.0 synthetic contract: G = grounding/ownership; R = workflow reliability.
 // IDs are stable requirements, not private benchmark or run identifiers.
-export const packages = ['workiq-preview'];
+export const packages = ['workiq'];
 
 export const requirements = {
   G01: 'Ordinary questions, summaries, comparisons and implementation context retrieve first.',
@@ -9,11 +9,11 @@ export const requirements = {
   G04: 'Known trusted agent IDs are reused without redundant discovery.',
   G05: 'Missing or ambiguous named agents never silently select a substitute.',
   G06: 'Same-agent continuation uses the returned conversation ID.',
-  G07: 'Unspecified sources explicitly select Grounding.',
-  G08: 'Unknown file location alone explicitly selects Grounding.',
+  G07: 'Unspecified sources explicitly select Copilot without a Grounding probe.',
+  G08: 'Unknown file locations explicitly select Copilot.',
   G09: 'Indexed file and Teams scope is retained.',
   G10: 'Required external sources select Copilot without a Grounding probe.',
-  G11: 'Dataverse and GraphConnectors require Copilot and are retained.',
+  G11: 'GraphConnectors requires Copilot; Dataverse and Power BI are unsupported roadmap sources.',
   G12: 'Mixed indexed and external sources are not silently narrowed.',
   G13: 'Explicit Copilot retrieval is honored within source authorization.',
   G14: 'Grounding-only restrictions prevent unauthorized broadening.',
@@ -27,7 +27,7 @@ export const requirements = {
   G22: 'Missing retrieve is disclosed, with no implicit ask or broad sweep.',
   G23: 'Unsupported Grounding is disclosed, not silently omitted.',
   G24: 'Exact entities, full collections, bytes and mutations use entity tools.',
-  G25: 'Retrieval arguments have explicit strategy, query array and compatible capabilities.',
+  G25: 'Retrieval arguments have explicit strategy, one nonblank query string and compatible capabilities.',
   'R.C1': 'Domain recipes remain discoverable, parsed frontmatter and local links are valid.',
   'R.C2': 'Files use exact authoritative source/destination identity and effect-correct tools.',
   'R.C3': 'Approval, execution and observed completion are separate states.',
@@ -36,14 +36,14 @@ export const requirements = {
   'R.C6': 'Teams/directory identity types, privileges and query restrictions are honored.',
   'R.C7': 'Exact routes, explicit delegation, continuity, citations and limitations are preserved.',
   'R.schema': 'Explicit schema and path discovery requests cannot be optimized away.',
-  'R.host': 'Preview guidance and logical tool contracts are agent-host-neutral; loading and behavioral evidence is attributed to its actual host.'
+  'R.host': 'Logical tool contracts are agent-host-neutral; loading and behavioral evidence is attributed to its actual host.'
 };
 
 export const capabilities = [
   'People', 'Meetings', 'OneDriveAndSharePoint', 'Email',
-  'TeamsMessages', 'Dataverse', 'GraphConnectors'
+  'TeamsMessages', 'GraphConnectors'
 ];
-export const broaderCapabilities = ['Dataverse', 'GraphConnectors'];
+export const broaderCapabilities = ['GraphConnectors'];
 export const terminals = [
   'completed', 'accepted/pending', 'awaiting confirmation',
   'not found in searched scope', 'blocked', 'outcome unknown'
@@ -58,8 +58,8 @@ export const requiredReferences = [
 
 export function retrievalProblems(args, supported = capabilities) {
   const errors = [];
-  if (!Array.isArray(args.query) || !args.query.length ||
-      args.query.some(q => typeof q !== 'string' || !q.trim())) errors.push('query must be a nonempty array of nonblank strings');
+  if (!args || typeof args !== 'object' || Array.isArray(args)) return ['retrieval arguments must be an object'];
+  if (typeof args.query !== 'string' || !args.query.trim()) errors.push('query must be a single nonblank string');
   if (!['grounding', 'copilot'].includes(args.strategy)) errors.push('strategy must be explicitly grounding or copilot');
   if (args.capabilities !== undefined && (!Array.isArray(args.capabilities) ||
       args.capabilities.some(c => !c || typeof c !== 'object' || Array.isArray(c) ||
@@ -68,8 +68,10 @@ export function retrievalProblems(args, supported = capabilities) {
   }
   if (args.strategy === 'grounding' && Array.isArray(args.capabilities) &&
       args.capabilities.some(c => broaderCapabilities.includes(c?.name))) {
-    errors.push('Grounding cannot use Dataverse or GraphConnectors');
+    errors.push('Grounding cannot use GraphConnectors');
   }
+  if (args.capabilities !== undefined && args.agentId !== undefined &&
+      args.agentId !== 'bizchat-as-gpt-scenario') errors.push('capabilities cannot use a non-default agent ID');
   const allowed = new Set(['query', 'strategy', 'capabilities', 'agentId', 'includeDeveloperCard']);
   if (Object.keys(args).some(k => !allowed.has(k))) errors.push('unsupported retrieval argument');
   return errors;

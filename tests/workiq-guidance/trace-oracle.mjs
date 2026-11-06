@@ -43,7 +43,7 @@ export function validateTrace(scenario, trace, { observed = false } = {}) {
     if (!p || required.some(k => typeof p[k] !== 'string' || !p[k].trim())) {
       fail('provenance', 'Missing host, catalog, scenario, package or raw-evidence provenance.');
     }
-    if (!packages.includes(p?.package)) fail('provenance', 'Unsupported package; this contract covers workiq-preview only.');
+    if (!packages.includes(p?.package)) fail('provenance', 'Unsupported package; this contract covers stable workiq only.');
     if (!trace.instrumentation || ['skillAvailable', 'skillActivated', 'referenceReads']
       .some(k => !Object.hasOwn(trace.instrumentation, k))) {
       fail('provenance', 'Record skill availability, activation and reference-read instrumentation separately (unknown is allowed).');
@@ -66,7 +66,8 @@ export function validateTrace(scenario, trace, { observed = false } = {}) {
   const pendingAccepted = new Set();
   const pendingPartials = new Set();
   const requiredBroad = scenario.scope.required.some(c => broaderCapabilities.includes(c));
-  const firstStrategy = requiredBroad || scenario.explicitCopilot ? 'copilot' : 'grounding';
+  const firstStrategy = scenario.scope.groundingOnly ? 'grounding' :
+    requiredBroad || scenario.explicitCopilot || !scenario.knownIndexed ? 'copilot' : 'grounding';
 
   for (const event of trace.events) {
     if (!event || typeof event !== 'object') { fail('trace-schema', 'Malformed event.'); continue; }
@@ -94,6 +95,7 @@ export function validateTrace(scenario, trace, { observed = false } = {}) {
         continue;
       }
       if (denied) fail('denial-bypass', 'No tool, strategy, agent or alias fallback after explicit denial.');
+      if (scenario.unsupportedSources?.length) fail('unsupported-source', 'Required roadmap sources are unavailable; disclose rather than search or drop them.');
       if (scenario.conflict) fail('conflicting-scope', 'Resolve incompatible source requirements before calling.');
       if (scenario.stopReason && !scenario.operations.some(op => operationMatches(op, event) && op.effect === 'read')) {
         fail('unresolved-identity', `Stop for authoritative prerequisite: ${scenario.stopReason}.`);
@@ -135,12 +137,12 @@ export function validateTrace(scenario, trace, { observed = false } = {}) {
         if (sufficient) fail('redundant-retrieval', 'Already sufficient evidence does not need semantic resynthesis.');
         if (escalations > 0 && event.args.strategy === 'grounding') fail('escalation-budget', 'Do not switch back to Grounding after the broader attempt.');
         if (grounding && event.args.strategy === 'copilot') {
-          escalations += Array.isArray(event.args.query) ? event.args.query.length : 1;
+          escalations += 1;
           if (escalations > 1) fail('escalation-budget', 'One targeted broader query per objective; batching/paraphrasing does not reset it.');
           if (!missingEvidence || !scenario.scope.allowed.includes(missingEvidence.capability)) {
             fail('unjustified-escalation', 'No concrete missing allowed broader-source fact in the scripted evidence.');
-          } else if (!Array.isArray(event.args.query) || missingEvidence.queryTerms.some(term =>
-            !event.args.query.every(q => typeof q === 'string' && q.toLowerCase().includes(term.toLowerCase())))) {
+          } else if (typeof event.args.query !== 'string' || missingEvidence.queryTerms.some(term =>
+            !event.args.query.toLowerCase().includes(term.toLowerCase()))) {
             fail('untargeted-escalation', 'Broader search must target the missing fact rather than repeat the original task.');
           }
         }

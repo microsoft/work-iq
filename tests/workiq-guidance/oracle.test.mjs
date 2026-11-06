@@ -181,14 +181,17 @@ test('static example and policy lint reject policy mutations without paragraph s
     '| Access denied | Unknown reason | Try a different path |').some(e => e.includes('alternate path')));
   assert.deepEqual(exampleProblems('```json\n{"actionUrl":"/search/query","jsonBody":{"query":{"queryString":"synthetic"}}}\n```'), []);
 });
-test('path-discovery query strings are not confused with retrieval query arrays', () => {
+test('path-discovery and retrieval both require query strings, with distinct schemas', () => {
   const example = value => `# search_paths\n\n\`\`\`json\n${JSON.stringify(value)}\n\`\`\`\n`;
   assert.deepEqual(exampleProblems(example({ query: '/me/people' })), []);
   for (const args of [{ query: [] }, { query: '' }, { query: '/me/people', strategy: 'grounding' }]) {
     assert.ok(exampleProblems(example(args)).length);
   }
   assert.ok(exampleProblems(example({ query: 'invalid retrieve query' }), true).length);
-  assert.ok(exampleProblems('# retrieve\n\n```json\n{"query":"invalid","strategy":"grounding"}\n```').length);
+  assert.deepEqual(exampleProblems('# retrieve\n\n```json\n{"query":"valid indexed query","strategy":"grounding"}\n```'), []);
+  for (const query of [[], ['x'], '', ' ', null, 42, {}]) {
+    assert.ok(exampleProblems(`# retrieve\n\n\`\`\`json\n${JSON.stringify({ query, strategy: 'grounding' })}\n\`\`\``).length);
+  }
 });
 test('host adapter envelope and raw receipts are checked (synthetic adapter unit only)', () => {
   const fixture = cases[0];
@@ -201,7 +204,7 @@ test('host adapter envelope and raw receipts are checked (synthetic adapter unit
   }));
   trace.provenance = {
     host: 'synthetic-adapter-unit', hostVersion: 'synthetic-version', model: 'none-unit-test',
-    package: 'workiq-preview', packageRevision: 'synthetic-revision', packageHash: packageHash('workiq-preview'),
+    package: 'workiq', packageRevision: 'synthetic-revision', packageHash: packageHash('workiq'),
     catalogHash: catalogHash(fixture.scenario), scenarioHash: scenarioHash(fixture.scenario),
     adapterVersion: 'synthetic-adapter-version', startedAt: '2030-01-01T00:00:00Z',
     rawTraceSha256: hash(rawBytes)
@@ -224,10 +227,10 @@ test('host adapter envelope and raw receipts are checked (synthetic adapter unit
   }
   assert.equal(validateObserved(fixture.scenario, trace).ok, false);
   for (const edit of [
-    t => { t.provenance.package = 'workiq'; t.provenance.packageHash = packageHash('workiq'); },
+    t => { t.provenance.package = 'workiq-preview'; },
     t => { t.provenance.scenarioHash = 'synthetic-wrong-hash'; },
     t => { t.provenance.packageHash = 'synthetic-wrong-hash'; },
-    t => { t.events[0].args.query = ['altered after execution']; },
+    t => { t.events[0].args.query = 'altered after execution'; },
     t => { t.events.splice(0, 2); },
     t => { delete t.events[0].evidenceRef; },
     t => { t.events[0].origin = 'agent'; }
@@ -247,15 +250,15 @@ test('trace CLI refuses missing/unsupported evidence and describes trusted scena
   const description = spawnSync(process.execPath, [cli, '--describe', cases[0].id], { encoding: 'utf8' });
   assert.equal(description.status, 0);
   assert.equal(JSON.parse(description.stdout).scenarioHash, scenarioHash(cases[0].scenario));
-  assert.deepEqual(Object.keys(JSON.parse(description.stdout).packageHashes), ['workiq-preview']);
+  assert.deepEqual(Object.keys(JSON.parse(description.stdout).packageHashes), ['workiq']);
 });
 test('CI is narrow, read-only, pinned and separates evidence layers', () => {
   const workflow = parseDocument(fs.readFileSync(new URL('../../.github/workflows/workiq-guidance.yml', import.meta.url), 'utf8')).toJS();
   assert.deepEqual(workflow.permissions, { contents: 'read' });
   for (const trigger of ['pull_request', 'push']) {
-    assert.ok(!workflow.on[trigger].paths.includes('plugins/workiq/**'));
-    for (const pattern of ['plugins/workiq-preview/**', '*.md', 'tests/workiq-guidance/**',
-      'marketplace.json', '.claude-plugin/marketplace.json']) {
+    assert.ok(!workflow.on[trigger].paths.includes('plugins/workiq-preview/**'));
+    for (const pattern of ['plugins/workiq/**', 'plugins/workiq/tests/**', '*.md', 'tests/workiq-guidance/**',
+      'marketplace.json', '.claude-plugin/marketplace.json', '.github/plugin/marketplace.json']) {
       assert.ok(workflow.on[trigger].paths.includes(pattern));
     }
   }
@@ -263,4 +266,5 @@ test('CI is narrow, read-only, pinned and separates evidence layers', () => {
   assert.ok(steps.filter(s => s.uses).every(s => /@[a-f0-9]{40}$/.test(s.uses)));
   assert.ok(steps.some(s => s.run === 'npm run test:oracle'));
   assert.ok(steps.some(s => s.run === 'npm run test:static'));
+  assert.ok(steps.some(s => s.run === 'node --test plugins/workiq/tests/guidance.test.mjs'));
 });

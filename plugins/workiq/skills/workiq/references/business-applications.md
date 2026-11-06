@@ -1,136 +1,65 @@
-# Business Applications
+# Business Applications discovery and reads
 
-Use WorkIQ entity tools with paths under `/businessapps/` for business-application environments, data, apps,
-skills, APIs, and operations. This path space is distinct from Microsoft Graph application registrations. Do not
-substitute a separate endpoint, another MCP server, or an invented REST URL.
+Use `/businessapps/` for CRM, ERP and Power Apps records, environments and
+operations. These are not Graph application registrations or this plugin's
+Markdown skills. Do not substitute another MCP server or invent an API URL.
 
-## Discovery and path grounding
+## Discover the application and paths
 
-1. Start intent-driven discovery with one focused `search_paths` call and a natural-language description of the
-   business record, workflow, app, or operation. Use only fields accepted by the connected WorkIQ tool schema.
-   Treat discovery as grounded only when the response contains a `/businessapps/...` path.
-2. Use `fetch` on `/businessapps/environments/` when the user explicitly asks to list environments or identify the
-   default environment. Do not guess an environment ID.
-3. If `search_paths` errors or returns no `/businessapps/...` path, do not repeat or broaden the search. Use the
-   environment inventory, select only the exact requested environment, and inspect only the relevant returned
-   `apps`, `skills`, or `tables` collection. If the environment or capability is absent, abstain.
-4. Discovery is read-only: use `search_paths`, not `do_action`. `do_action` is a POST action and may be denied based
-   on the calling client's trust classification and the tenant's effective mutation policy. Returned paths can be
-   passed directly to `fetch`, `get_schema`, or a write tool.
-5. For an unknown path or identifier, discover the Business Applications resource this way — apps, tables, records,
-   skills, APIs, and operations. Take each identifier from the returned paths. Do not guess an ID or name. Known
-   structural inventory is the exception: use its direct `fetch` path, especially `/businessapps/environments/`.
-   Choose the smallest sufficient set from the returned descriptions; when two or more are needed, read them in one
-   `fetch` through `entityUrls`, retain successful per-entry results, and retry only required failures.
-6. Fetch a concrete table to read its columns; do not repeat that read with `get_schema`. Use `get_schema` before an
-   unfamiliar mutation or operation whose input contract was not returned. Never fill in
-   `{environmentId}`, `{tableName}`, `{recordId}`, `{appName}`, `{apiName}`, `{skillName}`, or operation names
-   from memory.
+For a business-record or workflow request, start with the read-only discovery
+action `do_action` `/businessapps/me`:
 
-Do not use `do_action` on `/businessapps/me` for discovery even if that route is
-exposed; use `search_paths` instead. The old route is POST-shaped and can be
-policy-denied before any grounded path is returned, ending the workflow before
-`search_paths` or `fetch` can run.
+```json
+{"actionUrl":"/businessapps/me","jsonBody":{"query":"{requestedBusinessTask}"}}
+```
 
-## Exact path and tool selection
+The required query describes the user's task. Include an environmentId or limit
+only when the connected contract supports it and the environment is already
+known. For an explicit environment listing, use `fetch`
+`/businessapps/environments/`. Natural-language `search_paths` is another
+discovery option, not a fallback after denial.
 
-| Intent | WorkIQ tool and Business Applications path |
-|---|---|
-| List environments/default | `fetch` `/businessapps/environments/` |
-| List or describe tables | `fetch` `/businessapps/environments/{environmentId}/tables[/<tableName>]` (batch known paths with `entityUrls`) |
-| Read a record | `fetch` `/businessapps/environments/{environmentId}/tables/{tableName}/records/{recordId}` |
-| Query environment data | `do_action` `/businessapps/environments/{environmentId}/query` with `jsonBody: {"querytext":"SELECT ..."}` |
-| Create a table | `create_entity` on `/businessapps/environments/{environmentId}/tables` with `{tableName, columns, displayName?, description?}` |
-| Create a record | `create_entity` on `/businessapps/environments/{environmentId}/tables/{tableName}/records` with `{"item":{...}}` |
-| Update a record | `update_entity` on `/businessapps/environments/{environmentId}/tables/{tableName}/records/{recordId}` with changed fields |
-| Delete a record/table | `delete_entity` on the exact record or table path returned by discovery |
-| List or inspect apps | `fetch` `/businessapps/environments/{environmentId}/apps[/<appName>]` |
-| List or read a business skill | `fetch` `/businessapps/environments/{environmentId}/skills[/{skillName}]` |
-| Create a business skill | `create_entity` on `/businessapps/environments/{environmentId}/skills` with the schema-defined skill payload |
-| Update a business skill | `update_entity` on `/businessapps/environments/{environmentId}/skills/{skillName}` with changed fields |
-| Delete a business skill | `delete_entity` on `/businessapps/environments/{environmentId}/skills/{skillName}` |
-| Run an app-scoped operation | `do_action` on the exact `.../apps/{appName}/.../operations/{operationName}` path returned by `get_schema` |
-| Invoke a Custom API | `do_action` on the exact `/businessapps/environments/{environmentId}/customapis/{apiName}` path returned by discovery, with API inputs in `jsonBody` |
-| Invoke an in-app MCP tool | `do_action` on the exact `/businessapps/environments/{environmentId}/mcp/{serverName}/tools/{toolName}` path |
+Take every environment, app, table, record, skill, API and operation identifier
+from returned paths. Preserve casing and opaque IDs; never assume a default
+environment. Inspect the returned definition/schema when needed to distinguish
+reads from operations that change data or delegate work.
 
-Environment SQL queries and Custom APIs with input bodies are actions, not functions. Use `do_action` with the
-schema-defined `jsonBody`. Use `call_function` only for an exact function path returned by discovery; do not use it
-for `/businessapps/environments/{environmentId}/query`. Pass SQL in `querytext`, never natural language. Use explicit
-schema-confirmed columns, selective `WHERE`, and `TOP` or paging. Inspect the query schema once when its contract was
-not returned, and use only its advertised SQL subset; do not improvise subqueries, `CASE`, or `APPLY`. Join confirmed
-keys within one environment when useful; across environments, run bounded queries and correlate locally by stable
-business keys, not names or assumed shared IDs. Use keys returned by the first query to filter later queries; do not
-scan entire secondary tables.
+## Exact reads and queries
 
-## Business skills
+Use the following inherited shapes only after discovery confirms the resource:
 
-Business skills are reusable, environment-scoped capabilities that a business application exposes, and they are
-addressed like any other Business Applications resource. They are **not** the same thing as this WorkIQ skill or
-its `references/*.md` files.
+| Request | Tool and discovered path |
+| --- | --- |
+| Inspect tables | fetch or get_schema on `/businessapps/environments/{environmentId}/tables/{tableName}` |
+| Read a record | fetch `/businessapps/environments/{environmentId}/tables/{tableName}/records/{recordId}` |
+| Inspect an app | fetch `/businessapps/environments/{environmentId}/apps/{appName}` |
+| List/read an environment business skill | fetch `/businessapps/environments/{environmentId}/skills` or its returned skill path |
+| Query environment data | do_action `/businessapps/environments/{environmentId}/query`, with schema-defined `{"querytext":"{supportedReadQuery}"}` |
+| Download a record file | call_function on the discovered `.../records/{recordId}/files/{columnName}/download` path |
 
-- Read one skill with `fetch` on `/businessapps/environments/{environmentId}/skills/{skillName}`, or list the
-  collection with `fetch` on `/businessapps/environments/{environmentId}/skills`.
-- Skills are writable with the same entity tools used for records: `create_entity` on the `skills` collection,
-  and `update_entity` or `delete_entity` on the concrete `skills/{skillName}` path.
-- Call `get_schema` on the skill or collection path before a create or update, and send only schema-confirmed
-  fields. Do not infer a skill's payload shape from a record or table payload.
-- Resolve `{skillName}` from `search_paths` and preserve the exact returned casing. Do not invent skill names.
+Environment SQL queries use do_action, not call_function. Establish that the
+query is read-only and supported; do not generate a write query under a read
+request. Use optional destinationPath only when supported. Record-file download
+does not establish a Graph fetch_blob or OneDrive upload contract.
 
-## Approval and privilege boundaries
+App operations omit `/records/`: use exact returned paths under
+`.../apps/{appName}/tables/{tableName}`. If the schema exposes a read-only `view`
+or `read` action, use its supported arguments; never construct an app operation
+from an environment record path.
 
-Business Applications writes execute immediately. Apply the general WorkIQ
-write-confirmation rule before calling `create_entity`, `update_entity`,
-`delete_entity`, or a mutating `do_action`.
+## Results and stopping
 
-WorkIQ may deny mutations and POST actions based on the calling client's trust classification and the tenant's
-effective policy. This does not block read-only discovery with `search_paths` or structural reads with `fetch`. If a
-genuine write or action is policy-denied, stop and report the observed diagnostic. Surface only its stated
-remediation; do not assert that a particular setting, consent, or administrator action will fix it unless the
-diagnostic says so, and do not retry through another path.
+Report only returned records and fields, with their actual names and safe source
+links where available. Follow supported paging for requested completeness or
+disclose partial results. Missing fields, failed reads and empty results differ.
+Business metadata comes from discovery/schema results, not a delegated answer.
 
-- If the user explicitly says a preview or deletion is **not approved**, use
-  discovery and reads only. Do not call the write tool merely to let the
-  server reject it, and do not treat a rejection as a substitute for user
-  confirmation.
-- When prior transcript context records an explicit approval, perform only the
-  approved mutation, once, through the schema-defined path.
-- A named but unavailable environment is a hard stop. Never redirect the request
-  to a default, similarly named, or otherwise available environment.
-- An approved create or update is complete only when the current turn contains
-  the matching write receipt and, when supported, a read-back of that exact
-  target. A pre-existing lookalike is not proof of completion.
-- If the approved operation fails for a missing privilege, authorization, or
-  policy, **stop the mutation workflow immediately** and report that exact
-  failure. Do not continue searching for another write route. Do not modify a
-  different table, record, view, saved query, skill, or app artifact as a
-  workaround and do not claim the requested operation succeeded.
-- Schema and customization requests must use the discovered schema-mutation
-  operation. Record-level access does not imply customization rights, and a
-  saved view or ordinary record update is not a schema-customization fallback.
+Explicit access, privilege or policy denial stops the workflow. Do not switch
+tables, views, app operations, agents or endpoints to work around it.
+Read [recovery](troubleshooting.md) before any permitted retry.
 
-## App-scoped operations
+## Routes
 
-App-scoped paths intentionally differ from environment table paths:
-
-- Environment record collection:
-  `/businessapps/environments/{environmentId}/tables/{tableName}/records`
-- App table:
-  `/businessapps/environments/{environmentId}/apps/{appName}/tables/{tableName}`
-- App operations are directly under the app table or record path and **omit `/records/`**. Use only operation names
-  returned by `get_schema`, such as `view`, `read`, `prepare_create`, `submit_create`, `prepare_update`,
-  `submit_update`, `prepare_delete`, or `submit_delete`.
-- Use `view` for bounded/form-aware app record browsing. Use `prepare_*` then `submit_*` when the schema exposes
-  that two-step operation.
-
-## Grounding rules
-
-- WorkIQ's top-level `ask` can also answer questions about Business Applications requests, though some applications
-  may not be included in `ask`, so use `search_paths` for authoritative semantic path discovery.
-- Do not invent `/businessapps` REST shapes, append OData syntax to an undiscovered Business Applications path, or
-  move `/records/` into an app-scoped path, or retry a confirmed unsupported path through different tools.
-- Preserve exact casing and IDs returned by tools in subsequent calls, although structural path segments are
-  case-insensitive.
-- A write is complete only when the tool response confirms it.
-- For metadata-only questions with an unknown path, use `search_paths`, then fetch the returned resource. For known
-  structural inventory, use its direct `fetch` path instead, especially `/businessapps/environments/` for environment
-  listing. For exact data reads/writes, use the environment/table/app paths directly after discovery.
+| Route | Intent | Read |
+| --- | --- | --- |
+| businessapps-actions | Create, update, delete, upload or execute a business operation | [Actions](business-applications-actions.md) |

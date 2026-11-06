@@ -1,11 +1,10 @@
-# WorkIQ preview guidance contract checks
+# WorkIQ stable 3.0 guidance contract checks
 
-This contract covers **`workiq-preview` only**. The public `workiq` routing
-policy, metadata, and version remain unchanged. Its SharePoint metadata guidance
-is consolidated into the existing reference as a separate documentation cleanup,
-not an adoption of preview policy; cross-package policy parity is not required.
+This contract covers **`workiq` 3.0.0**. The public `workiq-preview` package has
+been retired. Historical mentions in reviewed stable source are not active
+marketplace registrations; see the root README for migration instructions.
 
-The preview contract is **agent-host-neutral**. Logical tool behavior is shared across
+The contract is **agent-host-neutral**. Logical tool behavior is shared across
 compatible agents; host adapters normalize actual tool names and event formats
 without changing policy. The CLI below is a Node-based trace validator, not a
 requirement to use GitHub Copilot CLI as the agent.
@@ -17,16 +16,21 @@ npm ci --prefix tests/workiq-guidance --ignore-scripts --no-audit --no-fund
 npm --prefix tests/workiq-guidance run test:oracle
 npm --prefix tests/workiq-guidance run test:static
 npm --prefix tests/workiq-guidance test
+node --test plugins/workiq/tests/guidance.test.mjs
 ```
 
-Dependencies and the lockfile are test-only; the preview plugin gains no runtime dependencies.
-CI runs the two layers separately and performs no model calls, plugin installation,
+Locked tarballs use the approved package proxy without changing dependency versions
+or integrity hashes. On machines that block direct public registries, install with
+`npm ci --prefix tests/workiq-guidance --registry https://packagefeedproxy.microsoft.io/npm/ --replace-registry-host=never --ignore-scripts --no-audit --no-fund`.
+
+Dependencies and the lockfile are test-only; the plugin gains no runtime dependencies.
+CI runs the static, synthetic oracle and promoted plugin-local layers separately and performs no model calls, plugin installation,
 Microsoft 365 operations, or live evaluations.
 
 [`baseline.json`](baseline.json) records the unchanged-guidance red run: 244 oracle
 self-tests pass; 24 of 132 documentation checks fail for enumerated old-policy/link
-causes. That historical run covered both packages before this PR was narrowed to
-preview only. Its counts are not the current suite's scope or results.
+causes. That historical run predates stable 3.0 and covered both packages.
+Its counts and old policy failures are not the current suite's scope or results.
 
 ## Canonical contract and evidence layers
 
@@ -37,15 +41,16 @@ preview only. Its counts are not the current suite's scope or results.
   deliberately invalid negative traces. These are **oracle unit inputs**, not observed
   agent behavior. There is no toy router whose output is counted as agent compliance.
 - **Static checks** parse YAML descriptions, Markdown links/anchors (including
-  unambiguous code references), domain dispatch, retrieval JSON, preview policy concepts
-  and contradictions. They also preserve the description's requirement to load the
-  skill before tool use. Public-only SharePoint/Business Applications references
-  and cross-package parity are outside this preview contract.
-  Prose paraphrases need not match a paragraph snapshot. The preview plugin's name,
-  version, and description must agree across both marketplaces and all its host
-  plugin manifests. The public package is not subject to preview metadata policy.
-  Metadata also retains explicit workloads and actions ahead of routing policy,
-  guarding discovery coverage without claiming a measured agent-quality effect.
+  unambiguous code references), domain/leaf dispatch, retrieval JSON, source-based policy
+  and contradictions. They preserve reading the skill before tool use, local links
+  in affected public docs, and stable metadata consistency across both public
+  marketplaces and all three host manifests. Workload and action discovery remains
+  covered without claiming a measured agent-quality effect.
+- [`loading-contract.mjs`](loading-contract.mjs) follows declared routes and their
+  transitive `Required before use` dependencies, checking leaf ownership, operative
+  rules and LF-normalized byte budgets. Optional prose/links do not become mandatory
+  preloads. Same-objective follow-ups load evidence repair, even after success.
+- **Promoted plugin tests** run the reviewed stable source contracts independently.
 - **Oracle tests** prove that the assertion runner accepts/rejects specified trace
   structures, including wrong actual calls, missing approval, replay and false outcomes.
 - **Observed host/mock tests** require a separately instrumented host to load the
@@ -61,7 +66,7 @@ run those products or establish cross-host behavioral equivalence.
 
 | Surface | What the suite establishes | Separate runtime evidence needed |
 | --- | --- | --- |
-| GitHub Copilot, Claude, Codex manifests | Preview package metadata consistency | Installation, skill activation, tool-name normalization, and behavior in each actual host/version |
+| GitHub Copilot, Claude, Codex manifests | Stable package metadata consistency | Installation, skill activation, tool-name normalization, and behavior in each actual host/version |
 | Other compatible agents | Host-neutral logical contracts and adapter envelope | A supported loader/MCP integration and instrumented host adapter |
 | Copilot CLI-only installation checks performed outside this suite | Evidence limited to the recorded CLI version and package hashes | No inference about Claude, Codex, or another host |
 
@@ -91,6 +96,15 @@ must be a preceding scenario-authored user event for that exact operation and pa
 Calendar ordering and exchanged-mail membership are computed from returned records.
 Retry delays start after the corresponding observed response; waiting while a call
 is pending does not satisfy a subsequently returned backoff.
+
+Retrieval requires a single nonblank `query` string, never an array, and an
+explicit strategy. Known indexed M365 sources use `grounding`; unknown, connected,
+external, mixed or explicitly broader sources use `copilot` directly, without a
+Grounding probe. GraphConnectors requires `copilot`; Dataverse and Power BI are
+unsupported roadmap sources, not silently droppable requirements. Schema-shape
+negatives reject malformed strings, arrays, unsupported capability names and
+non-default-agent/capability combinations. `search_paths.query` is also a string;
+the legacy `filter` interface is accepted only when advertised, never mixed with query.
 
 Focused source-filter cases reject guessed allow-lists for unspecified sources
 while retaining explicit source constraints and evidence-justified targeted
@@ -137,7 +151,8 @@ The normalized trace requires:
   `packageHash`, `catalogHash`, `scenarioHash`, `adapterVersion`, `startedAt`,
   `rawTraceSha256`. Each field must be a nonblank string, including `packageHash`
   when calling `validateTrace` directly with `observed: true`. Only
-  `package: "workiq-preview"` is accepted. Record the actual loaded package, not
+  `package: "workiq"` is accepted. Retired preview provenance is rejected.
+  Record the actual loaded package, not
   merely the checkout revision; `validateObserved` also verifies its digest.
 - `instrumentation`: separate `skillAvailable`, `skillActivated`, and `referenceReads`.
   Use `"unknown"` when the host cannot expose a signal; absence is not proof of non-use.

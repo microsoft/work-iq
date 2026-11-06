@@ -7,15 +7,9 @@
   "plugins": [
     {
       "name": "workiq",
-      "description": "Full WorkIQ tool surface \u2014 agentic queries via ask plus direct reads and writes (create, update, delete, send) across emails, meetings, calendar, Planner tasks, documents, Teams, people and contacts, OneDrive, and SharePoint.",
-      "version": "2.0.2",
+      "description": "WorkIQ for Microsoft 365 mail, calendar, Teams, files, SharePoint, people, Planner and Business Applications. Use retrieve with source-based strategy selection to find evidence and summarize locally. Use ask only for a requested Copilot or named-agent answer; use entity tools for specific reads and operations, with confirmation before mutations. If workiq and workiq-preview are both installed, prefer workiq-preview only if its installed version is higher than workiq's; otherwise prefer workiq.",
+      "version": "3.0.0",
       "source": "./plugins/workiq"
-    },
-    {
-      "name": "workiq-preview",
-      "description": "Preview WorkIQ for Microsoft 365 email, calendars, meetings, Teams messages, SharePoint and OneDrive files, people and contacts, and Planner tasks. Search, summarize, read, create, update, delete, send, and download using supported tools, with confirmation for mutations. Use retrieve-first context with explicit Grounding when available, intentional Copilot or named-agent delegation via ask, and entity tools for exact operations.",
-      "version": "2.1.0",
-      "source": "./plugins/workiq-preview"
     },
     {
       "name": "microsoft-365-agents-toolkit",

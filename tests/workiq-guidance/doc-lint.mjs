@@ -129,8 +129,8 @@ export function exampleProblems(text, isRetrieveReference = false) {
           Object.hasOwn(object, 'functionUrl')) return;
       if (Object.hasOwn(object, 'query')) {
         errors.push(...retrievalProblems(object).map(p => `${code.heading}: ${p}`));
-        if (/unknown|unspecified/i.test(code.heading) && !/external|broader|conflict/i.test(code.heading) && object.strategy !== 'grounding') {
-          errors.push(`${code.heading}: unknown source must explicitly select Grounding`);
+        if (/unknown|unspecified/i.test(code.heading) && !/conflict/i.test(code.heading) && object.strategy !== 'copilot') {
+          errors.push(`${code.heading}: unknown source must explicitly select Copilot`);
         }
       } else for (const child of Object.values(object)) check(child);
     };
@@ -142,34 +142,36 @@ export function exampleProblems(text, isRetrieveReference = false) {
 // Concept-level checks deliberately avoid snapshots of full prose paragraphs.
 // They establish documentation coverage only; they cannot prove instruction-following.
 export const policies = [
-  ['G07', 'SKILL.md', /(?:grounding.{0,35}default|default.{0,45}grounding)/is, 'advertise the Grounding skill default'],
-  ['G08', 'references/retrieve-work-iq.md', /(?:unknown|unspecified)[\s\S]{0,180}grounding/i, 'unknown/unspecified locations use Grounding'],
-  ['G25', 'SKILL.md', /unspecified source families[\s\S]{0,50}omit[\s\S]{0,30}capabilities/i, 'advertise omitted capability filters for unspecified sources'],
-  ['G25', 'references/retrieve-work-iq.md', /source families are unspecified[\s\S]{0,50}omit[\s\S]{0,30}capabilities/i, 'do not guess a source-family allow-list'],
+  ['G07', 'references/retrieve-work-iq.md', /Unknown sources[^\n]*\| copilot directly, without a Grounding probe/i, 'unknown sources select Copilot directly'],
+  ['G08', 'references/retrieve-work-iq.md', /Known indexed M365 content \| grounding/i, 'known indexed sources select Grounding'],
+  ['G25', 'SKILL.md', /Omit capabilities unless sources are specified/i, 'advertise omitted capability filters for unspecified sources'],
+  ['G25', 'references/retrieve-work-iq.md', /Unspecified source families: omit capabilities/i, 'do not guess a source-family allow-list'],
+  ['G25', 'references/retrieve-work-iq.md', /`query` is a single nonblank string, never an array/i, 'query must be a single nonblank string'],
+  ['G11', 'references/retrieve-work-iq.md', /Dataverse and Power BI are unsupported roadmap\s+sources/i, 'unsupported sources must not be advertised'],
   ['G22', 'references/retrieve-work-iq.md', /(?:explicit|user|select|permission)[\s\S]{0,100}(?:delegat|alternative)|(?:delegat|alternative)[\s\S]{0,100}(?:explicit|user|select)/i, 'delegation alternative requires user selection'],
-  ['G19', 'references/retrieve-work-iq.md', /(?:one|once|1)[\s\S]{0,150}(?:objective|bounded.{0,20}goal)/i, 'bound escalation per objective'],
+  ['G19', 'references/retrieve-repair-work-iq.md', /one targeted Copilot escalation per retrieval objective/i, 'bound escalation per objective'],
   ['G20', 'references/retrieve-work-iq.md', /(?:capp?ed|truncat)[\s\S]{0,200}(?:saved|read|inspect)/i, 'inspect available saved capped results'],
   ['G03', 'references/agents-work-iq.md', /list_agents/, 'discover named agents from the live catalog'],
   ['G04', 'references/agents-work-iq.md', /(?:reuse|already known|known.{0,20}ID)/i, 'reuse trusted known agent IDs'],
   ['G05', 'references/agents-work-iq.md', /ambigui|ambiguous/i, 'handle ambiguous agent selection'],
   ['G06', 'references/ask-work-iq.md', /conversationId/, 'preserve delegated conversation continuity'],
-  ['R.C2', 'references/files-work-iq.md', /same.drive/i, 'declare same-drive move constraints'],
-  ['R.C2', 'references/files-work-iq.md', /parentReference\.driveId|driveId[\s\S]{0,100}parentReference/i, 'retain authoritative drive identity'],
-  ['R.C3', 'references/files-work-iq.md', /(?:session|upload)[\s\S]{0,100}(?:bytes|replac)/i, 'separate session creation from uploaded bytes'],
-  ['R.C5', 'references/calendar-work-iq.md', /(?:time.?zone|timeZone)/i, 'resolve timezone and window'],
-  ['R.C5', 'references/calendar-work-iq.md', /each boundary[\s\S]{0,100}date/i, 'resolve each boundary using its requested date'],
-  ['R.C5', 'references/calendar-work-iq.md', /round.trip/i, 'verify timezone conversion by round-trip'],
-  ['R.C5', 'references/calendar-work-iq.md', /reminderView|reminder/i, 'state reminder scope'],
-  ['R.C5', 'references/calendar-work-iq.md', /(?:instance|series|recurr)/i, 'preserve instance/series intent'],
-  ['R.C3', 'references/mail-work-iq.md', /createReply/, 'persist reply drafts with reply linkage'],
-  ['R.C3', 'references/mail-work-iq.md', /isDraft/, 'exclude unsent drafts from exchanged history'],
-  ['R.C6', 'references/teams-work-iq.md', /tenantId|tenant identity|tenant.*field/i, 'retain required member tenant identity'],
+  ['R.C2', 'references/files-actions-work-iq.md', /same.drive/i, 'declare same-drive move constraints'],
+  ['R.C2', 'references/files-identity-work-iq.md', /parentReference\.driveId/i, 'retain authoritative drive identity'],
+  ['R.C3', 'references/files-actions-work-iq.md', /(?:session|upload)[\s\S]{0,100}(?:bytes|replac)/i, 'separate session creation from uploaded bytes'],
+  ['R.C5', 'references/calendar-base-work-iq.md', /(?:time.?zone|timeZone)/i, 'resolve timezone and window'],
+  ['R.C5', 'references/calendar-base-work-iq.md', /each boundary[\s\S]{0,100}date/i, 'resolve each boundary using its requested date'],
+  ['R.C5', 'references/calendar-base-work-iq.md', /round.trip/i, 'verify timezone conversion by round-trip'],
+  ['R.C5', 'references/calendar-reminders-work-iq.md', /reminderView|reminder/i, 'state reminder scope'],
+  ['R.C5', 'references/calendar-actions-work-iq.md', /(?:instance|series|recurr)/i, 'preserve instance/series intent'],
+  ['R.C3', 'references/mail-actions-work-iq.md', /createReply/, 'persist reply drafts with reply linkage'],
+  ['R.C3', 'references/mail-read-work-iq.md', /isDraft/, 'exclude unsent drafts from exchanged history'],
+  ['R.C6', 'references/teams-targets-work-iq.md', /tenantId|tenant identity|tenant.*field/i, 'retain required member tenant identity'],
   ['R.C5', 'references/call-function-work-iq.md', /(?:checkpoint|initial.sync)/i, 'distinguish initial sync from saved checkpoint'],
   ['R.C4', 'references/troubleshooting.md', /(?:202|accepted)[\s\S]{0,150}(?:pending|complet)/i, 'accepted is not completed'],
   ['R.C4', 'references/troubleshooting.md', /412|precondition/i, 'reconcile precondition failures'],
   ['R.C4', 'references/troubleshooting.md', /(?:effect|read.only|getSchedule)/i, 'classify actions by effects'],
-  ['R.C6', 'references/workflows-work-iq.md', /directory[\s\S]{0,200}contacts/i, 'distinguish directory users from contacts'],
-  ['R.schema', 'references/workflows-work-iq.md', /(?:explicit|request)[\s\S]{0,200}(?:get_schema|schema)/i, 'honor explicit schema requests']
+  ['R.C6', 'references/people-work-iq.md', /directory[\s\S]{0,200}contacts/i, 'distinguish directory users from contacts'],
+  ['R.schema', 'references/setup-work-iq.md', /(?:explicit|request)[\s\S]{0,200}(?:get_schema|schema)/i, 'honor explicit schema requests']
 ];
 
 export function policyProblems(file, text) {
@@ -180,9 +182,8 @@ export function policyProblems(file, text) {
   }
   const blocks = plain.split(/\n\s*\n/);
   for (const block of blocks) {
-    if (/\|[^\n]*(?:unknown|unspecified)[^\n]*\|[^\n]*copilot/i.test(block) &&
-        !/grounding|unsupported|conflict/i.test(block.split('\n').find(l => /unknown|unspecified/i.test(l)) ?? '')) {
-      errors.push('G08: unknown-source Copilot default');
+    if (/\|[^\n]*(?:unknown|unspecified)[^\n]*\|\s*grounding\s*\|/i.test(block)) {
+      errors.push('G08: unknown sources incorrectly select Grounding');
     }
     if (/(?:use|try|call) (?:one |a |single )?(?:scoped )?ask (?:as a fallback|only if a synthesized answer|if .*meets)/i.test(block) &&
         !/(?:only after|explicit.{0,30}(?:select|request)|user.{0,30}(?:select|confirm))/i.test(block)) {
@@ -218,12 +219,21 @@ export function policyProblems(file, text) {
 }
 
 export function discoverabilityProblems(directory) {
-  const skill = fs.readFileSync(path.join(directory, 'SKILL.md'), 'utf8');
-  const links = parseMarkdown(skill).links.filter(x => typeof x === 'string');
+  const reached = new Set();
+  function visit(file) {
+    if (reached.has(file) || !fs.existsSync(file)) return;
+    reached.add(file);
+    for (const link of parseMarkdown(fs.readFileSync(file, 'utf8')).links) {
+      if (typeof link !== 'string' || /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(link)) continue;
+      const target = path.resolve(path.dirname(file), link.split('#')[0]);
+      if (target.startsWith(`${directory}${path.sep}`) && target.endsWith('.md')) visit(target);
+    }
+  }
+  visit(path.join(directory, 'SKILL.md'));
   return requiredReferences.flatMap(file => {
     const errors = [];
     if (!fs.existsSync(path.join(directory, 'references', file))) errors.push(`missing canonical reference ${file}`);
-    if (!links.some(link => link.split('#')[0] === `references/${file}`)) errors.push(`SKILL.md must link canonical ${file}`);
+    if (!reached.has(path.join(directory, 'references', file))) errors.push(`SKILL.md must reach canonical ${file}`);
     return errors;
   });
 }

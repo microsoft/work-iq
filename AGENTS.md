@@ -6,16 +6,14 @@ Work IQ is a **Copilot CLI plugin marketplace** for managing AI agent plugins fo
 
 ```
 work-iq/
-├── .github/
-│   └── plugin/
-│       └── marketplace.json  # Plugin marketplace registry
+├── marketplace.json          # Copilot marketplace registry
+├── .claude-plugin/
+│   └── marketplace.json      # Equivalent Claude marketplace registry
 ├── plugins/                  # Plugin packages (skills + MCP servers)
 │   ├── workiq/
-│   ├── workiq-preview/
 │   ├── microsoft-365-agents-toolkit/
 │   └── workiq-productivity/
-├── tests/workiq-guidance/     # Offline preview guidance and trace-contract checks
-├── server.json               # MCP server manifest
+├── tests/workiq-guidance/     # Offline stable guidance and trace-contract checks
 ├── ADMIN-INSTRUCTIONS.md     # Tenant admin consent guide
 ├── CONTRIBUTING.md           # Guide for adding new plugins
 ├── PLUGINS.md                # Plugin catalog — skills, agents, and commands
@@ -30,7 +28,6 @@ This repo is a [Copilot CLI plugin marketplace](https://docs.github.com/en/copil
 
 ```bash
 copilot plugin install ./plugins/workiq
-copilot plugin install ./plugins/workiq-preview
 copilot plugin install ./plugins/microsoft-365-agents-toolkit
 copilot plugin install ./plugins/workiq-productivity
 ```
@@ -47,7 +44,6 @@ copilot plugin list
 
 ```bash
 copilot plugin uninstall workiq
-copilot plugin uninstall workiq-preview
 copilot plugin uninstall microsoft-365-agents-toolkit
 copilot plugin uninstall workiq-productivity
 ```
@@ -68,16 +64,18 @@ plugins/<plugin-name>/
 
 ### Available plugins
 
-- **workiq** — Full WorkIQ tool surface for Microsoft 365 (read + write). Bundles:
-  - `workiq` skill — Guides usage of `ask` for semantic questions plus the entity tools for fast, structured M365 and Business Applications reads and writes
-  - Hosted MCP server (`workiq`) with tools: `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `get_debug_link`
-  - SharePoint library-metadata requests dispatch to `references/sharepoint-library-metadata.md`; read it before the workflow. Detailed procedures and safeguards live there rather than being duplicated in `SKILL.md`.
+- **workiq** — Stable 3.0.0, agent-host-neutral Microsoft 365 guidance (read + write). Bundles:
+  - `workiq` skill — Source-based `retrieve` and local synthesis, `ask` only for requested Copilot/named-agent answers, and entity tools for exact reads and operations.
+  - Hosted MCP server (`workiq`): discover exact names and schemas in the host catalog. Installing the plugin does not enable tenant-dependent retrieval; missing retrieval never silently falls back to `ask`.
+  - Progressive loading: read the domain index, owning leaf and its `Required before use` dependencies before the call. Load mutation safeguards before writes, recovery before repair/replay, and result-status safeguards before final claims.
+  - File objects and transfer client actions route to `references/workiq-files-cli.md`; Graph drive-content/mail-attachment bytes remain on `fetch_blob`. CLI installation and EULA acceptance are separate, with explicit permission for acceptance.
+  - Agent/plugin lifecycle requests route to `references/wiqd.md` and the external, experimental WIQD plugin. Installation requires approval and a restart; WIQD is not bundled.
+  - Offline checks: `npm ci --prefix tests/workiq-guidance --ignore-scripts --no-audit --no-fund`, then `npm --prefix tests/workiq-guidance test` and `node --test plugins/workiq/tests/guidance.test.mjs` (Node 22+). No model or live M365 operations.
+  - Observed trace validation requires nonblank package-hash provenance; authoritative state claims are compared by property presence, including falsey values.
 
-- **workiq-preview** — Preview build with agent-host-neutral, retrieve-first guidance (read + write). Bundles:
-  - `workiq-preview` skill — Retrieve caller-owned context with explicit Grounding when available; use `ask` only for intentional delegation, and entity tools for exact reads, writes, and downloads. Load the skill before using WorkIQ tools.
-  - Hosted MCP server (`workiq-preview`): discover exact tool names and schemas in the connected host catalog. Preview retrieval is tenant-dependent; installation does not enable it, and missing `retrieve` never silently falls back to `ask`.
-  - Preview-only offline checks: `npm ci --prefix tests/workiq-guidance --ignore-scripts --no-audit --no-fund` then `npm --prefix tests/workiq-guidance test` (Node 22+). CI does not run models or live M365 operations. The public `workiq` package retains its existing routing policy and version; its SharePoint metadata documentation is consolidated separately.
-  - Observed trace validation requires nonblank package-hash provenance, including direct validator calls; authoritative state claims are compared by property presence, including falsey values.
+The public preview package is retired. Do not recreate it or register it.
+Existing installations must follow [migration instructions](README.md#migrating-from-workiq-preview)
+and restart; removing registry entries alone does not unload installed skills.
 
 - **microsoft-365-agents-toolkit** — Toolkit for building M365 Copilot declarative agents. Bundles:
   - `install-atk` skill — Install or update the M365 Agents Toolkit CLI and VS Code extension
@@ -100,7 +98,8 @@ plugins/<plugin-name>/
 
 ## Prerequisites
 
-- **Node.js 18+** — Required for the workiq MCP server (`npx`)
+- **Hosted workiq** — No local Node.js runtime required.
+- **Local CLI/productivity skills** — Node.js 18+; optional WorkIQ Files CLI transfers require Node.js 20+ and a separate installation.
 - **Admin consent** — The WorkIQ MCP server requires tenant admin consent on first use. See the [Tenant Administrator Enablement Guide](./ADMIN-INSTRUCTIONS.md) for details.
 
 ## Creating a New Plugin
@@ -142,20 +141,27 @@ Skill instructions here...
 ```
 
 After creating a plugin:
-1. Register it in `.github/plugin/marketplace.json` by adding an entry to the `plugins` array
+1. Register it consistently in `marketplace.json` and `.claude-plugin/marketplace.json`
 2. Install it with `copilot plugin install ./plugins/my-plugin`
 
 ---
 
 ## Self-Maintenance Instructions
 
+Follow [CONTRIBUTING.md](CONTRIBUTING.md) for WorkIQ source ownership,
+MAJOR.MINOR.PATCH versioning and internal preview-to-stable promotion.
+Publish only the stable snapshot after its internal promotion merges. An earlier
+publication PR must stay draft until the merge and source recheck. Keep public
+marketplace identity `work-iq`; preserve unrelated plugin entries and workflows.
+Never copy internal registries or preview into this repository.
+
 > **Important:** When making changes to this repository — adding new plugins or modifying workflows — update this AGENTS.md file to reflect those changes. This file serves as the primary context document for AI agents working in this repo. Keep it accurate and current. Specifically:
 >
 > - Add new plugins to the "Available plugins" section when they are created
-> - Register new plugins in `.github/plugin/marketplace.json`
+> - Register new plugins consistently in both public marketplace registries
 > - Update "Getting Started" if new setup steps are required
 > - Update "Repository Structure" if top-level directories change
-> - **After editing any skill or plugin content**, reinstall the affected plugin so the running session picks up the changes:
+> - Validate edits offline first. Do not install plugins or access live Microsoft 365 data without authorization. For separately approved runtime validation, reload the affected plugin and restart so the session picks up its content:
 >   ```bash
 >   copilot plugin uninstall <plugin-name>
 >   copilot plugin install ./plugins/<plugin-name>

@@ -1,91 +1,58 @@
 # search_paths
 
-Discover available WorkIQ entity paths and supported operations. Use as the first step before entity tools when the
-path is unknown.
+Discover entity paths and supported operations when the route is unknown or the
+user explicitly requests path discovery. Known exact workflows need no discovery
+preflight. This tool does not discover MCP tool names; use the connected catalog.
 
-## Parameters
+## Live argument contract
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `filter` | string | When named in `inputSchema.required` | Legacy regex/path-keyword search. Business Applications also accepts natural-language discovery through this parameter. |
-| `query` | string | When named in `inputSchema.required` | Natural-language description of the resource or action to discover. |
+The connected catalog inspected for this guidance exposes required `query`
+(string): a natural-language resource/action description or a path prefix.
+Older catalogs may expose a regex `filter` instead. Inspect the actual advertised
+schema and send only its accepted fields; do not translate examples into guessed
+arguments or try both interfaces after rejection.
 
-Inspect the connected WorkIQ tool schema and send only accepted fields. Never
-send both `filter` and `query`, and never retry with a different argument after
-rejection.
-
-There is no `backend`, `source`, or `provider` argument. WorkIQ may fan out to
-enabled providers, but only returned paths prove that a provider participated.
-For Business Applications, require a returned `/businessapps/...` path before
-following it.
+There is no basis for inventing `backend`, `source`, or `provider` selectors.
+Nor does path discovery imply that the entire catalog is Graph-only: retain
+exact returned resource families and their domain contracts.
 
 ## Workflow
 
-1. Make one focused `search_paths` call with an accepted `filter` or `query`
-   input to find candidate paths.
-2. `get_schema` on the chosen path
-3. `fetch` or the appropriate write tool (`create_entity` / `update_entity` / `delete_entity` / `do_action` / `call_function`)
+1. Make one focused discovery call that names the user's domain and the
+   families they need (for example "Teams chat and channel messages", not
+   "messages", which also matches mail). For a path inventory question, that one
+   call is the whole discovery step: answer from its result and any saved capped
+   output, and mark any requested family it did not return as unconfirmed. Never
+   add paths the results did not return.
+2. Inspect [get_schema](get-schema-work-iq.md) on the selected returned path when
+   the operation's body or query shape is unfamiliar.
+3. If the user also requested execution, resolve identities, prepare the action,
+   obtain required confirmation for mutations, and execute once. Discovery alone
+   is not execution, but discovering a path never grants authorization.
 
-If the user asks to discover paths AND read or mutate, continue to the mutation tool after picking the path — discovery alone is incomplete.
+Use [recovery](troubleshooting.md) for failures. Explicit denial stops; no route,
+agent, or tool substitution. An empty result means no matching path was confirmed
+in that search, not that the entire service lacks the capability.
 
-If Business Applications discovery errors or returns no `/businessapps/...`
-path, do not repeat or broaden it. Fetch `/businessapps/environments/`, resolve
-only the exact requested environment, and inspect only its relevant returned
-`apps`, `skills`, or `tables` collection. Abstain when the exact environment or
-capability is absent.
+When asked for all available matching paths, summarize every returned family and
+operation, not just common examples. Inspect an available saved capped result
+before claiming coverage; if the response is truncated, qualify completeness.
+Do not invent paths absent from the result.
 
-Never answer API/path questions from general Graph knowledge, local SQL, filesystem search, or built-in tools. Summarize paths from `search_paths`; if none matched, say WorkIQ did not confirm one.
-
-## Examples
-
-### Find all message-related paths
-
-When the schema requires `filter`:
-
-```json
-{ "filter": "messages" }
-```
-
-When the schema requires `query`:
+## Examples for the `query` catalog
 
 ```json
-{ "query": "message resources and actions" }
+{"query":"recent email messages and supported reply actions"}
 ```
-
-When the user asks what paths are available, enumerate every confirmed path
-family and operation returned by that `search_paths` call rather than selecting
-only the most common examples. Group related results for readability, such as
-chat messages, channel messages, replies, actions, retained or pinned
-messages, by-ID routes, and hosted content. Do not invent paths absent from the
-result, but do not omit less common confirmed variants.
-
-### Find calendar paths
-
-Legacy `filter` form:
 
 ```json
-{ "filter": ".*calendar.*" }
+{"query":"/me/people"}
 ```
-
-Natural-language `query` form:
 
 ```json
-{ "query": "calendar resources and actions" }
+{"query":"Planner plans and tasks"}
 ```
-
-### Discover Business Applications paths
-
-Use natural language in whichever parameter is required:
 
 ```json
-{ "filter": "qualify a lead" }
+{"query":"Teams chat and channel messages"}
 ```
-
-or:
-
-```json
-{ "query": "qualify a lead" }
-```
-
-For known structural inventory, skip discovery and use the exact read path. For example, list Business Applications
-environments with `fetch` on `/businessapps/environments/`.

@@ -8,7 +8,7 @@ const write = (id, tool, args, output = result(), extra = {}) =>
   ({ id, tool, match: args, effect: 'mutation', output, ...extra });
 const cite = 'synthetic-source-1';
 const evidence = result('ok', { citations: [cite], sufficient: true });
-const gArgs = { query: ['Synthetic project decisions'], strategy: 'grounding' };
+const gArgs = { query: 'Synthetic project decisions', strategy: 'grounding' };
 const cArgs = { ...gArgs, strategy: 'copilot' };
 const semanticOp = (id, strategy, output = evidence, extra = {}) =>
   read(id, 'retrieve', { strategy }, output, { flexible: ['query', 'capabilities'], ...extra });
@@ -18,7 +18,7 @@ const catalog = ['retrieve', 'ask', 'list_agents', 'fetch', 'fetch_blob', 'call_
 function base(id, prompt, overrides = {}) {
   return {
     schemaVersion: 1, id, prompt, objective: 'synthetic-objective-1',
-    mode: 'context', catalog, strategies: ['grounding', 'copilot'], capabilities,
+    mode: 'context', knownIndexed: true, catalog, strategies: ['grounding', 'copilot'], capabilities,
     scope: { allowed: capabilities, required: [], groundingOnly: false },
     operations: [], confirmations: {}, requiredOperations: [], limits: { calls: 8, readRetries: 1 },
     ...overrides
@@ -76,15 +76,15 @@ for (const [id, req, prompt] of [
   ['unspecified-source', 'G07', 'Find synthetic project decisions.'],
   ['unknown-location', 'G08', 'I do not know where the synthetic file is.']
 ]) {
-  const s = base(id, prompt, { operations: [semanticOp('ground', 'grounding')] });
-  add(id, [req, 'G16', 'G25', 'R.host'], s, [{ op: 'ground', args: gArgs }], { citations: [cite] },
-    e => { firstCall(e).args.strategy = 'copilot'; }, 'initial-strategy');
+  const s = base(id, prompt, { knownIndexed: false, operations: [semanticOp('retrieve', 'copilot')] });
+  add(id, [req, 'G16', 'G25', 'R.host'], s, [{ op: 'retrieve', args: cArgs }], { citations: [cite] },
+    e => { firstCall(e).args.strategy = 'grounding'; }, 'initial-strategy');
 }
 {
   const s = base('source-filter-default', 'Find the synthetic project decisions and issue owners; source locations are unspecified.', {
-    operations: [semanticOp('ground', 'grounding')], requiredOperations: ['ground']
+    knownIndexed: false, operations: [semanticOp('retrieve', 'copilot')], requiredOperations: ['retrieve']
   });
-  add(s.id, ['G07', 'G08', 'G25'], s, [{ op: 'ground', args: gArgs }], { citations: [cite] },
+  add(s.id, ['G07', 'G08', 'G25'], s, [{ op: 'retrieve', args: cArgs }], { citations: [cite] },
     e => { firstCall(e).args.capabilities = ['OneDriveAndSharePoint', 'Email', 'TeamsMessages', 'Meetings'].map(name => ({ name })); },
     'source-scope');
 }
@@ -98,7 +98,6 @@ for (const [id, req, prompt] of [
 }
 for (const [id, req, required, explicitCopilot] of [
   ['external-source', 'G10', ['GraphConnectors'], false],
-  ['dataverse-source', 'G11', ['Dataverse'], false],
   ['connector-source', 'G11', ['GraphConnectors'], false],
   ['mixed-sources', 'G12', ['Email', 'GraphConnectors'], false],
   ['requested-copilot', 'G13', [], true]
@@ -109,6 +108,13 @@ for (const [id, req, required, explicitCopilot] of [
   });
   add(id, [req], s, [{ op: 'broader', args: { ...cArgs, capabilities: required.map(name => ({ name })) } }],
     { citations: [cite] }, e => { firstCall(e).args.strategy = 'grounding'; }, 'initial-strategy');
+}
+for (const source of ['Dataverse', 'PowerBI']) {
+  const s = base(`unsupported-${source.toLowerCase()}`, `Find synthetic records requiring ${source}.`, {
+    unsupportedSources: [source]
+  });
+  add(s.id, ['G11'], s, [], { status: 'blocked', limitations: ['unsupported-source'] },
+    e => appendCall(e, 'retrieve', { ...cArgs, capabilities: [{ name: source }] }), 'unsupported-source');
 }
 {
   const s = base('grounding-only', 'Use indexed M365 only.', {
@@ -168,13 +174,13 @@ for (const id of ['targeted-escalation', 'escalation-exhausted', 'paraphrase-bud
         { resolves: ['ground'] })]
   });
   add(id, ['G18', 'G19'], s,
-    [{ op: 'ground', args: gArgs }, { op: 'broader', args: { query: ['synthetic external owner'], strategy: 'copilot', capabilities: [{ name: 'GraphConnectors' }] } }],
+    [{ op: 'ground', args: gArgs }, { op: 'broader', args: { query: 'synthetic external owner', strategy: 'copilot', capabilities: [{ name: 'GraphConnectors' }] } }],
     { citations: [cite], ...(exhausted ? { status: 'blocked', limitations: ['partial-data'] } : {}) },
     e => {
       if (id === 'targeted-escalation') e.filter(x => x.type === 'call')[1].args.query = gArgs.query;
-      else if (id === 'batch-budget') e.filter(x => x.type === 'call')[1].args.query.push('another external owner search');
-      else appendCall(e, 'retrieve', { ...cArgs, query: ['external owner differently phrased'] });
-    }, id === 'targeted-escalation' ? 'untargeted-escalation' : 'escalation-budget');
+      else if (id === 'batch-budget') e.filter(x => x.type === 'call')[1].args.query = ['synthetic external owner', 'another external owner search'];
+      else appendCall(e, 'retrieve', { ...cArgs, query: 'external owner differently phrased' });
+    }, id === 'targeted-escalation' ? 'untargeted-escalation' : id === 'batch-budget' ? 'retrieval-schema' : 'escalation-budget');
 }
 {
   const s = base('in-scope-repair', 'Read the missing exact synthetic message.', {
@@ -263,12 +269,18 @@ for (const id of ['agent-absent', 'agent-ambiguous']) {
     e => appendCall(e, 'fetch', { entityUrls: ['/me/messages'] }), 'conversation');
 }
 for (const [id, mutate] of [
-  ['query-scalar', args => { args.query = 'not an array'; }],
-  ['query-empty', args => { args.query = [' ']; }],
+  ['query-array', args => { args.query = ['synthetic']; }],
+  ['query-empty', args => { args.query = ' '; }],
+  ['query-number', args => { args.query = 42; }],
+  ['query-null', args => { args.query = null; }],
+  ['query-omitted', args => { delete args.query; }],
   ['strategy-omitted', args => { delete args.strategy; }],
   ['capability-string', args => { args.capabilities = ['Email']; }],
   ['capabilities-not-array', args => { args.capabilities = 'Email'; }],
-  ['incompatible-capability', args => { args.capabilities = [{ name: 'Dataverse' }]; }]
+  ['incompatible-capability', args => { args.capabilities = [{ name: 'Dataverse' }]; }],
+  ['unsupported-powerbi-capability', args => { args.capabilities = [{ name: 'PowerBI' }]; }],
+  ['grounding-connector', args => { args.capabilities = [{ name: 'GraphConnectors' }]; }],
+  ['nondefault-agent-capabilities', args => { args.agentId = 'synthetic-agent'; args.capabilities = [{ name: 'Email' }]; }]
 ]) {
   const s = base(id, 'Gather synthetic evidence.', { operations: [semanticOp('ground', 'grounding')] });
   add(id, ['G25'], s, [{ op: 'ground', args: gArgs }], { citations: [cite] },

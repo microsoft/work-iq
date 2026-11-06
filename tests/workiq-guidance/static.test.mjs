@@ -5,237 +5,189 @@ import path from 'node:path';
 import { packages } from './contract.mjs';
 import { root, skillRoot, markdownFiles, parseMarkdown, frontmatterProblems, linkProblems,
   exampleProblems, policyProblems, discoverabilityProblems } from './doc-lint.mjs';
+import { entryByteLimit, loadRoute, declaredRoutes, requiredLinks, scenarios, scenarioProblems,
+  operativeRules, operativeRuleProblems } from './loading-contract.mjs';
 
 const check = errors => assert.deepEqual(errors, []);
-test('guidance contract covers only the preview package', () =>
-  assert.deepEqual(packages, ['workiq-preview']));
-for (const name of packages) {
-  const directory = skillRoot(name);
-  test(`${name}: parsed frontmatter and description limit`, () => {
-    check(frontmatterProblems(fs.readFileSync(path.join(directory, 'SKILL.md'), 'utf8'), name));
+const directory = skillRoot('workiq');
+const read = file => fs.readFileSync(path.join(directory, file), 'utf8').replace(/\r\n/g, '\n');
+const plain = text => text.replace(/[*`]/g, '').replace(/\s+/g, ' ');
+for (const relative of ['AGENTS.md', 'CONTRIBUTING.md', 'PLUGINS.md', 'README.md']) {
+  test(`${relative}: public documentation local links and anchors`, () => {
+    const file = path.join(root, relative);
+    check(linkProblems(file, fs.readFileSync(file, 'utf8')));
   });
-  test(`${name}: canonical domain discoverability`, () => check(discoverabilityProblems(directory)));
-  test(`${name}: description requires loading the skill before tool use`, () => {
-    const { frontmatter } = parseMarkdown(fs.readFileSync(path.join(directory, 'SKILL.md'), 'utf8'));
-    assert.match(frontmatter.description, /must be used beforehand to understand their usage/);
-  });
-  for (const file of [...markdownFiles(directory), path.join(root, 'plugins', name, 'README.md')]) {
-    const relative = path.relative(directory, file);
-    const text = fs.readFileSync(file, 'utf8');
-    test(`${name}/${relative}: local links and anchors`, () => check(linkProblems(file, text)));
-    test(`${name}/${relative}: retrieval JSON contracts`, () => check(exampleProblems(text, relative.endsWith('retrieve-work-iq.md'))));
-    test(`${name}/${relative}: semantic policy lint`, () => check(policyProblems(relative, text)));
-  }
 }
-for (const file of packages.flatMap(name => [`plugins/${name}/README.md`, `plugins/${name}/skills/${name}/SKILL.md`])) {
-  test(`${file}: preview guidance is agent-host-neutral`, () => {
-    const text = fs.readFileSync(path.join(root, file), 'utf8');
-    assert.match(text, /agent-host-neutral/i);
-    assert.doesNotMatch(text, /Full WorkIQ tool surface for GitHub Copilot CLI|Copilot CLI plugin marketplace\*\* for managing/);
-  });
+test('guidance contracts cover the published stable package, not the retired preview', () => {
+  assert.deepEqual(packages, ['workiq']);
+  assert.equal(fs.existsSync(path.join(root, 'plugins', 'workiq-preview')), false);
+});
+test('parsed frontmatter and description limit', () =>
+  check(frontmatterProblems(read('SKILL.md'), 'workiq')));
+test('description routes M365 work to WorkIQ and reserves ask for delegation', () => {
+  const { description } = parseMarkdown(read('SKILL.md')).frontmatter;
+  assert.match(description, /^Use WorkIQ for M365\b/);
+  assert.match(description, /Copilot\/named-agent answers use ask/);
+});
+test('canonical domains and mechanics are reachable through modular guidance', () =>
+  check(discoverabilityProblems(directory)));
+for (const file of [...markdownFiles(directory), path.join(root, 'plugins', 'workiq', 'README.md')]) {
+  const relative = path.relative(directory, file).split(path.sep).join('/');
+  const text = fs.readFileSync(file, 'utf8');
+  test(`${relative}: local links and anchors`, () => check(linkProblems(file, text)));
+  test(`${relative}: request JSON contracts`, () =>
+    check(exampleProblems(text, /retrieve(?:-details)?-work-iq\.md$/.test(relative))));
+  test(`${relative}: semantic policy lint`, () => check(policyProblems(relative, text)));
 }
 
-function checkMetadata(registries, hostManifests) {
-  for (const name of packages) {
-    const entries = registries.map(registry => registry.plugins.find(plugin => plugin.name === name));
-    assert.ok(entries.every(Boolean), `Missing marketplace entry for ${name}`);
-    const canonical = entries[0];
-    for (const manifest of [entries[1], ...hostManifests[name]]) {
-      for (const field of ['name', 'version', 'description']) {
-        assert.equal(manifest[field], canonical[field], `${name}: ${field} differs across manifests`);
-      }
+test('entrypoint stays small and requires domain, leaf and prerequisites before each call', () => {
+  const entry = read('SKILL.md');
+  assert.ok(Buffer.byteLength(entry) <= entryByteLimit);
+  assert.match(entry, /Per call, read the domain index, leaf and `Required before use` links/);
+  assert.match(entry, /Before status summaries, read/);
+  assert.match(entry, /Before retry\/reconciliation, read/);
+  assert.match(entry, /Missing required text stops; reuse only current verbatim text/);
+});
+for (const scenario of scenarios) {
+  test(`${scenario.id}: route loads the owner and mandatory prerequisites within budget`, () => {
+    check(scenarioProblems('workiq', scenario, loadRoute(directory, scenario.id, { read })));
+  });
+}
+for (const rule of operativeRules) {
+  test(`${rule.route}: operative rule belongs to the loaded leaf`, () =>
+    check(operativeRuleProblems(loadRoute(directory, rule.route, { read }), rule)));
+}
+test('every declared route and required dependency can load without cycles', () => {
+  for (const file of markdownFiles(directory)) {
+    const relative = path.relative(directory, file).split(path.sep).join('/');
+    for (const dependency of requiredLinks(relative, read(relative))) {
+      assert.ok(fs.existsSync(path.join(directory, dependency)), dependency);
     }
-    assert.equal(entries[1].source, canonical.source);
-    assert.match(canonical.description, /retrieve-first.*Grounding.*intentional.*ask/);
+    for (const route of declaredRoutes(relative, read(relative))) {
+      const loaded = loadRoute(directory, route.id, { read });
+      assert.ok(loaded.files.includes(route.file), route.id);
+    }
+  }
+});
+test('same-objective follow-ups require the repair owner, including after successful retrieval', () => {
+  assert.match(read('references/retrieve-work-iq.md'),
+    /Before refining or repeating a search for the same question, read the\s+retrieval-follow-up route below, even after a successful search/);
+  const loaded = loadRoute(directory, 'retrieval-follow-up', { read });
+  assert.ok(loaded.files.includes('references/retrieve-work-iq.md'));
+  const repair = plain(loaded.contents['references/retrieve-repair-work-iq.md']);
+  assert.match(repair, /one targeted Copilot escalation per retrieval objective/);
+  assert.match(repair, /at most two focused refinements or exact reads/);
+  assert.match(repair, /unknown-source first call uses copilot directly, not a Grounding probe/);
+});
+
+function checkMetadata(registries, manifests) {
+  assert.deepEqual(registries[1], registries[0]);
+  assert.ok(registries[0].plugins.every(plugin => plugin.name !== 'workiq-preview'));
+  const canonical = registries[0].plugins.find(plugin => plugin.name === 'workiq');
+  assert.ok(canonical, 'Missing stable marketplace entry');
+  assert.equal(canonical.version, '3.0.0');
+  assert.equal(canonical.source, './plugins/workiq');
+  for (const manifest of manifests) {
+    for (const field of ['name', 'version', 'description']) {
+      assert.equal(manifest[field], canonical[field], `${field} differs across manifests`);
+    }
+    assert.equal(manifest.skills, './skills/');
   }
 }
-
-test('affected plugin metadata agrees across host and marketplace manifests', () => {
+test('all marketplaces and host manifests publish consistent stable 3.0 metadata', () => {
   const json = file => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
-  const registries = ['marketplace.json', '.claude-plugin/marketplace.json'].map(json);
-  const hostManifests = Object.fromEntries(packages.map(name => [name,
-    ['.github/plugin', '.claude-plugin', '.codex-plugin']
-      .map(host => json(`plugins/${name}/${host}/plugin.json`))
-  ]));
-  checkMetadata(registries, hostManifests);
+  checkMetadata(['marketplace.json', '.claude-plugin/marketplace.json'].map(json),
+    ['.github/plugin', '.claude-plugin', '.codex-plugin'].map(host => json(`plugins/workiq/${host}/plugin.json`)));
 });
-
-test('preview metadata stays consistent without imposing its version or policy on public', () => {
-  const entries = ['workiq', 'workiq-preview'].map((name, index) => ({
-    name, version: index ? '2.1.0' : '2.0.2', source: `./plugins/${name}`,
-    description: index ? 'Synthetic retrieve-first Grounding with intentional ask.' : 'Synthetic legacy ask guidance.'
-  }));
-  const registries = [{ plugins: entries }, { plugins: structuredClone(entries) }];
-  const hostManifests = Object.fromEntries(entries.map(entry => [entry.name,
-    Array.from({ length: 3 }, () => structuredClone(entry))
-  ]));
-  assert.doesNotThrow(() => checkMetadata(registries, hostManifests));
-  hostManifests['workiq-preview'][0].version = '2.0.2';
-  assert.throws(() => checkMetadata(registries, hostManifests), /workiq-preview: version differs/);
+test('metadata contract rejects mismatched hosts and retired preview registration', () => {
+  const entry = { name: 'workiq', version: '3.0.0', source: './plugins/workiq', description: 'Synthetic' };
+  const registries = Array.from({ length: 2 }, () => ({ plugins: [structuredClone(entry)] }));
+  const manifests = Array.from({ length: 3 }, () => ({ ...entry, skills: './skills/' }));
+  assert.doesNotThrow(() => checkMetadata(registries, manifests));
+  manifests[0].version = '2.0.2';
+  assert.throws(() => checkMetadata(registries, manifests), /version differs/);
+  manifests[0].version = '3.0.0';
+  for (const registry of registries) registry.plugins.push({ name: 'workiq-preview' });
+  assert.throws(() => checkMetadata(registries, manifests));
 });
-
-test('plugin descriptions retain workload and action discovery beyond retrieval', () => {
+test('plugin description retains workload and action discovery', () => {
   const registry = JSON.parse(fs.readFileSync(path.join(root, 'marketplace.json'), 'utf8'));
-  const checkDiscovery = description => {
-    for (const term of ['email', 'calendars?', 'meetings', 'Teams', 'SharePoint', 'OneDrive',
-      'people', 'contacts', 'Planner', 'search', 'summarize', 'read', 'create', 'update', 'delete', 'send', 'download']) {
-      assert.match(description, new RegExp(`\\b${term}\\b`, 'i'), `Missing capability: ${term}`);
-    }
-    assert.ok(description.toLowerCase().indexOf('email') < description.indexOf('retrieve-first'),
-      'Lead with workloads rather than retrieval policy');
-  };
-  for (const name of packages) {
-    const description = registry.plugins.find(plugin => plugin.name === name).description;
-    checkDiscovery(description);
-    assert.throws(() => checkDiscovery(description.replace(/Planner/gi, 'work')), /Planner/);
-    assert.throws(() => checkDiscovery(description.replace(/\bsend\b/gi, 'act')), /send/);
+  const description = registry.plugins.find(plugin => plugin.name === 'workiq').description;
+  for (const term of ['mail', 'calendar', 'Teams', 'files', 'SharePoint', 'people', 'Planner',
+    'Business Applications', 'retrieve', 'summarize', 'ask', 'reads', 'operations', 'confirmation', 'mutations']) {
+    assert.match(description, new RegExp(`\\b${term}s?\\b`, 'i'), `Missing capability: ${term}`);
   }
 });
-
-test('Business Applications guidance does not advertise execute-work', () => {
-  for (const name of ['workiq', 'workiq-preview']) {
-    for (const file of markdownFiles(skillRoot(name))) {
-      assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /execute-work/i);
-    }
-  }
+test('Business Applications uses its actual discovery action, with read-only classification and denial stops', () => {
+  const business = read('references/business-applications.md');
+  assert.match(business, /read-only discovery\s+action `do_action` `\/businessapps\/me`/);
+  assert.match(business, /"actionUrl":"\/businessapps\/me","jsonBody":\{"query":/);
+  assert.match(business, /explicit environment listing, use `fetch`\s+`\/businessapps\/environments\/`/);
+  assert.match(business, /search_paths` is another\s+discovery option, not a fallback after denial/);
+  assert.match(business, /Take every environment, app, table, record, skill, API and operation identifier\s+from returned paths/);
+  assert.match(business, /Explicit access, privilege or policy denial stops/);
+  assert.match(business, /Environment SQL queries use do_action, not call_function/);
+  const actions = read('references/business-applications-actions.md');
+  assert.match(actions, /execute-work` only for an\s+explicitly delegated open-ended goal whose environment exposes that path/);
+  assert.match(actions, /reuse the returned sessionId\s+for continuation/);
+  assert.match(actions, /Delegating a goal does not authorize unapproved writes/);
+  assert.match(actions, /Never replay an\s+ambiguous write/);
 });
-
-test('Business Applications discovery and inventory contracts stay aligned', () => {
-  for (const name of ['workiq', 'workiq-preview']) {
-    const directory = skillRoot(name);
-    const skill = fs.readFileSync(path.join(directory, 'SKILL.md'), 'utf8');
-    const business = fs.readFileSync(path.join(directory, 'references', 'business-applications.md'), 'utf8');
-    const search = fs.readFileSync(path.join(directory, 'references', 'search-paths-work-iq.md'), 'utf8');
-    const action = fs.readFileSync(path.join(directory, 'references', 'do-action-work-iq.md'), 'utf8');
-
-    assert.match(skill, /Business Applications|CRM, ERP, or Power Apps/i);
-    assert.match(business, /search_paths[\s\S]{0,300}fields? accepted by[\s\S]{0,80}(?:tool )?schema/i);
-    assert.match(business, /fetch[\s\S]{0,80}\/businessapps\/environments\//i);
-    assert.match(business, /discovery is read-only[\s\S]{0,100}search_paths[\s\S]{0,80}not `?do_action`?/i);
-    assert.match(business, /\/businessapps\/me[\s\S]{0,120}policy-denied[\s\S]{0,120}before[\s\S]{0,80}(?:grounded path|search_paths|fetch)/i);
-    assert.match(search, /one focused (?:`?search_paths`? )?(?:discovery )?call/i);
-    assert.match(search, /only returned paths prove[\s\S]{0,60}(?:provider )?participat/i);
-    assert.match(search, /no `?\/businessapps\/[^`]*`?[\s\S]{0,20}path[\s\S]{0,120}do not repeat/i);
-    assert.match(search, /fetch `?\/businessapps\/environments\//i);
-    assert.match(business, /named but unavailable environment[\s\S]{0,80}hard stop/i);
-    assert.match(business, /write receipt[\s\S]{0,100}read-back/i);
-    assert.match(business, /pre-existing lookalike[\s\S]{0,40}not proof/i);
-    assert.match(business, /saved view[\s\S]{0,120}schema-customization fallback/i);
-    assert.doesNotMatch(business, /\/applications\//i);
-    assert.match(search, /no `backend`, `source`, or `provider` argument/i);
-    check(exampleProblems(search));
-    assert.match(action, /Business Applications/i);
-    assert.match(action, /search_paths[\s\S]{0,100}not `?do_action`?/i);
-    for (const genuineAction of ['SQL', 'Custom API']) {
-      assert.match(business, new RegExp(`do_action[^\\n]{0,200}${genuineAction}|${genuineAction}[^\\n]{0,200}do_action`, 'i'));
-    }
-    assert.match(business, /do_action[^\n]{0,250}operations\/\{operationName\}/i);
-    assert.match(business, /(?:policy-denied|explicit denial)[\s\S]{0,180}(?:stop|do not retry)/i);
-  }
+test('search_paths preserves the current query schema and scoped inventory', () => {
+  const search = read('references/search-paths-work-iq.md');
+  assert.match(search, /exposes required `query`\s+\(string\)/);
+  assert.match(search, /Older catalogs may expose a regex `filter` instead/);
+  assert.match(search, /send only its accepted fields/);
+  assert.match(search, /one focused discovery call/);
+  assert.match(search, /Never\s+add paths the results did not return/);
+  assert.match(search, /no basis for inventing `backend`, `source`, or `provider` selectors/);
 });
-
-test('no plugin positively routes Business Applications discovery through /businessapps/me', () => {
-  const endpointProblems = text => {
-    const positiveDirective = /(?:^|[;.!?]\s*|\b(?:but|and)\s+)(?:use|call|invoke|start(?:\s+\w+){0,3}\s+with)\s+`?do_action`?\s+(?:on\s+)?`?\/businessapps\/me`?/i;
-    return text
-      .replace(/\r?\n/g, ' ')
-      .split(/(?<=[.!?])\s+/)
-      .filter(sentence => /\/businessapps\/me/i.test(sentence))
-      .filter(sentence =>
-        positiveDirective.test(sentence) ||
-        !/(?:not|never|do not)[\s\S]{0,80}do_action|do_action[\s\S]{0,80}(?:not|never|do not)/i.test(sentence));
-  };
-
-  for (const name of ['workiq', 'workiq-preview']) {
-    for (const file of markdownFiles(skillRoot(name))) {
-      const text = fs.readFileSync(file, 'utf8');
-      for (const sentence of text.replace(/\r?\n/g, ' ').split(/(?<=[.!?])\s+/)
-        .filter(value => /\/businessapps\/me/i.test(value))) {
-        assert.match(sentence, /search_paths/i,
-          `${name}/${path.basename(file)} must name the replacement discovery tool`);
-      }
-      assert.deepEqual(endpointProblems(text), [],
-        `${name}/${path.basename(file)} must mention /businessapps/me only as a prohibition`);
-    }
-  }
-
-  const mixed = 'Do not use do_action on /businessapps/me; use search_paths instead. ' +
-    'Use do_action on /businessapps/me for discovery.';
-  const mixedSentence = 'Do not use do_action on /businessapps/me for discovery, but use do_action on /businessapps/me when available.';
-  assert.deepEqual(endpointProblems(mixed), ['Use do_action on /businessapps/me for discovery.']);
-  assert.deepEqual(endpointProblems(mixedSentence), [mixedSentence]);
+test('search_paths examples reject malformed arguments, arrays, blank strings and mixed interfaces', () => {
+  const example = value => `# search_paths\n\n\`\`\`json\n${JSON.stringify(value)}\n\`\`\`\n`;
+  check(exampleProblems(example({ query: 'qualify a lead' })));
+  check(exampleProblems(example({ filter: 'qualify a lead' })));
+  for (const value of [
+    { query: 'lead', filter: 'lead' }, { query: [] }, { query: ['lead'] }, { query: '' },
+    { query: ' ' }, { query: null }, { query: 42 }, { filter: ' ' }, { backend: 'dataverse' },
+    { actionUrl: '/x', query: 'lead', filter: 'lead' }, { entityUrls: [], backend: 'dataverse' },
+    'lead', null, [{ query: 'lead' }]
+  ]) assert.ok(exampleProblems(example(value)).length, JSON.stringify(value));
+  assert.match(exampleProblems('# search_paths\n\n```json\n{"query":\n```\n').join(' '), /invalid search_paths JSON/);
 });
-
-test('search_paths examples validate query and legacy filter as exclusive inputs', () => {
-  const validQuery = '# search_paths\n\n```json\n{"query":"qualify a lead"}\n```\n';
-  const validFilter = '# search_paths\n\n```json\n{"filter":"qualify a lead"}\n```\n';
-  const both = '# search_paths\n\n```json\n{"query":"lead","filter":"lead"}\n```\n';
-  const blankFilter = '# search_paths\n\n```json\n{"filter":" "}\n```\n';
-  const selectorOnly = '# search_paths\n\n```json\n{"backend":"dataverse"}\n```\n';
-  const malformedFilter = '# search_paths\n\n```json\n{"filter":\n```\n';
-  const actionEnvelope = '# search_paths\n\n```json\n{"actionUrl":"/x","query":"lead","filter":"lead"}\n```\n';
-  const entityEnvelope = '# search_paths\n\n```json\n{"entityUrls":[],"backend":"dataverse"}\n```\n';
-  const scalar = '# search_paths\n\n```json\n"lead"\n```\n';
-  const nullValue = '# search_paths\n\n```json\nnull\n```\n';
-  const arrayValue = '# search_paths\n\n```json\n[{"query":"lead"}]\n```\n';
-
-  check(exampleProblems(validQuery));
-  check(exampleProblems(validFilter));
-  assert.match(exampleProblems(both).join(' '), /exactly one query or filter/);
-  assert.match(exampleProblems(blankFilter).join(' '), /filter must be a nonblank string/);
-  assert.match(exampleProblems(selectorOnly).join(' '), /exactly one query or filter/);
-  assert.match(exampleProblems(malformedFilter).join(' '), /invalid search_paths JSON/);
-  assert.match(exampleProblems(actionEnvelope).join(' '), /exactly one query or filter/);
-  assert.match(exampleProblems(entityEnvelope).join(' '), /exactly one query or filter/);
-  assert.match(exampleProblems(scalar).join(' '), /must be a JSON object/);
-  assert.match(exampleProblems(nullValue).join(' '), /must be a JSON object/);
-  assert.match(exampleProblems(arrayValue).join(' '), /must be a JSON object/);
-});
-
-test('Work IQ Files documents core commands, explicit EULA permission, and secret protection', () => {
-  const filesReference = fs.readFileSync(path.join(skillRoot('workiq-preview'), 'references', 'workiq-files-cli.md'), 'utf8');
-  const { codes } = parseMarkdown(filesReference);
+test('Work IQ Files documents commands, separate explicit EULA permission, and secret protection', () => {
+  const reference = read('references/workiq-files-cli.md');
+  const { codes } = parseMarkdown(reference);
   const commands = codes.map(code => code.value).join('\n');
   for (const command of [
-    'npm install --global @microsoft/workiq-files',
-    'workiq-files --help', 'workiq-files eula show',
-    'workiq-files accept-eula', 'workiq-files auth login',
-    'workiq-files status --file-id', 'workiq-files download --file-id',
-    'workiq-files upload --file-id'
-  ]) {
-    assert.ok(commands.includes(command), `Missing verified command: ${command}`);
-  }
+    'npm install --global @microsoft/workiq-files', 'workiq-files --help', 'workiq-files eula show',
+    'workiq-files accept-eula', 'workiq-files auth login', 'workiq-files status --file-id',
+    'workiq-files download --file-id', 'workiq-files upload --file-id'
+  ]) assert.ok(commands.includes(command), command);
   for (const code of codes.filter(code => code.value.includes('workiq-files accept-eula'))) {
-    assert.equal(code.value, 'workiq-files accept-eula', 'Acceptance must remain a separate command');
+    assert.equal(code.value, 'workiq-files accept-eula');
   }
-  assert.match(filesReference, /explicit user permission/);
-  assert.match(filesReference, /accepts immediately without a confirmation prompt/);
-  assert.match(filesReference, /never automate acceptance, including after an error/i);
-  assert.match(filesReference, /Never expose tokens[\s\S]{0,100}signed URLs/);
+  assert.match(reference, /explicit user permission/);
+  assert.match(reference, /accepts immediately without a confirmation prompt/);
+  assert.match(reference, /never automate acceptance, including after an error/i);
+  assert.match(reference, /Never expose tokens[\s\S]{0,100}signed URLs/);
 });
-
-test('preview file routing distinguishes WorkIQ files API objects from existing blob routes', () => {
-  const skill = fs.readFileSync(path.join(skillRoot('workiq-preview'), 'SKILL.md'), 'utf8');
-  const filesReference = fs.readFileSync(path.join(skillRoot('workiq-preview'), 'references', 'workiq-files-cli.md'), 'utf8');
+test('file routing keeps WorkIQ transfer objects separate from existing Graph blob routes', () => {
+  const reference = read('references/workiq-files-cli.md');
+  const index = read('references/files-work-iq.md');
   for (const route of ['/api/beta/files/{id}', '/api/files/{id}']) {
-    assert.ok(skill.includes(route));
-    assert.ok(filesReference.includes(route));
+    assert.ok(index.includes(route));
+    assert.ok(reference.includes(route));
   }
-  const blobRow = skill.split('\n').find(line => line.startsWith('| Download drive content'));
-  assert.ok(blobRow);
-  assert.match(blobRow, /`fetch_blob`/);
-  assert.doesNotMatch(blobRow, /Files CLI|EULA/);
-  assert.match(filesReference, /Existing drive[\s\S]{0,200}without CLI setup or EULA acceptance/);
-  for (const field of ['fileId', 'direction', 'expiresAt',
-    'GET contentUrl', 'PUT contentUrl', 'GET statusUrl']) {
-    assert.ok(filesReference.includes(field), `Missing file-transfer contract: ${field}`);
+  const download = loadRoute(directory, 'files-download', { read });
+  assert.match(Object.values(download.contents).join('\n'), /fetch_blob/);
+  assert.ok(!download.files.includes('references/workiq-files-cli.md'));
+  assert.match(reference, /Existing drive[\s\S]{0,200}without CLI setup or EULA acceptance/);
+  for (const field of ['fileId', 'direction', 'expiresAt', 'GET contentUrl', 'PUT contentUrl', 'GET statusUrl']) {
+    assert.ok(reference.includes(field), field);
   }
-  assert.match(filesReference, /require WorkIQ authentication; they are not anonymous presigned links/);
-  assert.match(filesReference, /response conversion is disabled[\s\S]{0,80}original response is preserved/);
-  const blob = fs.readFileSync(path.join(skillRoot('workiq-preview'), 'references', 'fetch-blob-work-iq.md'), 'utf8');
-  for (const route of ['/me/drive/items/{itemId}/content',
-    '/drives/{driveId}/items/{itemId}/content',
-    '/me/messages/{messageId}/attachments/{attachmentId}/$value']) {
-    assert.ok(blob.includes(route), `Missing existing blob route: ${route}`);
-  }
+  assert.match(reference, /require WorkIQ authentication; they are not anonymous presigned links/);
+  assert.match(reference, /response conversion is disabled[\s\S]{0,80}original response is preserved/);
+  const blob = read('references/fetch-blob-work-iq.md');
+  for (const route of ['/me/drive/items/{itemId}/content', '/drives/{driveId}/items/{itemId}/content',
+    '/me/messages/{messageId}/attachments/{attachmentId}/$value']) assert.ok(blob.includes(route), route);
 });
