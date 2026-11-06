@@ -1,21 +1,25 @@
-name: WorkIQ preview guidance contracts
+name: WorkIQ guidance contracts
 
 on:
   pull_request:
     paths:
-      - 'plugins/workiq-preview/**'
+      - 'plugins/workiq/**'
+      - 'plugins/workiq/tests/**'
       - '*.md'
       - 'marketplace.json'
       - '.claude-plugin/marketplace.json'
+      - '.github/plugin/marketplace.json'
       - 'tests/workiq-guidance/**'
       - '.github/workflows/workiq-guidance.yml'
   push:
     branches: [main]
     paths:
-      - 'plugins/workiq-preview/**'
+      - 'plugins/workiq/**'
+      - 'plugins/workiq/tests/**'
       - '*.md'
       - 'marketplace.json'
       - '.claude-plugin/marketplace.json'
+      - '.github/plugin/marketplace.json'
       - 'tests/workiq-guidance/**'
       - '.github/workflows/workiq-guidance.yml'
   workflow_dispatch:
@@ -43,3 +47,5 @@ jobs:
       - name: Static documentation and contract checks
         run: npm run test:static
         working-directory: tests/workiq-guidance
+      - name: Promoted stable plugin contracts
+        run: node --test plugins/workiq/tests/guidance.test.mjs

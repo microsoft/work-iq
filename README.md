@@ -14,18 +14,14 @@ For more information, see Microsoft's [User and Admin Consent Overview](https://
 
 ## 📋 Prerequisites
 
-Before getting started, ensure you have **Node.js** (which includes NPM and NPX) installed:
+The `workiq` plugin connects to a hosted MCP endpoint; it does not need a local
+Node.js runtime or launch an NPX server. Tenant consent and appropriate Microsoft
+365 licensing are still required.
 
-- **Node.js 18+** — [Download from nodejs.org](https://nodejs.org/)
-
-You can verify your installation by running:
-
-```bash
-node --version
-npm --version
-```
-
-> 💡 **Why Node.js?** WorkIQ uses NPX to run the MCP server. NPX is included automatically with NPM, which comes bundled with Node.js.
+**Node.js 18+** is needed for the separate local WorkIQ CLI and CLI-backed
+productivity skills below. Optional WorkIQ Files CLI transfers require
+**Node.js 20+**, separate installation and explicit permission before accepting
+the Files CLI EULA. Other plugins have their own prerequisites.
 
 ---
 
@@ -40,7 +36,6 @@ copilot
 
 # 3. Install any plugin
 /plugin install workiq@work-iq
-/plugin install workiq-preview@work-iq
 /plugin install microsoft-365-agents-toolkit@work-iq
 /plugin install workiq-productivity@work-iq
 ```
@@ -55,12 +50,40 @@ You: Find documents I worked on yesterday
 
 ---
 
+## Migrating from workiq-preview
+
+Stable **3.0.0** replaces stable **2.0.2** with retrieve-first evidence gathering
+and local synthesis, explicit Copilot/named-agent delegation, progressive
+guidance and exact entity operations. Retrieval availability remains
+tenant-dependent; installation does not enable it, and missing retrieval never
+silently falls back to `ask`. See the [stable plugin guide](plugins/workiq/README.md).
+
+The public `workiq-preview` package is retired. Remove an existing installation
+before installing/updating stable, since an installed preview skill otherwise
+takes precedence for overlapping requests:
+
+```bash
+copilot plugin uninstall workiq-preview
+copilot plugin install workiq@work-iq
+```
+
+Restart your session afterward. Registry removal does not uninstall an existing
+plugin or replace instructions already loaded in a running session.
+Future WorkIQ development preview remains internal; this GitHub marketplace
+publishes promoted stable WorkIQ releases, alongside the other plugins.
+
+---
+
 ## 📦 Alternative: Standalone MCP Installation
 
 [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=workiq&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40microsoft%2Fworkiq%22%2C%22mcp%22%5D%7D)
 [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=workiq&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40microsoft%2Fworkiq%22%2C%22mcp%22%5D%7D&quality=insiders)
 
 If you prefer to run WorkIQ as a standalone MCP server:
+
+This separate CLI-backed integration is not the hosted `workiq` plugin, does
+not load its skill instructions by itself, and does not inherit the plugin's
+version. The following Node.js/NPX commands apply to the CLI.
 
 ```bash
 # Install globally
@@ -166,8 +189,7 @@ workiq mcp
 
 | Plugin | Description |
 |--------|-------------|
-| [**workiq**](./plugins/workiq/) | Query Microsoft 365 data with natural language — emails, meetings, documents, Teams messages, and more. |
-| [**workiq-preview**](./plugins/workiq-preview/) | **Preview build.** Agent-host-neutral, retrieve-first context with explicit Grounding when available, intentional delegation via `ask`, and exact entity reads, writes, and downloads. This preview policy does not change the public `workiq` routing policy. |
+| [**workiq**](./plugins/workiq/) | **3.0.0:** Source-based retrieval and local synthesis, explicit delegation, and structured Microsoft 365 reads/writes. |
 | [**microsoft-365-agents-toolkit**](./plugins/microsoft-365-agents-toolkit/) | Toolkit for building and evaluating M365 Copilot declarative agents — scaffolding, manifest authoring, capability configuration, and eval workflows. |
 | [**workiq-productivity**](./plugins/workiq-productivity/) | Read-only WorkIQ productivity insights — email triage, meeting costs, org charts, channel audits, and more. |
 
@@ -187,7 +209,7 @@ We welcome new plugins! See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full gu
 
 1. Create your plugin under `plugins/{your-plugin}/`
 2. Add `.mcp.json`, `README.md`, and `skills/{name}/SKILL.md`
-3. Register it in `.github/plugin/marketplace.json`
+3. Register it consistently in `marketplace.json` and `.claude-plugin/marketplace.json`
 4. Submit a pull request
 
 ---
