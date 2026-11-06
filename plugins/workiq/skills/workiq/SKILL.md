@@ -7,8 +7,8 @@ compatibility: >
 ---
 # WorkIQ
 
-Both installed: for overlaps prefer preview only if its installed numeric
-MAJOR.MINOR.PATCH exceeds stable's; ties/unknown prefer stable.
+If a workiq-preview plugin is also installed, for overlaps prefer it only if
+its numeric version is higher; ties/unknown prefer workiq.
 Unavailable retrieve never permits automatic ask or plugin fallback.
 Omit capabilities unless sources are specified.
 
