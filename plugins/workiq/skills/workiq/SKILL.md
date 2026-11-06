@@ -8,7 +8,7 @@ compatibility: >
 # WorkIQ
 
 If a workiq-preview plugin is also installed, for overlaps prefer it only if
-its numeric version is higher; ties/unknown prefer workiq.
+its numeric version exceeds workiq's; else prefer workiq.
 Unavailable retrieve never permits automatic ask or plugin fallback.
 Omit capabilities unless sources are specified.
 
