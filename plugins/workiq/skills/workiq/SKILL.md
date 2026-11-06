@@ -7,8 +7,8 @@ compatibility: >
 ---
 # WorkIQ
 
-If a workiq-preview plugin is also installed, for overlaps prefer it only if
-its numeric version exceeds workiq's; else prefer workiq.
+With workiq and workiq-preview both installed, for overlaps use
+workiq-preview only if its numeric version exceeds workiq's; else workiq.
 Unavailable retrieve never permits automatic ask or plugin fallback.
 Omit capabilities unless sources are specified.
 
