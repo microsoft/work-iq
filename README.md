@@ -59,8 +59,8 @@ tenant-dependent; installation does not enable it, and missing retrieval never
 silently falls back to `ask`. See the [stable plugin guide](plugins/workiq/README.md).
 
 The public `workiq-preview` package is retired. Remove an existing installation
-before installing/updating stable, since an installed preview skill otherwise
-takes precedence for overlapping requests:
+before installing/updating stable, since older preview skills claim
+precedence over stable for overlapping requests:
 
 ```bash
 copilot plugin uninstall workiq-preview

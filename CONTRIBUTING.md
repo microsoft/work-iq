@@ -9,16 +9,16 @@ the other independently maintained marketplace plugins. The public
 `workiq-preview` package is retired; do not re-add its package or registration.
 
 WorkIQ feature changes for capabilities already public in production rings
-belong in the Work IQ team's internal ADO `workiq-preview` channel. Unreleased
+belong in the Work IQ team's internal `workiq-preview` channel. Unreleased
 features stay in team forks until ready to be made public. Public contributors
 can submit issues or PRs here; Work IQ maintainers must carry accepted changes
 back into the internal preview source before the next promotion, rather than
 letting a later export overwrite public-only fixes.
 
 The Work IQ team promotes preview to stable at least every two weeks, sooner
-when warranted. Merge the reviewed promotion in ADO before publishing its stable
+when warranted. Merge the reviewed internal promotion before publishing its stable
 snapshot here. Draft publication PRs may be prepared earlier, but must remain
-draft until the ADO promotion merges and the exported source is rechecked.
+draft until the internal promotion merges and the exported source is rechecked.
 
 Both internal channels use numeric MAJOR.MINOR.PATCH: patch for compatible
 fixes, minor for compatible additions, major for breaking routing/behavior

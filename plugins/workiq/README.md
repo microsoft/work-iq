@@ -16,8 +16,8 @@ From GitHub Copilot CLI:
 ```
 
 Restart the session after installation or updates. If previously installed,
-remove the retired `workiq-preview` plugin first; an installed preview skill
-otherwise takes precedence over stable for overlapping requests. See the
+remove the retired `workiq-preview` plugin first; older preview skills claim
+precedence over stable for overlapping requests. See the
 [migration guide](../../README.md#migrating-from-workiq-preview).
 
 Claude and Codex users should use their host's supported plugin loader and

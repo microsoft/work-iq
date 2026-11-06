@@ -24,8 +24,10 @@ test('guidance contracts cover the published stable package, not the retired pre
 });
 test('parsed frontmatter and description limit', () =>
   check(frontmatterProblems(read('SKILL.md'), 'workiq')));
-test('description requires reading guidance before tool use', () => {
-  assert.match(parseMarkdown(read('SKILL.md')).frontmatter.description, /Read before using workiq tools/i);
+test('description routes M365 work to WorkIQ and reserves ask for delegation', () => {
+  const { description } = parseMarkdown(read('SKILL.md')).frontmatter;
+  assert.match(description, /^Use WorkIQ for M365\b/);
+  assert.match(description, /Copilot\/named-agent answers use ask/);
 });
 test('canonical domains and mechanics are reachable through modular guidance', () =>
   check(discoverabilityProblems(directory)));

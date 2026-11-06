@@ -149,8 +149,8 @@ After creating a plugin:
 ## Self-Maintenance Instructions
 
 Follow [CONTRIBUTING.md](CONTRIBUTING.md) for WorkIQ source ownership,
-MAJOR.MINOR.PATCH versioning and internal ADO preview-to-stable promotion.
-Publish only the stable snapshot after its ADO promotion merges. An earlier
+MAJOR.MINOR.PATCH versioning and internal preview-to-stable promotion.
+Publish only the stable snapshot after its internal promotion merges. An earlier
 publication PR must stay draft until the merge and source recheck. Keep public
 marketplace identity `work-iq`; preserve unrelated plugin entries and workflows.
 Never copy internal registries or preview into this repository.

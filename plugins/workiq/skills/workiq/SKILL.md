@@ -1,13 +1,14 @@
 ---
 name: workiq
-description: "Use WorkIQ for M365 work: unread mail, calendar, named Teams messages, documents, SharePoint/OneDrive files, Teams chats/channels, people, Planner and business-app records, drafts and actions. Use ask only for explicit Copilot/named-agent answers. Read before using workiq tools."
+description: "Use WorkIQ for M365 unread mail, calendar, named Teams messages, documents, SharePoint/OneDrive files, Teams chats/channels, people, Planner, business apps, drafts/actions. Copilot/named-agent answers use ask."
 compatibility: >
   Uses the hosted WorkIQ MCP endpoint. No local package is required for MCP
   tool calls.
 ---
 # WorkIQ
 
-Installed workiq-preview takes precedence for overlapping requests.
+Both installed: for overlaps prefer preview only if its installed numeric
+MAJOR.MINOR.PATCH exceeds stable's; ties/unknown prefer stable.
 Unavailable retrieve never permits automatic ask or plugin fallback.
 Omit capabilities unless sources are specified.
 
