@@ -33,6 +33,7 @@ Use the following inherited shapes only after discovery confirms the resource:
 | Inspect tables | fetch or get_schema on `/businessapps/environments/{environmentId}/tables/{tableName}` |
 | Read a record | fetch `/businessapps/environments/{environmentId}/tables/{tableName}/records/{recordId}` |
 | Inspect an app | fetch `/businessapps/environments/{environmentId}/apps/{appName}` |
+| List an app's custom operations | get_schema on `/businessapps/environments/{environmentId}/apps/{appName}`; its app-level operations are the app's custom operations |
 | List/read an environment business skill | fetch `/businessapps/environments/{environmentId}/skills` or its returned skill path |
 | Query environment data | do_action `/businessapps/environments/{environmentId}/query`, with schema-defined `{"querytext":"{supportedReadQuery}"}` |
 | Download a record file | call_function on the discovered `.../records/{recordId}/files/{columnName}/download` path |
@@ -42,10 +43,12 @@ query is read-only and supported; do not generate a write query under a read
 request. Use optional destinationPath only when supported. Record-file download
 does not establish a Graph fetch_blob or OneDrive upload contract.
 
-App operations omit `/records/`: use exact returned paths under
-`.../apps/{appName}/tables/{tableName}`. If the schema exposes a read-only `view`
-or `read` action, use its supported arguments; never construct an app operation
-from an environment record path.
+App operations omit `/records/` and exist at two levels: table-level record
+operations under `.../apps/{appName}/tables/{tableName}`, and app-level custom
+operations a maker added to the app under `.../apps/{appName}/operations/`.
+Use only exact paths and operation names returned by get_schema. If the schema
+exposes a read-only `view` or `read` action, use its supported arguments; never
+construct an app operation from an environment record path.
 
 ## Results and stopping
 

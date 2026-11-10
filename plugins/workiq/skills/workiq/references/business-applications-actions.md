@@ -27,7 +27,8 @@ Use only paths and payload fields confirmed by discovery and the live schema:
 | Update/delete a record | update_entity/delete_entity on the exact returned record path |
 | Delete a table | delete_entity on the exact discovered table path, only when supported and the user confirmed deletion of the whole table, not a record |
 | Create/update/delete a business skill | Matching entity tool on the discovered skills collection or concrete skill path |
-| App operation | do_action on the exact returned app-scoped operation; use prepare_* then submit_* only when exposed |
+| App record operation | do_action on the exact returned `.../apps/{appName}/tables/{tableName}/operations/{operationName}` path; use prepare_* then submit_* only when exposed |
+| App custom operation | do_action on the exact `.../apps/{appName}/operations/{operationName}` path returned by get_schema on the app, with its schema-defined inputs in jsonBody |
 | Custom API or in-app MCP operation | do_action on the discovered concrete API/tool path with schema-defined inputs |
 | Upload a record file | do_action on the discovered `.../records/{recordId}/files/{columnName}/upload` path |
 
