@@ -13,7 +13,10 @@ work-iq/
 │   ├── workiq/
 │   ├── microsoft-365-agents-toolkit/
 │   └── workiq-productivity/
-├── tests/workiq-guidance/     # Offline stable guidance and trace-contract checks
+├── tests/
+│   ├── workiq-guidance/      # Offline stable guidance and trace-contract checks
+│   ├── workiq-claude/        # WorkIQ Claude ZIP packaging regression checks
+│   └── workiq-openai/        # WorkIQ OpenAI ZIP packaging regression checks
 ├── ADMIN-INSTRUCTIONS.md     # Tenant admin consent guide
 ├── CONTRIBUTING.md           # Guide for adding new plugins
 ├── PLUGINS.md                # Plugin catalog — skills, agents, and commands
@@ -72,6 +75,12 @@ plugins/<plugin-name>/
   - Agent/plugin lifecycle requests route to `references/wiqd.md` and the external, experimental WIQD plugin. Installation requires approval and a restart; WIQD is not bundled.
   - Offline checks: `npm ci --prefix tests/workiq-guidance --ignore-scripts --no-audit --no-fund`, then `npm --prefix tests/workiq-guidance test` and `node --test plugins/workiq/tests/guidance.test.mjs` (Node 22+). No model or live M365 operations.
   - Observed trace validation requires nonblank package-hash provenance; authoritative state claims are compared by property presence, including falsey values.
+  - OpenAI directory submission inputs live in `plugins/workiq/openai-submission/`. Package only WorkIQ with `scripts/package-workiq-openai.ps1 -OutputPath <zip>`; `-Draft` permits pending publisher/OAuth inputs for inspection only, never missing referenced icons. The submission owner reports a video exemption, so `demo_recording_url` is omitted and non-draft packaging is enabled; live checks remain separate. Included neutral monogram PNGs are draft assets, not approved branding. The packager preserves portable root `plugin.json` and `mcp.json` so the submission importer can read the OAuth client, requires exactly one WorkIQ server, and reuses the unchanged skill without changing existing Copilot configuration. Upload through With MCP. See the submission README for required assets and live-review evidence.
+  - OpenAI listing names and descriptions use neutral WorkIQ/Microsoft 365 wording; the packager rejects AI assistant/model brand references in those fields. Preserve factual backend prerequisites and tool documentation outside listing copy rather than hiding service dependencies. Listing theme colors are configured with `brandColor` and `brandColorDark` under `extensions.com.openai.interface` in the submission manifest.
+  - OpenAI submission OAuth declares `extensions.com.openai.auth.defaultScopes` using the fully qualified WorkIQ scope advertised in the hosted server's protected-resource metadata and a provided-client ID; packaging regression checks verify both survive packaging in root `mcp.json`. OpenAI does not accept `clientSecret` in the manifest; enter real secrets only in connection setup/the submission portal.
+  - Build a Claude-only ZIP with `scripts/package-workiq-claude.ps1 -OutputPath <zip>`. It reuses the existing Claude manifest and unchanged skills, generates a URL-only HTTP MCP configuration without Copilot OAuth fields, and includes the README from `plugins/workiq/claude-package/`. Run `pwsh -NoProfile -File tests/workiq-claude/package.test.ps1` for offline regression checks; live Claude OAuth and tool behavior require separate verification.
+
+  - The Claude manifest (`plugins/workiq/.claude-plugin/plugin.json`) uses `workiq` as its machine identifier and `Work IQ` as its display name, and references the transparent `claude-package/icon.png` at the same path in the Claude ZIP. Listing URLs are configured in the manifest; configure classification in the submission portal, not the manifest.
 
 The public preview package is retired. Do not recreate it or register it.
 Existing installations must follow [migration instructions](README.md#migrating-from-workiq-preview)

@@ -52,6 +52,14 @@ Use the exact tool names and schemas advertised by the configured server;
 logical names are not necessarily directly callable host names. OAuth fields
 and configuration wrappers are host-specific.
 
+## Claude package
+
+Build a Claude-only ZIP with
+`.\scripts\package-workiq-claude.ps1 -OutputPath .\workiq-claude.zip`
+from the repository root. See [WorkIQ for Claude](claude-package/README.md)
+for installation, authentication prerequisites, data flow, and validation status.
+This package does not change the existing Copilot configuration.
+
 ## Choosing the operation
 
 | Request | Route |

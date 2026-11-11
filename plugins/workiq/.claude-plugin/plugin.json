@@ -1,6 +1,17 @@
 {
   "name": "workiq",
+  "displayName": "Work IQ",
   "version": "3.0.0",
   "description": "WorkIQ for Microsoft 365 mail, calendar, Teams, files, SharePoint, people, Planner and Business Applications. Use retrieve with source-based strategy selection to find evidence and summarize locally. Use ask only for a requested Copilot or named-agent answer; use entity tools for specific reads and operations, with confirmation before mutations. If workiq and workiq-preview are both installed, prefer workiq-preview only if its installed version is higher than workiq's; otherwise prefer workiq.",
+  "author": {
+    "name": "Microsoft Corporation"
+  },
+  "icon": "./claude-package/icon.png",
+  "privacyPolicyUrl": "https://www.microsoft.com/en-us/privacy/privacystatement",
+  "supportUrl": "https://support.microsoft.com/en-us/contactus",
+  "repository": "https://github.com/microsoft/work-iq",
+  "homepage": "https://aka.ms/workiqclaudehomepage",
+  "documentationUrl": "https://aka.ms/workiqclaudedocs",
+  "termsOfServiceUrl": "https://www.microsoft.com/licensing/terms/en-US/product/microsoftIQ",
   "skills": "./skills/"
 }
