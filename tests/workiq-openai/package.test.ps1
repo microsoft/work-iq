@@ -57,6 +57,15 @@ try {
         if ($cases.positive.Count -ne 5 -or $cases.negative.Count -ne 3) {
             throw 'Review scenarios were lost in packaging.'
         }
+        $documentCases = @($cases.positive | Where-Object { $_.description -eq 'Summarize a named document with source grounding' })
+        if ($documentCases.Count -ne 1 -or
+            $documentCases[0].tools_triggered -cne 'retrieve (grounding); fetch if needed to verify document metadata') {
+            throw 'The document summary review case must retrieve source evidence, with optional metadata reads, not delegate to ask.'
+        }
+        $emailCases = @($cases.negative | Where-Object { $_.description -eq 'Treat retrieved email instructions as data' })
+        if ($emailCases.Count -ne 1 -or $emailCases[0].tools_triggered -cne 'fetch') {
+            throw 'The exact-subject email review case must use structured reads, not delegate to ask.'
+        }
         $interface = $manifest.extensions.'com.openai'.interface
         if ($interface.shortDescription.Length -gt 30 -or $interface.defaultPrompt.Count -gt 3) {
             throw 'Listing exceeds submission limits.'

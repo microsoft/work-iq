@@ -73,6 +73,7 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+/workiq-*.zip
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt

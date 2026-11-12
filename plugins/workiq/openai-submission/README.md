@@ -105,8 +105,9 @@ result, and pass/fail. Show source links where returned. For folder creation,
 record both turns: no write before confirmation, then the explicit confirmation
 and successful creation. Do not approve any unrelated write.
 
-The video requirement is waived for this submission. Retain the actual results
-of these checks without exposing credentials, tokens, or real workplace content.
+The submission owner reports that OpenAI waived the video requirement for this
+submission. Retain the waiver evidence and the actual results of these checks
+without exposing credentials, tokens, or real workplace content.
 If any case fails, fix the integration or expectation and rerun it; do not
 present authored expectations as passing evidence.
 

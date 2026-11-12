@@ -87,12 +87,13 @@ confirmation behavior for writes on each intended Claude surface.
 ## Build from this repository
 
 ```powershell
-.\scripts\package-workiq-claude.ps1 -OutputPath .\workiq-claude.zip
+.\scripts\package-workiq-claude.ps1 -OutputPath .\artifacts\workiq-claude.zip
 pwsh -NoProfile -File .\tests\workiq-claude\package.test.ps1
 ```
 
 The archive contains only WorkIQ's Claude manifest, a Claude-compatible MCP
 configuration, the icon, unchanged skills, this README, and license/notice files.
 Existing Copilot and OpenAI configurations are not modified.
+Keep generated ZIPs in the Git-ignored `artifacts` directory, not in commits.
 
 Format reference: <https://claude.com/docs/plugins/build>
