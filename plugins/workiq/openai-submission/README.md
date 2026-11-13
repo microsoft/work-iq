@@ -1,15 +1,15 @@
 # WorkIQ OpenAI submission
 
 This directory contains OpenAI-specific submission inputs for **WorkIQ only**.
-The packager preserves the portable source manifests as root `plugin.json`
-and `mcp.json`, so the submission importer can read the OAuth client from
-`mcp.json`. It copies the existing `workiq` skill unchanged under `skills/`.
-It does not include preview, productivity, toolkit, the existing host manifests,
+The submission archive must preserve the portable source manifests as root
+`plugin.json` and `mcp.json`, so the submission importer can read the OAuth client
+from `mcp.json`. Include the existing `workiq` skill unchanged under `skills/`.
+Do not include preview, productivity, toolkit, the existing host manifests,
 or the Copilot-specific `.mcp.json`.
 
 The submission owner reports that OpenAI waived the video requirement for this
-submission, so the manifest omits `demo_recording_url`. Non-draft packaging is
-enabled. Review scenarios are authored, not executed. OAuth interoperability,
+submission, so the manifest omits `demo_recording_url`.
+Review scenarios are authored, not executed. OAuth interoperability,
 tool discovery, and skill behavior in ChatGPT have not been verified. A ZIP
 build is not evidence that these work.
 
@@ -25,7 +25,7 @@ access beyond the signed-in account, unverified data-handling guarantees, or
 support for every Microsoft Graph operation.
 
 Listing names and descriptions use neutral integration wording, not other AI
-assistant or model brands. The packager checks these public metadata fields.
+assistant or model brands. Check these public metadata fields before submission.
 This does not remove factual service prerequisites or tool documentation:
 semantic queries may require Microsoft 365 Copilot licensing, which must be
 confirmed for the submitting tenant. The existing skill and its backend
@@ -48,7 +48,7 @@ qualified scope advertised by the server's
 (verified November 5, 2026). The pre-registered client declaration uses
 `client.mode: "provided"` and `client.clientId` for the registered client ID.
 If the client ID is still `pending_client_id`, replace that placeholder before
-connecting; non-draft packaging rejects it while it is pending. Set the optional
+connecting or submitting. Set the optional
 `client.tokenEndpointAuthMethod` only after confirming the provider-supported
 method. Other optional settings remain omitted so discovery can supply them.
 
@@ -111,32 +111,26 @@ without exposing credentials, tokens, or real workplace content.
 If any case fails, fix the integration or expectation and rerun it; do not
 present authored expectations as passing evidence.
 
-## Build the submission package
+## Prepare the submission package
 
-From the repository root:
+Prepare a separate staging directory. Copy this directory's `plugin.json`,
+`mcp.json`, `README.md`, and `assets` directory into it. Add the repository root's
+`LICENSE` and `NOTICES.TXT`, and copy `plugins/workiq/skills` unchanged as `skills`.
+Archive the staged contents as `artifacts\workiq-openai.zip`, with the entries
+below at the ZIP root, not inside an extra parent directory.
 
-```powershell
-.\scripts\package-workiq-openai.ps1 -OutputPath .\artifacts\workiq-openai.zip
-```
+Before submission, inspect the archive and confirm it contains exactly one remote
+HTTPS MCP server named `workiq`, all referenced icons, a version matching the
+canonical WorkIQ manifest, at most three starter prompts, and a short description
+of at most 30 characters. Verify the provided OAuth client ID and default scope
+are preserved in root `mcp.json`, and the skill files are unchanged. Listing names
+and descriptions must not reference AI assistant or model brands. Resolve all
+pending metadata; do not submit an incomplete inspection build.
 
-The command packages current working files, including uncommitted changes.
-The command refuses to overwrite an existing ZIP; choose a fresh path for each
-build. Optional `-Draft` mode permits pending metadata for inspection and emits
-a warning, but missing referenced icon files are always an error. Do not submit
-a draft build.
-
-Every build requires exactly one remote HTTPS MCP server named `workiq`,
-referenced icons, a matching canonical version, at most three starter prompts,
-and a short description of at most 30 characters. Listing names and descriptions
-must not reference AI assistant or model brands. Non-draft builds also reject
-pending metadata. These are packaging checks, not certification of OAuth, legal
-approval, host behavior, or review readiness.
-
-Run focused packaging regression checks from the repository root:
-
-```powershell
-.\tests\workiq-openai\package.test.ps1
-```
+This repository does not include submission packaging scripts or archive
+regression tests. Manual archive checks do not certify OAuth, legal approval,
+host behavior, or review readiness. Keep generated ZIPs in the Git-ignored
+`artifacts` directory, not in commits.
 
 Expected ZIP layout:
 

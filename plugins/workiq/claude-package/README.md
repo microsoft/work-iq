@@ -84,16 +84,42 @@ tenant availability, or end-to-end tool behavior. Before distributing as a
 verified integration, test sign-in, tool discovery, a read-only request, and
 confirmation behavior for writes on each intended Claude surface.
 
-## Build from this repository
+## Prepare a package from this repository
 
-```powershell
-.\scripts\package-workiq-claude.ps1 -OutputPath .\artifacts\workiq-claude.zip
-pwsh -NoProfile -File .\tests\workiq-claude\package.test.ps1
+Prepare a separate staging directory with this layout, then archive its contents
+as `artifacts\workiq-claude.zip`. Preserve the hidden `.claude-plugin` directory
+and put these entries at the ZIP root, not inside an extra parent directory:
+
+```text
+.claude-plugin/
+  plugin.json       # copy plugins/workiq/.claude-plugin/plugin.json
+.mcp.json           # use the Claude-specific configuration below
+claude-package/
+  icon.png          # copy plugins/workiq/claude-package/icon.png
+skills/             # copy plugins/workiq/skills unchanged
+README.md           # copy this README
+LICENSE             # copy from the repository root
+NOTICES.TXT         # copy from the repository root
 ```
 
-The archive contains only WorkIQ's Claude manifest, a Claude-compatible MCP
-configuration, the icon, unchanged skills, this README, and license/notice files.
-Existing Copilot and OpenAI configurations are not modified.
+Use this `.mcp.json` in the staged package; do not copy the repository's
+Copilot-specific `.mcp.json` or modify it:
+
+```json
+{
+  "mcpServers": {
+    "workiq": {
+      "type": "http",
+      "url": "https://workiq.svc.cloud.microsoft/mcp"
+    }
+  }
+}
+```
+
+Inspect the archive against this layout, verify the manifest's icon and skill
+paths resolve, and confirm the skill files are unchanged. This repository does
+not include submission packaging scripts or archive regression tests.
+Existing Copilot and OpenAI configurations must remain unchanged.
 Keep generated ZIPs in the Git-ignored `artifacts` directory, not in commits.
 
 Format reference: <https://claude.com/docs/plugins/build>
