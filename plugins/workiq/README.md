@@ -52,6 +52,13 @@ Use the exact tool names and schemas advertised by the configured server;
 logical names are not necessarily directly callable host names. OAuth fields
 and configuration wrappers are host-specific.
 
+## Claude package
+
+Claude listing metadata is in `.claude-plugin/plugin.json`, with the icon in
+`claude-package/icon.png`. Live Claude authentication and tool behavior require
+separate verification. Keep generated ZIPs in the Git-ignored `artifacts` directory.
+This package does not change the existing Copilot configuration.
+
 ## Choosing the operation
 
 | Request | Route |

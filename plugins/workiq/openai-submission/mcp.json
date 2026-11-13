@@ -1,0 +1,23 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "workiq": {
+      "type": "streamable-http",
+      "url": "https://workiq.svc.cloud.microsoft/mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "oauth",
+            "client": {
+              "mode": "provided",
+              "clientId": "e0476654-c1d5-430b-ab80-70cbd947616a"
+            },
+            "defaultScopes": [
+              "fdcc1f02-fc51-4226-8753-f668596af7f7/WorkIQAgent.Act"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
