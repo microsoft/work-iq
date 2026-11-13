@@ -9,7 +9,7 @@
   "homepage": "https://github.com/microsoft/work-iq",
   "repository": "https://github.com/microsoft/work-iq",
   "license": "MIT",
-  "keywords": ["microsoft-365", "outlook", "teams", "sharepoint", "productivity"],
+  "keywords": ["microsoft-365", "outlook", "teams", "sharepoint", "productivity", "meetings", "business apps", "bizapps"],
   "extensions": {
     "com.openai": {
       "interface": {
