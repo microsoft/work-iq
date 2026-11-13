@@ -54,9 +54,9 @@ and configuration wrappers are host-specific.
 
 ## Claude package
 
-See [WorkIQ for Claude](claude-package/README.md) for the Claude-only ZIP layout,
-package preparation, installation, authentication prerequisites, data flow,
-and validation status. Keep generated ZIPs in the Git-ignored `artifacts` directory.
+Claude listing metadata is in `.claude-plugin/plugin.json`, with the icon in
+`claude-package/icon.png`. Live Claude authentication and tool behavior require
+separate verification. Keep generated ZIPs in the Git-ignored `artifacts` directory.
 This package does not change the existing Copilot configuration.
 
 ## Choosing the operation
