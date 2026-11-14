@@ -54,9 +54,11 @@ $expectedWorkIqToolsScopes = @('McpServers.CopilotMCP.All','McpServers.Me.All','
 
 # --- Verify MCP Server service principals ---
 Write-Host "`n--- MCP Server Service Principals ---" -ForegroundColor Cyan
+$servicePrincipalsByAppId = @{}
 foreach ($server in $McpServers) {
     $sp = Get-MgServicePrincipal -Filter "appId eq '$($server.AppId)'" -ErrorAction SilentlyContinue
     if ($sp) {
+        $servicePrincipalsByAppId[$server.AppId] = $sp
         Write-Host "  [OK] $($server.Name) (Id: $($sp.Id))" -ForegroundColor Green
     } else {
         Write-Host "  [MISSING] $($server.Name) (AppId: $($server.AppId))" -ForegroundColor Red
@@ -105,7 +107,7 @@ if ($graphGrant) {
 # --- Verify MCP Server permission grants ---
 Write-Host "`n--- MCP Server Permission Grants ---" -ForegroundColor Cyan
 foreach ($server in $McpServers) {
-    $sp = Get-MgServicePrincipal -Filter "appId eq '$($server.AppId)'" -ErrorAction SilentlyContinue
+    $sp = $servicePrincipalsByAppId[$server.AppId]
     if (-not $sp) { continue }
 
     $grant = $grants | Where-Object { $_.ResourceId -eq $sp.Id } | Select-Object -First 1
