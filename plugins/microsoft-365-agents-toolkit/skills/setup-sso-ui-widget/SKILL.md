@@ -1,21 +1,16 @@
 ---
 name: setup-sso-ui-widget
 description: >
-  Adds Microsoft Entra SSO (single sign-on, no OBO) to a Microsoft 365 Copilot declarative
-  agent whose tools are served by an MCP server — for BOTH widget standards:
-  (1) the MCP Apps standard (from create-mcp-app / the MCP Apps SDK): a plugin manifest such as
-  readiness_plugin.json (or another *_plugin.json with a runtimes[] block) and an EXPRESS-based
-  MCP server; and (2) the OpenAI Apps (OAI Apps) layout from the ui-widget-developer skill:
-  appPackage/mcpPlugin.json and a raw-http MCP server. When the layout is ambiguous, DEFAULT to
-  the MCP Apps standard (most projects use it). The skill auto-detects the layout, reuses the
-  existing named devtunnel + env/.env.local (never creates a second tunnel), registers the Entra
-  app + ATK OAuth (MicrosoftEntra), patches the plugin manifest's runtimes[] auth to
-  OAuthPluginVault, injects a minimal JWKS bearer-token guard into the existing server (an EXPRESS
-  middleware for MCP Apps, or a raw-http guard WITHOUT rewriting to Express for OAI Apps),
-  validates, sideloads, and prints an app-registration summary. SSO only — no OBO.
-  Triggered by: "add sso to my mcp server", "wire entra sso for my copilot agent",
-  "setup sso for mcp apps", "add sso after create-mcp-app", "add sso after ui-widget-developer",
-  "add entra auth to my express mcp server", "configure only sso no obo"
+  Adds Microsoft Entra single sign-on (SSO, no OBO) to Microsoft 365 Copilot
+  declarative agents whose tools use an MCP server. Supports both MCP Apps
+  projects with a runtimes-based plugin manifest and Express server, and OpenAI
+  Apps projects with appPackage/mcpPlugin.json and a raw HTTP server. Detects
+  the layout, reuses the existing named dev tunnel and env/.env.local,
+  registers Entra and Agents Toolkit OAuth, configures OAuthPluginVault,
+  injects the appropriate JWKS bearer-token guard without changing server
+  frameworks, validates, sideloads, and prints the app-registration summary.
+  Use for requests to add or configure Entra SSO for MCP Apps or UI widgets.
+  SSO only; do not use for on-behalf-of (OBO) token exchange.
 ---
 
 # Setup SSO for a ui-widget-developer Agent (Minimal-Touch, No OBO)
