@@ -62,6 +62,7 @@ Write-Host "Connected to tenant: $($context.TenantId)" -ForegroundColor Green
 try {
 
 # --- Step 1: Provision MCP Server service principals ---
+$mcpServicePrincipals = @{}
 if (-not $ConsentOnly) {
     Write-Host "`nProvisioning MCP Server service principals..." -ForegroundColor Cyan
     foreach ($server in $McpServers) {
@@ -73,6 +74,7 @@ if (-not $ConsentOnly) {
             $sp = New-MgServicePrincipal -AppId $server.AppId
             Write-Host "  Created $($server.Name) (Id: $($sp.Id))" -ForegroundColor Green
         }
+        $mcpServicePrincipals[$server.AppId] = $sp
     }
 }
 
@@ -126,7 +128,12 @@ $workIqToolsAppId  = 'ea9ffc3e-8a23-4a7d-836d-234d7c7565c1'
 
 foreach ($server in $McpServers) {
     Write-Host "`nGranting admin consent for $($server.Name) permissions..." -ForegroundColor Cyan
-    $sp = Get-MgServicePrincipal -Filter "appId eq '$($server.AppId)'"
+    if ($mcpServicePrincipals.ContainsKey($server.AppId)) {
+        $sp = $mcpServicePrincipals[$server.AppId]
+    } else {
+        $sp = Get-MgServicePrincipal -Filter "appId eq '$($server.AppId)'" | Select-Object -First 1
+        $mcpServicePrincipals[$server.AppId] = $sp
+    }
 
     $existingGrant = Get-MgOauth2PermissionGrant -Filter "clientId eq '$($cliSp.Id)'" -ErrorAction SilentlyContinue | Where-Object { $_.ResourceId -eq $sp.Id } | Select-Object -First 1
 
