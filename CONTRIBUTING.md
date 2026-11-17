@@ -59,8 +59,12 @@ plugins/{plugin-name}/
 ### Marketplace Registry
 
 All public plugins must be registered consistently in `marketplace.json` and
-`.claude-plugin/marketplace.json`. Keep name, version and description consistent
-with the plugin's host manifests. Add your plugin entry:
+`.claude-plugin/marketplace.json`. Keep name and version consistent with the
+plugin's host manifests. Descriptions should also match, except that Work IQ's
+Claude marketplace and Claude manifest share a customer-facing tagline rather
+than the other hosts' discovery description. Keep the longer Claude listing copy
+in the existing [plugin README](plugins/workiq/README.md#claude-directory-listing)
+for the submission portal. Add your plugin entry:
 
 ```json
 {
