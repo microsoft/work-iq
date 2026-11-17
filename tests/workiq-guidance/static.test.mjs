@@ -87,26 +87,45 @@ function checkMetadata(registries, manifests) {
   assert.ok(canonical, 'Missing stable marketplace entry');
   assert.equal(canonical.version, '3.0.0');
   assert.equal(canonical.source, './plugins/workiq');
-  for (const manifest of manifests) {
-    for (const field of ['name', 'version', 'description']) {
-      assert.equal(manifest[field], canonical[field], `${field} differs across manifests`);
+  for (const [host, manifest] of Object.entries(manifests)) {
+    for (const field of ['name', 'version']) {
+      assert.equal(manifest[field], canonical[field], `${host}: ${field} differs from its marketplace`);
+    }
+    if (host === '.claude-plugin') {
+      assert.equal(typeof manifest.description, 'string');
+      assert.ok(manifest.description.trim(), 'Missing Claude listing tagline');
+    } else {
+      assert.equal(manifest.description, canonical.description, `${host}: description differs from its marketplace`);
     }
     assert.equal(manifest.skills, './skills/');
   }
 }
-test('all marketplaces and host manifests publish consistent stable 3.0 metadata', () => {
+test('marketplaces share stable 3.0 metadata while the Claude manifest may use a listing tagline', () => {
   const json = file => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
   checkMetadata(['marketplace.json', '.claude-plugin/marketplace.json'].map(json),
-    ['.github/plugin', '.claude-plugin', '.codex-plugin'].map(host => json(`plugins/workiq/${host}/plugin.json`)));
+    Object.fromEntries(['.github/plugin', '.claude-plugin', '.codex-plugin']
+      .map(host => [host, json(`plugins/workiq/${host}/plugin.json`)])));
 });
-test('metadata contract rejects mismatched hosts and retired preview registration', () => {
+test('metadata contract permits Claude listing copy but rejects mismatches and retired preview registration', () => {
   const entry = { name: 'workiq', version: '3.0.0', source: './plugins/workiq', description: 'Synthetic' };
   const registries = Array.from({ length: 2 }, () => ({ plugins: [structuredClone(entry)] }));
-  const manifests = Array.from({ length: 3 }, () => ({ ...entry, skills: './skills/' }));
+  const manifests = Object.fromEntries(['.github/plugin', '.claude-plugin', '.codex-plugin']
+    .map(host => [host, { ...entry, skills: './skills/' }]));
   assert.doesNotThrow(() => checkMetadata(registries, manifests));
-  manifests[0].version = '2.0.2';
+  manifests['.claude-plugin'].description = 'Customer-facing listing copy';
+  assert.doesNotThrow(() => checkMetadata(registries, manifests));
+  registries[1].plugins[0].description = 'Mismatched registry copy';
+  assert.throws(() => checkMetadata(registries, manifests));
+  registries[1].plugins[0].description = entry.description;
+  manifests['.claude-plugin'].description = ' ';
+  assert.throws(() => checkMetadata(registries, manifests), /Missing Claude listing tagline/);
+  manifests['.claude-plugin'].description = 'Customer-facing listing copy';
+  manifests['.github/plugin'].description = 'Mismatched discovery copy';
+  assert.throws(() => checkMetadata(registries, manifests), /description differs/);
+  manifests['.github/plugin'].description = entry.description;
+  manifests['.github/plugin'].version = '2.0.2';
   assert.throws(() => checkMetadata(registries, manifests), /version differs/);
-  manifests[0].version = '3.0.0';
+  manifests['.github/plugin'].version = '3.0.0';
   for (const registry of registries) registry.plugins.push({ name: 'workiq-preview' });
   assert.throws(() => checkMetadata(registries, manifests));
 });
