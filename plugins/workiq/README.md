@@ -32,9 +32,6 @@ Tenant consent and appropriate licensing are required; see
 
 ## Hosted MCP configuration
 
-This example is for GitHub Copilot. Its OAuth fields are not the Claude
-connector's authentication settings.
-
 ```json
 {
   "mcpServers": {
@@ -61,52 +58,6 @@ Claude listing metadata is in `.claude-plugin/plugin.json`, with the icon in
 `.claude-plugin/icon.png`. Live Claude authentication and tool behavior require
 separate verification. Keep generated ZIPs in the Git-ignored `artifacts` directory.
 This package does not change the existing Copilot configuration.
-
-### Claude connector authentication
-
-For Claude.ai, Claude Desktop, mobile and Cowork, configure the Work IQ
-connector with Anthropic-held OAuth client credentials:
-
-| Setting | Value |
-| --- | --- |
-| MCP server URL | `https://workiq.svc.cloud.microsoft/mcp` |
-| Anthropic's Entra application (client) ID | `9d24ba1b-a182-46b1-9455-0efcf0bafae1` |
-| Required delegated API permission | `WorkIQ.Act` |
-| Redirect URI | `https://claude.ai/api/mcp/auth_callback` |
-
-Set the client in the [Claude developer portal](https://claude.ai/directory/manage)
-for the Work IQ MCP connector under **How users authenticate** > **OAuth sign-in**
-> **OAuth client**, using Anthropic-held client credentials. Configure any
-required client secret only through the authorized portal setup, never in the
-repository, plugin manifest or MCP configuration. Tenant administrator consent
-is still required; recording the client ID here does not grant consent or change
-the live listing.
-
-The connector's OAuth client is managed separately from the GitHub-backed
-plugin bundle. Do not replace the shared Copilot or OpenAI client settings
-with this ID. Claude Code uses a separate OAuth path; do not assume this
-confidential client and Claude.ai callback can be reused there. See
-[Anthropic's connector authentication requirements](https://claude.com/docs/connectors/building/authentication#anthropic-held-client-credentials).
-
-### Claude directory listing
-
-The manifest's `description` is the user-facing tagline, also mirrored in the
-Claude marketplace entry. Use the longer description below in the submission
-portal; the manifest has no documented long-description field. Model instructions
-remain in the shared skill, not the listing copy.
-
-**Tagline:** Bring your Microsoft 365 work context into Claude.
-
-**Description:** Bring your Microsoft 365 work context into Claude with Work IQ,
-built by Microsoft. Find and connect information across Outlook email and calendar,
-Teams conversations, and SharePoint and OneDrive files to prepare for meetings,
-catch up on projects, and turn scattered information into clear next steps. Use
-those insights to inform analysis in Microsoft Fabric and Power BI, and to shape
-agents and AI experiences built with Microsoft Foundry. Get answers grounded in
-work information you're permitted to access, with source links when available,
-and take supported actions with your confirmation. Work IQ respects your
-organization's access controls and requires a Microsoft 365 work or school
-account, administrator consent, and applicable licensing.
 
 ## Choosing the operation
 
